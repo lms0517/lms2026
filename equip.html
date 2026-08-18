@@ -124,6 +124,8 @@ h1.big{font-size:23px;font-weight:800;letter-spacing:-.03em}
 #priceBox{display:none}
 #vizWrap{display:flex;flex-direction:column;align-items:center;margin-top:6px}
 #viz{width:100%;max-width:560px}
+#viz img.photo{width:100%;height:auto;display:block;border-radius:12px;
+  background:#f4f5f6;object-fit:contain;aspect-ratio:560/400}
 #viz svg{width:100%;height:auto;display:block}
 #deg{font-size:13px;font-weight:700;color:#777;letter-spacing:.06em}
 #vuToggle{display:flex;margin:14px auto 0;width:100%;max-width:300px;border:1px solid var(--line-d);border-radius:6px;overflow:hidden}
@@ -640,9 +642,56 @@ function svgOf(kind,o){
   switch(kind){case 'reach':return svgReach(o);case 'picker':return svgPicker(o);
     case 'stacker':return svgStacker(o);case 'ppt':return svgPPT(o);default:return svgCB(o);}
 }
-function renderViz(){
+/* ═════════ 장비 사진 ═════════
+   photos/ 폴더에 아래 이름으로 파일을 넣으면 일러스트 대신 실물 사진이 뜬다.
+   파일이 없으면 자동으로 일러스트로 되돌아가므로, 있는 것부터 채우면 된다.
+     photos/diesel   디젤 카운터밸런스      photos/reach    리치트럭
+     photos/lpg      LPG 카운터밸런스       photos/picker   오더피커
+     photos/elec     전동 카운터밸런스      photos/stacker  보행식 스태커
+                                            photos/ppt      전동 파렛트트럭
+   엔진식에서 "전동(리튬) 전환"을 고르면 photos/<id>-electric 를 먼저 찾는다.
+   확장자는 jpg · png · webp 순으로 찾으므로 어느 쪽으로 올려도 된다.        */
+const PHOTO_DIR='photos/', PHOTO_EXTS=['.jpg','.png','.webp'];
+function photoCandidates(){
+  const m=model(), stems=[];
+  if(S.battery&&m.power!=='battery')stems.push(m.id+'-electric');
+  stems.push(m.id, m.kind);
+  const out=[];
+  stems.forEach(st=>PHOTO_EXTS.forEach(ex=>out.push(PHOTO_DIR+st+ex)));
+  return out;
+}
+const photoMiss={};   /* 없다고 확인된 경로는 다시 찾지 않는다 */
+function drawIllust(){
   const col=COLORS.find(c=>c.id===S.color).body;
   $('viz').innerHTML=svgOf(model().kind,{kind:model().kind,body:col,lift:S.lift,mast:S.mast,tire:S.tire,batt:S.battery});
+  setStageMode(false);
+}
+function renderViz(){
+  drawIllust();                                   /* 사진이 뜨기 전까지 일러스트를 보여 둔다 */
+  const list=photoCandidates().filter(u=>!photoMiss[u]);
+  const token=++renderViz._t;                     /* 늦게 도착한 사진이 새 선택을 덮지 않게 */
+  let i=0;
+  (function tryNext(){
+    if(i>=list.length)return;
+    const url=list[i++], img=new Image();
+    img.onload=()=>{
+      if(token!==renderViz._t)return;
+      $('viz').innerHTML='';
+      img.className='photo';img.alt=model().name+' 대표 장비 사진';
+      $('viz').appendChild(img);
+      setStageMode(true);
+    };
+    img.onerror=()=>{photoMiss[url]=1;tryNext();};
+    img.src=url;
+  })();
+}
+renderViz._t=0;
+function setStageMode(isPhoto){
+  const note=$('stageNote'), deg=$('deg');
+  if(deg)deg.style.visibility=isPhoto?'hidden':'';   /* 한 장짜리 사진에는 360°가 없다 */
+  if(note)note.textContent=isPhoto
+    ? '* 상기 사진은 해당 기종의 대표 장비 사진입니다. 실제 배정 장비는 제조사·연식·보유 재고에 따라 외관과 색상이 다를 수 있습니다.'
+    : '* 상기 이미지는 사양 선택을 돕기 위한 참고용 일러스트입니다. (실제 장비 외관은 제조사·연식에 따라 다를 수 있습니다)';
 }
 
 /* ═════════ 계산 · 판정 ═════════ */
