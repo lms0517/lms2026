@@ -286,6 +286,7 @@ const PRICE_REF={"s2":"※ 확정 단가 아님 — 실단가는 본부 견적. 
 
 /* ---------- 외부 전문 견적앱 ---------- */
 const PRO_APPS={ /*@PRO_APPS*/
+ s1:[{n:'유니트 렌탈 견적앱', s:'견적 전 확인 위저드 · 적합도 평가 · 자가 비교', u:'pps/'}],
  s2:[{n:'운송견적 전문앱', s:'차량·구간별 운송비 산출', u:'https://ipgomi-app.github.io/a2026/'}],
  glo:[{n:'S3 견적앱', s:'3D 적재 시뮬레이션 포함', u:'https://lms0517.github.io/X2026/s3/'}],
  s4:[{n:'엔지니어링 견적앱', s:'설비사 자동화 제안·견적', u:'https://ipgomi-app.github.io/B2026/v2/'}]
@@ -554,6 +555,7 @@ function vQuote(b){
 function qPPS(){
  const r=rateGet('s1',{wood:35, plastic:45, trans:45000});
  $('#qbody').innerHTML=`
+  ${proLinks('s1')}
   ${rateNote()}
   <div class="card calc">
    <div class="frow">

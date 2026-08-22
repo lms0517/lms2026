@@ -1,0 +1,548 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>유니트 렌탈 견적</title>
+<meta name="theme-color" content="#0a2d61">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="유니트견적">
+<link rel="manifest" href='data:application/manifest+json,{"name":"유니트 렌탈 견적","short_name":"유니트견적","display":"standalone","background_color":"%23eef1f6","theme_color":"%230a2d61","start_url":"."}'>
+<link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="%230a2d61"/><rect x="12" y="36" width="40" height="8" rx="2" fill="%23f5c344"/><path d="M16 36v-7h8v7M28 36v-7h8v7M40 36v-7h8v7" stroke="%23f5c344" stroke-width="3" fill="none"/><path d="M20 52h24M26 46l-6 6 6 6M38 46l6 6-6 6" stroke="%23f5c344" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>'>
+<style>
+:root{
+  --navy:#0b3a7c; --navy-d:#0a2d61; --navy-x:#082448; --navy-grad:linear-gradient(160deg,#0a2d61,#0b4da2);
+  --gold:#f5c344; --gold-d:#d9a51f; --gold-bg:#f9f1da;
+  --bg:#eef1f6; --card:#ffffff; --line:#d9dfeb; --line2:#e4e9f2;
+  --txt:#141d33; --sub:#4d5e78; --mut:#8b99ad;
+  --blue-l:#e8eef8; --ok:#1e7a46; --ok-bg:#e6f4ec; --warn:#b3341f; --warn-bg:#faeae6;
+  --r:10px; --sh:0 2px 10px rgba(10,25,55,.07);
+}
+*{box-sizing:border-box; margin:0; -webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{background:#dfe4ec; color:var(--txt);
+  font-family:"Pretendard","Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",system-ui,sans-serif;
+  font-size:15px; line-height:1.55}
+#shell{max-width:520px; margin:0 auto; min-height:100dvh; background:var(--bg);
+  display:flex; flex-direction:column; position:relative; box-shadow:0 0 40px rgba(10,25,55,.12)}
+#view{flex:1; display:flex; flex-direction:column; padding-bottom:86px}
+button{font:inherit; cursor:pointer; border:none; background:none; color:inherit}
+input,select,textarea{font:inherit; color:var(--txt); background:var(--card);
+  border:1.5px solid var(--line); border-radius:8px; padding:9px 11px; width:100%}
+input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid var(--navy); outline-offset:1px}
+input[type=number]{font-variant-numeric:tabular-nums}
+input:disabled{background:var(--bg); color:var(--mut)}
+textarea{resize:vertical; min-height:56px}
+
+/* ---------- 헤더 · 스텝 ---------- */
+.hdr{background:var(--navy-grad); color:#fff; padding:calc(env(safe-area-inset-top,0px) + 18px) 18px 15px}
+.hdr .brand{font-size:11px; font-weight:800; letter-spacing:.14em; color:var(--gold)}
+.hdr h1{font-size:21px; font-weight:800; letter-spacing:-.01em; margin-top:4px}
+.hdr .sub{font-size:12.5px; opacity:.78; margin-top:4px}
+.steps{display:flex; background:var(--navy-d); padding:0 10px}
+.step{flex:1; padding:9px 2px 11px; text-align:center; font-size:11px; font-weight:700;
+  color:#7f95b8; border-bottom:3px solid transparent}
+.step.on{color:var(--gold); border-bottom-color:var(--gold)}
+.step.done{color:#cdd9ec}
+.step .n{display:block; font-size:13px; font-weight:800}
+
+/* ---------- 본문 공통 ---------- */
+.body{padding:14px 16px 20px; display:flex; flex-direction:column; gap:12px}
+.sec-t{font-size:13px; font-weight:800; color:var(--navy); letter-spacing:.02em;
+  display:flex; align-items:center; gap:7px; margin-top:4px}
+.sec-t::after{content:""; flex:1; height:1px; background:var(--line)}
+.card{background:var(--card); border:1px solid var(--line2); border-bottom:2.5px solid var(--line2);
+  border-radius:var(--r); box-shadow:var(--sh)}
+.calc{padding:14px; display:flex; flex-direction:column; gap:11px}
+.hint{font-size:11.5px; color:var(--mut)}
+.rate-note{font-size:11.5px; color:var(--warn); background:var(--warn-bg);
+  border:1px solid #f0d4cc; border-radius:8px; padding:8px 11px}
+.frow{display:flex; gap:9px}
+.fi{flex:1; display:flex; flex-direction:column; gap:5px; min-width:0}
+.fi label{font-size:11.5px; font-weight:700; color:var(--sub)}
+.unit{font-weight:500; color:var(--mut)}
+.chkline{display:flex; gap:7px; align-items:center; font-size:12.5px; color:var(--sub); font-weight:700}
+.chkline input{width:auto}
+
+.seg{display:flex; background:var(--blue-l); border-radius:8px; padding:3px; gap:3px}
+.seg button{flex:1; padding:8px 4px; border-radius:6px; font-size:13px; font-weight:700; color:var(--sub)}
+.seg button.on{background:var(--navy); color:#fff}
+
+.badge{display:inline-block; font-size:10.5px; font-weight:800; padding:2px 8px; border-radius:99px; vertical-align:1px}
+.b-est{background:var(--gold-bg); color:var(--gold-d)}
+.b-ok{background:var(--ok-bg); color:var(--ok)}
+.b-warn{background:var(--warn-bg); color:var(--warn)}
+
+/* ---------- 결과 표시 ---------- */
+.result{background:linear-gradient(160deg,#0a2d61,#083058); color:#fff; border-radius:8px; padding:13px 14px}
+.result .rl{font-size:11.5px; font-weight:700; color:#9db4d8; letter-spacing:.04em}
+.result .rv{font-size:23px; font-weight:800; color:var(--gold); font-variant-numeric:tabular-nums; margin-top:2px}
+.rline{display:flex; justify-content:space-between; gap:10px; font-size:12.5px; padding:5px 0;
+  border-bottom:1px solid rgba(255,255,255,.12); font-variant-numeric:tabular-nums}
+.rline:last-child{border-bottom:none}
+.rline b{color:var(--gold)}
+.rlines{margin-top:9px}
+.outbox{background:#0e1c33; color:#e8eef8; border-radius:8px; padding:13px 14px; font-size:13px;
+  line-height:1.7; white-space:pre-wrap; word-break:break-all; border-left:3px solid var(--gold)}
+
+/* ---------- 하단 내비 · 토스트 ---------- */
+.navbar{position:fixed; bottom:0; left:50%; transform:translateX(-50%); width:100%; max-width:520px;
+  background:var(--card); border-top:1px solid var(--line);
+  padding:11px 16px calc(env(safe-area-inset-bottom,0px) + 11px); display:flex; gap:9px; z-index:10}
+.btn{border-radius:9px; padding:12px; font-size:14.5px; font-weight:800; text-align:center; flex:1}
+.btn.prev{background:var(--blue-l); color:var(--navy)}
+.btn.next{background:var(--navy); color:#fff}
+.btn.gold{background:var(--gold); color:#4a3607}
+#toast{position:fixed; bottom:90px; left:50%; transform:translateX(-50%) translateY(8px); background:#12213c; color:#fff;
+  font-size:13px; font-weight:600; padding:9px 18px; border-radius:99px; opacity:0; transition:.25s; pointer-events:none; z-index:20}
+#toast.on{opacity:1; transform:translateX(-50%) translateY(0)}
+
+/* ---------- 도구 ---------- */
+.acc{overflow:hidden}
+.acc summary{list-style:none; cursor:pointer; padding:12px 14px; font-size:13.5px; font-weight:700;
+  display:flex; justify-content:space-between; align-items:center; gap:8px}
+.acc summary::-webkit-details-marker{display:none}
+.acc .cbody{padding:0 14px 13px; font-size:13px; color:var(--sub); white-space:pre-wrap}
+.chev{color:var(--mut); font-size:11px}
+.scorewrap{display:flex; align-items:center; gap:12px}
+.scorebar{flex:1; height:10px; background:var(--blue-l); border-radius:99px; overflow:hidden}
+.scorebar i{display:block; height:100%; background:linear-gradient(90deg,#0b4da2,var(--gold)); border-radius:99px; transition:width .3s}
+.scorev{font-size:21px; font-weight:800; font-variant-numeric:tabular-nums; color:var(--navy)}
+.fitrow{display:flex; align-items:center; gap:9px}
+.fitrow .fn{flex:1.2; font-size:12.5px; font-weight:700; color:var(--sub)}
+.fitrow .fw{font-size:10.5px; color:var(--mut); font-weight:700}
+.fitrow select{flex:1}
+.toollink{display:flex; align-items:center; gap:10px; padding:12px 14px; font-size:13.5px; font-weight:700;
+  color:var(--txt); text-decoration:none}
+.toollink small{display:block; font-size:11.5px; font-weight:500; color:var(--mut)}
+.toollink .chev{margin-left:auto}
+.tic{width:34px; height:34px; border-radius:8px; background:var(--blue-l); display:grid; place-items:center; font-size:16px; flex:none}
+@media (prefers-reduced-motion: reduce){*{transition:none !important}}
+</style>
+</head>
+<body>
+<div id="shell">
+  <div class="hdr">
+    <div class="brand">영업마스터 PRO</div>
+    <h1>유니트 렌탈 견적</h1>
+    <div class="sub" id="hsub">견적 전 확인 위저드</div>
+  </div>
+  <div class="steps" id="steps"></div>
+  <div id="view"></div>
+</div>
+<div class="navbar" id="navbar"></div>
+<div id="toast"></div>
+
+<script>
+/* ============================================================
+   유틸 · 저장 (localStorage 접두어 pps1. — 영업마스터 bm3.과 분리)
+   ============================================================ */
+const $=s=>document.querySelector(s);
+const won=n=>isFinite(n)?Math.round(n).toLocaleString('ko-KR'):'-';
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const store={
+ get(k,d){try{const v=localStorage.getItem('pps1.'+k); return v==null?d:JSON.parse(v)}catch(e){return d}},
+ set(k,v){try{localStorage.setItem('pps1.'+k,JSON.stringify(v))}catch(e){}}
+};
+let toastT=null;
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('on'),1800)}
+function copyText(s){
+ if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(s).then(()=>toast('복사되었습니다')).catch(()=>fallbackCopy(s))}
+ else fallbackCopy(s);
+}
+function fallbackCopy(s){
+ const ta=document.createElement('textarea'); ta.value=s; ta.style.position='fixed'; ta.style.opacity='0';
+ document.body.appendChild(ta); ta.select();
+ try{document.execCommand('copy'); toast('복사되었습니다')}catch(e){toast('복사 실패 — 길게 눌러 선택하세요')}
+ document.body.removeChild(ta);
+}
+
+/* ============================================================
+   상수
+   ============================================================ */
+const RATE_DEFAULT={keep:25, trans:2000, carry:600, lossFee:38500, days:30.4};
+function rateGet(){return Object.assign({},RATE_DEFAULT,store.get('rate',{}))}
+function rateSave(o){store.set('rate',o); toast('단가가 저장되었습니다')}
+
+const QUOTE_KINDS=['신규','연장','경쟁사전환','재전환','점유율확대','이탈업체 재견적'];
+const INDUSTRIES=['식품','음료','유화·화학','섬유','제지','비료·농산','유통','건자재','기타'];
+
+const FIT_ITEMS=[
+ {k:'volume',n:'출하 물량',w:15,q:'월평균·성수기 최대 출하량은 충분한가',o:['충분','보통','부족']},
+ {k:'turn',n:'회전성',w:20,q:'평균 회전일과 연간 회전 수는',o:['빠름(30일 내)','보통','느림·장기체류']},
+ {k:'dest',n:'착지 구조',w:25,q:'최종 납품처가 확인되고 회수가 가능한가',o:['확인·회수 가능','일부 확인','불분명']},
+ {k:'var',n:'수요 변동성',w:10,q:'성수기·프로모션 물량 편차가 큰가',o:['편차 큼','보통','일정']},
+ {k:'qual',n:'품질 요구',w:10,q:'위생·안전·자동화 대응 필요성',o:['높음','보통','낮음']},
+ {k:'std',n:'표준화 효과',w:10,q:'규격 혼용으로 작업 손실이 있는가',o:['있음','일부','없음']},
+ {k:'data',n:'데이터 제공',w:10,q:'출하처·수량·일자 정보 제공 가능한가',o:['가능','부분 가능','불가']}];
+
+const OBJECTIONS=[
+ {t:'"사서 쓰는 게 싸다"',b:'한자리에 두고 1년 내내 쓰는 고정 재고면 구매가 맞습니다 — 먼저 인정합니다.\n다만 사외로 나가는 물량은 구매가 외에 회수·분실·재구매·보관이 붙습니다. 내부 사용분과 외부 출하분을 분리해 1회전당 비용으로 비교하겠습니다.'},
+ {t:'"회수는 우리 기사가 한다"',b:'그 인건비와 공차 운행비를 매당으로 나눠 보신 적 있으십니까? 지금 구조가 더 싸면 그 구간은 유지하고, 비효율적인 착지만 전환하는 게 맞습니다.\n→ "이 회수망을 직접 만드실 수 있습니까?"'},
+ {t:'"성수기에만 더 필요하다"',b:'자가 보유는 피크 기준으로 사야 하고, 나머지 기간엔 자리만 차지합니다. 필요한 시기에, 필요한 장소에, 필요한 수량만 쓰고 반납하는 구조가 렌탈입니다.'},
+ {t:'"창고에 쌓아두면 된다"',b:'빈 유니트가 차지하는 자리도 임차료입니다. 쓰다가 반납하면 사업장 공간을 차지하지도, 유지비가 들지도 않습니다.'},
+ {t:'분실비 — 내 입으로 먼저 꺼낸다',b:'분실책임비가 매당 발생합니다(기본값 38,500원 VAT 포함 — 최신 단가표 확인). 숨기면 계약 후 반드시 클레임이 됩니다.\n뒤집기: 자가로 1,000매 굴리면 그 금액어치 자산이 현장에 흩어져 있는 겁니다. 렌탈은 분실분만 정산하고 대체 유니트가 바로 나가 조업이 멈추지 않습니다.'},
+ {t:'"우리 유니트도 멀쩡하다"',b:'자가는 파손·오염을 걸러낼 설비를 갖추기 어렵습니다. 풀링은 거점에서 자동선별·고압 온수 세척 후 재공급합니다. 식품·제약·콜드체인 고객이면 결정타입니다.'},
+ {t:'"규격은 우리 것도 표준이다"',b:'논점은 "표준이냐"가 아니라 "섞여 있느냐"입니다. 규격이 섞이면 차량 적재도 자동화설비도 어긋납니다.'},
+ {t:'"타 풀사가 더 싸다"',b:'표면 단가는 그럴 수 있습니다. 납품처별 회수 조건, 장기체류 정산, 성수기 공급 수량, 세척·선별 기준까지 같은 조건인지 먼저 맞춰 보겠습니다. 회수가 안 되는 만큼이 결국 고객사 부담으로 돌아옵니다.'}];
+
+/* ============================================================
+   상태 (세션 한정 — 단가 기본값만 저장)
+   ============================================================ */
+const Q={
+ use:'trans', unitCode:'N11', unitKind:'일반', industry:'식품',
+ monthlyOut:10000, season:false, peakMonths:3, peakMult:1.5,
+ turnDays:15, startYm:'',
+ stock:5000, stockEst:true,
+ client:'', endUser:'', biller:'', sameAll:true,
+ prevUse:'own', quoteKind:'신규', contractYears:1, creditMemo:'',
+ r:rateGet(), monthlyIn:10000, monthlyInEst:true,
+ company:'', region:''
+};
+const OWN={buy:22000, life:3, loss:7, repair:1500, storage:800, ret:400};
+let toolTab='fit';
+const fitAns={};
+
+/* ============================================================
+   계산
+   ============================================================ */
+const estStock=()=>Math.round(Q.monthlyOut*Q.turnDays/30);
+function calcMonth(mult){
+ const out=Q.monthlyOut*mult, inn=Q.monthlyIn*mult, st=Q.stock*mult;
+ const keepM=st*Q.r.keep*Q.r.days;                 // 보관료: 전산재고 × 원/매/일 × 매일 청구
+ const transM=Q.use==='in'?0:out*Q.r.trans;        // 수송비: 출고 매당 (구내용 0)
+ const carryM=inn*Q.r.carry;                       // 운반비: 납품(투입) 매당
+ return {keepM,transM,carryM,tot:keepM+transM+carryM};
+}
+function calcRevenue(){
+ const base=calcMonth(1);
+ let year, annualOut;
+ if(Q.season){
+  const peak=calcMonth(Q.peakMult), k=Math.min(12,Math.max(0,Q.peakMonths));
+  year=base.tot*(12-k)+peak.tot*k;
+  annualOut=Q.monthlyOut*(12-k)+Q.monthlyOut*Q.peakMult*k;
+ }else{year=base.tot*12; annualOut=Q.monthlyOut*12}
+ return {...base, year, annualOut};
+}
+function fmtEok(n){const e=n/1e8; return (e<0.05?e.toFixed(2):e.toFixed(1))+'억'}
+function rateCond(){return `${Q.unitCode} ${Q.r.keep}/${Q.use==='in'?0:won(Q.r.trans)}/${Q.r.carry}`}
+function buildSummary(){
+ const rev=calcRevenue();
+ return `${Q.company||'업체명'} : ${Q.region||'지역'}, ${Q.industry}${Q.unitKind==='건자재'?'(건자재)':''}, ${Q.quoteKind}, `+
+  `물동량 ${won(rev.annualOut)}매/년, 예상매출 ${fmtEok(rev.year)}/년 (${rateCond()})`;
+}
+
+/* ============================================================
+   라우터 · 공통 렌더
+   ============================================================ */
+const SCREENS=['1','2','3','4','result','tools'];
+function cur(){const h=location.hash.replace(/^#\/?/,''); return SCREENS.includes(h)?h:'1'}
+window.go=s=>{location.hash='#/'+s};
+window.goTool=t=>{toolTab=t; if(cur()==='tools')render(); else go('tools')};
+addEventListener('hashchange',render);
+
+const STEPS=[['1','사용형태'],['2','물동'],['3','거래구조'],['4','단가·수익']];
+function renderSteps(){
+ const s=cur(), idx=+s||9;
+ $('#steps').innerHTML=STEPS.map(([n,t])=>
+  `<button class="step ${s===n?'on':(idx>+n?'done':'')}" onclick="go('${n}')"><span class="n">${n}</span>${t}</button>`).join('')+
+  `<button class="step ${s==='result'?'on':''}" onclick="go('result')"><span class="n">✓</span>결과</button>`+
+  `<button class="step ${s==='tools'?'on':''}" onclick="go('tools')"><span class="n">☰</span>도구</button>`;
+}
+function seg(list,curv,fn){
+ return `<div class="seg">`+list.map(([v,t])=>`<button class="${curv===v?'on':''}" onclick="${fn}('${v}')">${t}</button>`).join('')+`</div>`;
+}
+const NOTE=`<div class="rate-note">⚠ 실제 단가는 <b>최신 단가표를 반드시 확인</b>하세요. 아래 값은 참고용 기본값이며, 회수기한·미회수 정산 기준은 현장에서 임의 확답하지 않습니다.</div>`;
+function navbar(prev,next,nextTxt){
+ $('#navbar').innerHTML=
+  (prev?`<button class="btn prev" onclick="go('${prev}')">← 이전</button>`:'')+
+  (next?`<button class="btn next" onclick="go('${next}')">${nextTxt||'다음 →'}</button>`:'');
+}
+
+/* ============================================================
+   Step 1 — 사용형태
+   ============================================================ */
+function vStep1(){
+ $('#hsub').textContent='1단계 · 사용형태 — 여기서 견적 구조가 갈린다';
+ $('#view').innerHTML=`<div class="body">
+  ${NOTE}
+  <div class="sec-t">사용 형태</div>
+  <div class="card calc">
+   ${seg([['trans','수송용 (사외 출하)'],['in','구내용 (사업장 내)']],Q.use,'setUse')}
+   <div class="hint">${Q.use==='in'?'구내용: 수송비 없음 — 보관료 + 운반비만 청구됩니다.':'수송용: 보관료 + 출고 매당 수송비 + 납품 매당 운반비.'}</div>
+  </div>
+  <div class="sec-t">유니트 유형</div>
+  <div class="card calc">
+   <div class="frow">
+    <div class="fi"><label>유형 코드 <span class="unit">(직접 입력 가능)</span></label>
+     <input list="codes" value="${esc(Q.unitCode)}" oninput="Q.unitCode=this.value">
+     <datalist id="codes"><option value="N11"><option value="N12"><option value="R11"></datalist></div>
+    <div class="fi"><label>구분</label>${seg([['일반','일반'],['건자재','건자재']],Q.unitKind,'setKind')}</div>
+   </div>
+   <div class="fi"><label>업종</label>
+    <select onchange="Q.industry=this.value">${INDUSTRIES.map(i=>`<option ${Q.industry===i?'selected':''}>${i}</option>`).join('')}</select></div>
+   ${Q.unitKind==='건자재'?`<div class="hint">건자재: 회수율 목표가 일반과 다릅니다. 건설현장/대리점/보도블럭 세부를 상담에서 확인하세요.</div>`:''}
+  </div>
+ </div>`;
+ navbar(null,'2');
+}
+window.setUse=v=>{Q.use=v;render()};
+window.setKind=v=>{Q.unitKind=v;render()};
+
+/* ============================================================
+   Step 2 — 물동
+   ============================================================ */
+function vStep2(){
+ $('#hsub').textContent='2단계 · 물동 — 예상매출의 근거';
+ $('#view').innerHTML=`<div class="body">
+  ${NOTE}
+  <div class="sec-t">출하 물동</div>
+  <div class="card calc">
+   <div class="frow">
+    <div class="fi"><label>월 출고량 <span class="unit">(매)</span></label>
+     <input type="number" value="${Q.monthlyOut}" oninput="Q.monthlyOut=+this.value||0;syncEst()"></div>
+    <div class="fi"><label>회전일 <span class="unit">(출고→반환 일수)</span></label>
+     <input type="number" value="${Q.turnDays}" oninput="Q.turnDays=+this.value||0;syncEst()"></div>
+   </div>
+   <div class="fi"><label>월별 편차</label>
+    ${seg([['flat','균등'],['season','시즌성 있음']],Q.season?'season':'flat','setSeason')}</div>
+   ${Q.season?`<div class="frow">
+    <div class="fi"><label>성수기 개월수</label><input type="number" value="${Q.peakMonths}" oninput="Q.peakMonths=+this.value||0"></div>
+    <div class="fi"><label>성수기 배수 <span class="unit">(×평월)</span></label><input type="number" step="0.1" value="${Q.peakMult}" oninput="Q.peakMult=+this.value||1"></div>
+   </div><div class="hint">복숭아·감귤 등 시즌 품목은 성수기 전 사전계약으로.</div>`:''}
+   <div class="fi"><label>사용 시작 시점</label><input type="month" value="${Q.startYm}" oninput="Q.startYm=this.value"></div>
+  </div>
+  <div class="sec-t">전산재고 (보관료 과금 기준)</div>
+  <div class="card calc">
+   <div class="hint">보관료는 <b>전산재고(누적 입고−출고) × 매일</b> 청구됩니다 (1~31일). 평균 체류가 아닙니다.</div>
+   <div class="frow">
+    <div class="fi"><label>예상 전산재고 <span class="unit">(매)</span> <span class="badge b-est" id="stockBadge" ${Q.stockEst?'':'hidden'}>추정치</span></label>
+     <input type="number" id="stockIn" value="${Q.stock}" oninput="Q.stock=+this.value||0;Q.stockEst=false;$('#stockBadge').hidden=true"></div>
+    <div class="fi"><label>&nbsp;</label>
+     <button class="btn prev" style="padding:9px" onclick="useEst()" id="estBtn">추정값 사용 (${won(estStock())}매)</button></div>
+   </div>
+   <div class="hint">보조 추정 = 월 출고량 × 회전일 ÷ 30 — 실제 전산재고와 다를 수 있어 "추정치"로 표기됩니다.</div>
+  </div>
+ </div>`;
+ navbar('1','3');
+}
+window.setSeason=v=>{Q.season=v==='season';render()};
+window.useEst=()=>{Q.stock=estStock();Q.stockEst=true;$('#stockIn').value=Q.stock;$('#stockBadge').hidden=false};
+window.syncEst=()=>{
+ const b=$('#estBtn'); if(b)b.textContent=`추정값 사용 (${won(estStock())}매)`;
+ if(Q.stockEst){Q.stock=estStock(); const el=$('#stockIn'); if(el)el.value=Q.stock}
+};
+
+/* ============================================================
+   Step 3 — 거래구조
+   ============================================================ */
+function vStep3(){
+ $('#hsub').textContent='3단계 · 거래구조 — 계약처·실수요처·청구처를 구분';
+ $('#view').innerHTML=`<div class="body">
+  ${NOTE}
+  <div class="sec-t">거래처 구조</div>
+  <div class="card calc">
+   <div class="fi"><label>계약처</label><input value="${esc(Q.client)}" oninput="Q.client=this.value" placeholder="계약하는 곳"></div>
+   <label class="chkline"><input type="checkbox" ${Q.sameAll?'checked':''} onchange="Q.sameAll=this.checked;render()"> 실수요처·청구처가 계약처와 동일</label>
+   ${Q.sameAll?'':`<div class="frow">
+    <div class="fi"><label>실수요처</label><input value="${esc(Q.endUser)}" oninput="Q.endUser=this.value" placeholder="실제 쓰는 곳"></div>
+    <div class="fi"><label>청구처</label><input value="${esc(Q.biller)}" oninput="Q.biller=this.value" placeholder="비용 청구 대상"></div></div>`}
+   <div class="hint">계약하는 곳과 실제 쓰는 곳이 다른 경우가 많습니다. 청구처까지 확정하세요.</div>
+  </div>
+  <div class="sec-t">견적 종류</div>
+  <div class="card calc">
+   <div class="fi"><label>기존 사용</label>
+    ${seg([['own','자가'],['pool','타 풀사'],['mixed','혼용'],['new','신규']],Q.prevUse,'setPrev')}</div>
+   <div class="frow">
+    <div class="fi"><label>견적 종류</label>
+     <select onchange="Q.quoteKind=this.value;kindHint()">${QUOTE_KINDS.map(k=>`<option ${Q.quoteKind===k?'selected':''}>${k}</option>`).join('')}</select></div>
+    <div class="fi"><label>계약 기간 <span class="unit">(년)</span></label>
+     <input type="number" value="${Q.contractYears}" oninput="Q.contractYears=+this.value||1"></div>
+   </div>
+   <div class="hint" id="kindHint"></div>
+   <div class="fi"><label>여신 메모 <span class="unit">(미수금 이력 등 — 저장되지 않음)</span></label>
+    <textarea oninput="Q.creditMemo=this.value" placeholder="장기·반복 미수 이력 업체는 신규 여신 주의">${esc(Q.creditMemo)}</textarea></div>
+  </div>
+ </div>`;
+ kindHint();
+ navbar('2','4');
+}
+window.setPrev=v=>{Q.prevUse=v;render()};
+window.kindHint=()=>{
+ const el=$('#kindHint'); if(!el)return;
+ el.innerHTML=Q.quoteKind==='경쟁사전환'?'경쟁사 전환: 상대 계약 만료 시점·인상 이슈를 함께 확인하세요. 대형업체 전환 건은 저단가 요구가 따라옵니다 — 수익성 리스크를 단가 제안 시 짚으세요.':'';
+};
+
+/* ============================================================
+   Step 4 — 단가·수익
+   ============================================================ */
+function vStep4(){
+ $('#hsub').textContent='4단계 · 단가·수익 — 단가조건 '+rateCond();
+ const inTrans=Q.use!=='in';
+ $('#view').innerHTML=`<div class="body">
+  ${NOTE}
+  <div class="sec-t">단가 조건 <span class="badge b-est">기본값 수정 가능</span></div>
+  <div class="card calc">
+   <div class="frow">
+    <div class="fi"><label>보관료 <span class="unit">(원/매/일)</span></label>
+     <input type="number" value="${Q.r.keep}" oninput="Q.r.keep=+this.value||0;upd4()"></div>
+    <div class="fi"><label>수송비 <span class="unit">(원/매·출고)</span></label>
+     <input type="number" value="${inTrans?Q.r.trans:0}" ${inTrans?'':'disabled'} oninput="Q.r.trans=+this.value||0;upd4()"></div>
+   </div>
+   <div class="frow">
+    <div class="fi"><label>운반비 <span class="unit">(원/매·납품)</span></label>
+     <input type="number" value="${Q.r.carry}" oninput="Q.r.carry=+this.value||0;upd4()"></div>
+    <div class="fi"><label>월 일수 <span class="unit">(일)</span></label>
+     <input type="number" step="0.1" value="${Q.r.days}" oninput="Q.r.days=+this.value||0;upd4()"></div>
+   </div>
+   <div class="frow">
+    <div class="fi"><label>월 납품량 <span class="unit">(매)</span> <span class="badge b-est" id="innBadge" ${Q.monthlyInEst?'':'hidden'}>추정치</span></label>
+     <input type="number" value="${Q.monthlyIn}" oninput="Q.monthlyIn=+this.value||0;Q.monthlyInEst=false;$('#innBadge').hidden=true;upd4()"></div>
+    <div class="fi"><label>분실책임비 <span class="unit">(원/매·참고)</span></label>
+     <input type="number" value="${Q.r.lossFee}" oninput="Q.r.lossFee=+this.value||0"></div>
+   </div>
+   ${inTrans?`<div class="hint">월 납품량 기본값 = 월 출고량 (순환 가정, 추정치). 실제 투입 계획이 있으면 수정하세요.</div>`
+   :`<div class="hint">구내용: 수송비 항목이 0으로 처리됩니다. 납품량은 보충 투입분만 입력하세요.</div>`}
+   <div class="result" id="r4"></div>
+   <button class="btn gold" onclick="saveRate()">현재 단가를 기본값으로 저장</button>
+   <div class="hint">저장 시 이 기기(localStorage)에만 보관됩니다.</div>
+  </div>
+ </div>`;
+ if(Q.monthlyInEst&&inTrans)Q.monthlyIn=Q.monthlyOut;
+ upd4();
+ navbar('3','result','견적 결과 →');
+}
+window.upd4=()=>{
+ const rev=calcRevenue(), el=$('#r4'); if(!el)return;
+ el.innerHTML=`<div class="rl">월 예상 매출</div><div class="rv">${won(rev.tot)}원</div>
+  <div class="rlines">
+   <div class="rline"><span>① 보관료 — 전산재고 ${won(Q.stock)}매 × ${Q.r.keep}원 × ${Q.r.days}일 <b>매일 청구</b></span><span>${won(rev.keepM)}</span></div>
+   <div class="rline"><span>② 수송비 — 출고 ${won(Q.monthlyOut)}매 × ${won(Q.use==='in'?0:Q.r.trans)}원</span><span>${won(rev.transM)}</span></div>
+   <div class="rline"><span>③ 운반비 — 납품 ${won(Q.monthlyIn)}매 × ${Q.r.carry}원</span><span>${won(rev.carryM)}</span></div>
+   <div class="rline"><span>연 매출 ${Q.season?`(성수기 ${Q.peakMonths}개월 ×${Q.peakMult} 반영)`:'(×12)'}</span><b>${won(rev.year)}원 ≈ ${fmtEok(rev.year)}/년</b></div>
+  </div>`;
+};
+window.saveRate=()=>rateSave({keep:Q.r.keep, trans:Q.r.trans, carry:Q.r.carry, lossFee:Q.r.lossFee, days:Q.r.days});
+
+/* ============================================================
+   결과 — 표준 형식
+   ============================================================ */
+function vResult(){
+ $('#hsub').textContent='견적 결과 — 표준 형식';
+ const rev=calcRevenue();
+ $('#view').innerHTML=`<div class="body">
+  <div class="sec-t">업체 정보</div>
+  <div class="card calc"><div class="frow">
+   <div class="fi"><label>업체명</label><input value="${esc(Q.company)}" oninput="Q.company=this.value;updSum()" placeholder="예: 대한식품"></div>
+   <div class="fi"><label>지역</label><input value="${esc(Q.region)}" oninput="Q.region=this.value;updSum()" placeholder="예: 양산"></div>
+  </div></div>
+  <div class="sec-t">표준 형식 (보고·파이프라인 공용)</div>
+  <div class="outbox" id="sumbox"></div>
+  <button class="btn next" onclick="copyText(buildSummary())">표준 형식 복사</button>
+  <div class="sec-t">상세 내역</div>
+  <div class="card calc"><div class="result">
+   <div class="rl">연 예상 매출</div><div class="rv">${fmtEok(rev.year)} <span style="font-size:13px;color:#9db4d8">(${won(rev.year)}원)</span></div>
+   <div class="rlines">
+    <div class="rline"><span>월 매출 (평월)</span><span>${won(rev.tot)}원</span></div>
+    <div class="rline"><span>보관료 / 수송비 / 운반비</span><span>${won(rev.keepM)} / ${won(rev.transM)} / ${won(rev.carryM)}</span></div>
+    <div class="rline"><span>단가조건</span><b>${rateCond()}</b></div>
+    <div class="rline"><span>분실책임비 (참고)</span><span>${won(Q.r.lossFee)}원/매 · VAT 포함</span></div>
+   </div></div>
+   <div class="hint">※ 분실·파손·미회수 정산 기준은 계약서에 명시 — 구두로 넘기지 않습니다.</div>
+  </div>
+  <div class="sec-t">상담 도구</div>
+  <div class="card">
+   <a class="toollink" href="#/tools" onclick="toolTab='fit'"><span class="tic">◎</span><span>고객 적합도 평가<small>7항목 100점 — 무리한 계약 방지</small></span><span class="chev">›</span></a>
+   <a class="toollink" style="border-top:1px solid var(--line2)" href="#/tools" onclick="toolTab='own'"><span class="tic">⇄</span><span>자가 보유 대비 비교<small>1회전당 비용으로 비교</small></span><span class="chev">›</span></a>
+   <a class="toollink" style="border-top:1px solid var(--line2)" href="#/tools" onclick="toolTab='talk'"><span class="tic">❝</span><span>반론 대응 스크립트<small>자가보유·타 풀사 대응 8건</small></span><span class="chev">›</span></a>
+  </div>
+ </div>`;
+ updSum();
+ navbar('4','tools','상담 도구 →');
+}
+window.updSum=()=>{const el=$('#sumbox'); if(el)el.textContent=buildSummary()};
+
+/* ============================================================
+   상담 도구 — 적합도 / 자가 비교 / 반론 카드
+   ============================================================ */
+function vTools(){
+ $('#hsub').textContent='상담 도구';
+ const tabs=`<div class="seg">
+  <button class="${toolTab==='fit'?'on':''}" onclick="goTool('fit')">적합도 평가</button>
+  <button class="${toolTab==='own'?'on':''}" onclick="goTool('own')">자가 비교</button>
+  <button class="${toolTab==='talk'?'on':''}" onclick="goTool('talk')">반론 카드</button></div>`;
+ let body='';
+ if(toolTab==='fit'){
+  let score=0,answered=0;
+  FIT_ITEMS.forEach(f=>{if(fitAns[f.k]!=null){score+=f.w*[1,0.5,0][fitAns[f.k]];answered++}});
+  score=Math.round(score);
+  const v=answered<FIT_ITEMS.length?null
+   :score>=80?['우선공략 — 현장진단·파일럿 추진','b-ok']
+   :score>=60?['선별제안 — 특정 출하 구간만','b-est']
+   :score>=40?['조건개선 후 재검토','b-warn']
+   :['무리한 계약 금지','b-warn'];
+  body=`<div class="card calc">
+   <div class="scorewrap"><div class="scorev">${score}<span style="font-size:12px;color:var(--mut)">/100</span></div>
+    <div class="scorebar"><i style="width:${score}%"></i></div>
+    ${v?`<span class="badge ${v[1]}">${v[0].split(' — ')[0]}</span>`:`<span class="hint">${FIT_ITEMS.length-answered}개 항목 남음</span>`}</div>
+   ${v?`<div class="hint" style="color:var(--sub)"><b>판정:</b> ${v[0]}</div>`:''}
+   ${FIT_ITEMS.map(f=>`<div class="fitrow"><span class="fn">${f.n} <span class="fw">${f.w}점</span><br><span class="fw" style="font-weight:500">${f.q}</span></span>
+    <select onchange="setFit('${f.k}',this.selectedIndex)">
+     <option ${fitAns[f.k]==null?'selected':''}>선택</option>
+     ${f.o.map((o,i)=>`<option ${fitAns[f.k]===i?'selected':''}>${o}</option>`).join('')}</select></div>`).join('')}
+   <div class="hint">배점: 착지구조 25 · 회전성 20 · 출하물량 15 · 나머지 각 10. 착지가 불분명하면 물량이 많아도 좋은 계약이 아닙니다.</div>
+  </div>`;
+ }else if(toolTab==='own'){
+  body=`<div class="card calc">
+   <div class="hint">구매가로 비교하면 집니다 — 반드시 <b>1회전당 원가</b>로. (회전일 ${Q.turnDays}일 기준, 2단계에서 수정)</div>
+   <div class="frow">
+    <div class="fi"><label>자가 구매단가 <span class="unit">(원/매)</span></label><input type="number" value="${OWN.buy}" oninput="OWN.buy=+this.value||0;updOwn()"></div>
+    <div class="fi"><label>내용연수 <span class="unit">(년)</span></label><input type="number" value="${OWN.life}" oninput="OWN.life=+this.value||1;updOwn()"></div></div>
+   <div class="frow">
+    <div class="fi"><label>연 분실률 <span class="unit">(%)</span></label><input type="number" value="${OWN.loss}" oninput="OWN.loss=+this.value||0;updOwn()"></div>
+    <div class="fi"><label>연 수리·관리 <span class="unit">(원/매)</span></label><input type="number" value="${OWN.repair}" oninput="OWN.repair=+this.value||0;updOwn()"></div></div>
+   <div class="frow">
+    <div class="fi"><label>연 보관비 <span class="unit">(원/매)</span></label><input type="number" value="${OWN.storage}" oninput="OWN.storage=+this.value||0;updOwn()"></div>
+    <div class="fi"><label>회수운송 <span class="unit">(원/매·회전)</span></label><input type="number" value="${OWN.ret}" oninput="OWN.ret=+this.value||0;updOwn()"></div></div>
+   <div class="result" id="ownres"></div>
+   <div class="hint" id="ownhint"></div>
+  </div>`;
+ }else{
+  body=OBJECTIONS.map(ob=>`<details class="card acc"><summary>${ob.t}<span class="chev">▾</span></summary>
+   <div class="cbody">${esc(ob.b)}</div></details>`).join('');
+ }
+ $('#view').innerHTML=`<div class="body">${tabs}${body}</div>`;
+ if(toolTab==='own')updOwn();
+ navbar('result','1','처음부터 다시');
+}
+window.setFit=(k,idx)=>{fitAns[k]=idx<1?null:idx-1;render()};
+window.updOwn=()=>{
+ const el=$('#ownres'); if(!el)return;
+ const yearTurns=Q.turnDays>0?365/Q.turnDays:0;
+ const totalTurns=yearTurns*OWN.life;
+ const ownTrip=totalTurns>0?OWN.buy/totalTurns+(OWN.buy*OWN.loss/100+OWN.repair+OWN.storage)/yearTurns+OWN.ret:0;
+ const rentTrip=Q.turnDays*Q.r.keep+(Q.use==='in'?0:Q.r.trans)+Q.r.carry;
+ const diff=ownTrip-rentTrip;
+ el.innerHTML=`
+  <div class="rline"><span>자가 1회전당 (연 ${yearTurns.toFixed(1)}회전)</span><span>${won(ownTrip)}원</span></div>
+  <div class="rline"><span>렌탈 1회전당 (${Q.turnDays}일×${Q.r.keep}원${Q.use==='in'?'':' + 수송 '+won(Q.r.trans)+'원'} + 운반 ${Q.r.carry}원)</span><span>${won(rentTrip)}원</span></div>
+  <div class="rline">${diff>0?`<span>렌탈 시 회전당 절감</span><b>+${won(diff)}원</b>`:`<span>이 조건에서는 자가가 회전당 유리</span><b style="color:#f0a9a0">${won(diff)}원</b>`}</div>`;
+ $('#ownhint').textContent=diff<=0?'자가가 유리한 구간은 먼저 인정하세요 — 내부 고정재고는 유지, 사외 출하 구간만 전환 제안이 신뢰를 만듭니다.':'';
+};
+
+/* ============================================================
+   렌더 진입
+   ============================================================ */
+function render(){
+ renderSteps();
+ const s=cur();
+ if(s==='result')vResult();
+ else if(s==='tools')vTools();
+ else [vStep1,vStep2,vStep3,vStep4][+s-1]();
+ window.scrollTo(0,0);
+}
+render();
+</script>
+</body>
+</html>
