@@ -1,6 +1,6 @@
 /* 로지스올 지게차 견적 — 서비스워커
    앱 셸을 캐시해 오프라인(현장·창고 안)에서도 견적을 만들 수 있게 한다. */
-const V = 'lf-v1';
+const V = 'lf-v2';
 const SHELL = [
   './forklift.html',
   './forklift.webmanifest',
@@ -24,12 +24,25 @@ self.addEventListener('activate', e => {
 /* 이 SW는 지게차 견적앱 자산만 담당한다.
    같은 스코프의 다른 페이지(index.html 등)는 건드리지 않고 네트워크로 흘려보낸다. */
 const mine = url => SHELL.some(p => url.pathname.endsWith(p.replace('./', '')));
+/* 장비 사진(360° 시퀀스 포함)은 한 번 받은 것만 캐시에 남겨 현장에서 다시 쓴다 */
+const isPhoto = url => url.pathname.includes('/photos/');
 
 self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
-  if (url.origin !== location.origin || !mine(url)) return;
+  if (url.origin !== location.origin) return;
+
+  if (isPhoto(url)) {
+    e.respondWith(caches.open(V).then(c =>
+      c.match(req).then(hit => hit || fetch(req).then(res => {
+        if (res.ok) c.put(req, res.clone());   /* 없는 사진(404)은 캐시하지 않는다 */
+        return res;
+      }))
+    ));
+    return;
+  }
+  if (!mine(url)) return;
 
   if (req.mode === 'navigate') {
     /* 문서는 네트워크 우선 — 새 버전을 받되, 오프라인이면 캐시로 */
