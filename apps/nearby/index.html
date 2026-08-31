@@ -237,6 +237,8 @@ button{ border:none; background:none; cursor:pointer; }
 <div class="toast" id="toast"></div>
 
 <script src="../../nearby-data.js"></script>
+<!-- 미수금·경쟁사 명단 — 아직 없으면 이 파일만 빠진다 -->
+<script src="../../nearby-extra.js"></script>
 <script>
 "use strict";
 const $ = id => document.getElementById(id);
@@ -379,7 +381,7 @@ function renderLock() {
     if (!pw) { $("pwErr").textContent = "비밀번호를 입력하세요"; $("pwErr").style.display = "block"; return; }
     $("pwGo").textContent = "푸는 중…"; $("pwErr").style.display = "none";
     try {
-      RECS = normalize(await decryptData(pw));
+      RECS = applyExtra(normalize(await decryptData(pw)), await loadExtra(pw));
       localStorage.setItem(PW_KEY, pw);
       start();
     } catch (e) {
@@ -390,6 +392,39 @@ function renderLock() {
   };
   $("pwGo").onclick = run;
   $("pw").onkeydown = e => { if (e.key === "Enter") run(); };
+}
+
+/* ── 미수금·경쟁사 명단 ──
+   nearby-extra.js 가 같은 비밀번호로 암호화된 명단을 들고 있다.
+     { debt:  ["업체명 또는 코드", …]            기존 업체를 미수금으로 표시
+       rival: [{name, addr, tel, person, note, lat, lng}, …]  새 업체로 추가 }
+   파일이 없으면 아무 일도 하지 않는다.                              */
+async function loadExtra(password) {
+  if (typeof window.NEARBY_EXTRA_ENC !== "string") return null;
+  try {
+    const raw = Uint8Array.from(atob(window.NEARBY_EXTRA_ENC), c => c.charCodeAt(0));
+    const salt = raw.slice(0, 16), iv = raw.slice(16, 28), ct = raw.slice(28);
+    const bk = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveKey"]);
+    const k = await crypto.subtle.deriveKey({ name: "PBKDF2", salt, iterations: 100000, hash: "SHA-256" },
+      bk, { name: "AES-GCM", length: 256 }, false, ["decrypt"]);
+    return JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({ name: "AES-GCM", iv }, k, ct)));
+  } catch (e) { return null; }
+}
+function applyExtra(recs, extra) {
+  if (!extra) return recs;
+  const debt = new Set((extra.debt || []).map(x => String(x).trim()).filter(Boolean));
+  if (debt.size) recs.forEach(r => { if (debt.has(r.name) || debt.has(String(r.code))) r.kind = "debt"; });
+  const add = (extra.rival || []).map((x, i) => {
+    const o = Object.assign({}, x, { id: "rival|" + (x.code || i), kind: "rival", fkey: "", qty: 0 });
+    if (x.lat && x.lng) { o.lat = +x.lat; o.lng = +x.lng; o.approx = false; }
+    else {
+      const h = findRegion(x.addr || "");
+      if (h) { o.lat = h.lat; o.lng = h.lng; o.approx = true; }
+      else { o.lat = null; o.lng = null; o.approx = false; }
+    }
+    return o;
+  }).filter(r => r.name);
+  return recs.concat(add);
 }
 
 /* 좌표가 없으면 주소의 시·군 중심으로 근사한다 */
@@ -499,7 +534,7 @@ function cardHtml(r) {
           <span class="addr-short">${esc(r.addrShort || r.addr || "")}${r.approx ? " (시·군 중심)" : ""}</span>
         </div>
         <div class="staff-row">
-          <div class="meta">${esc(r.person || "-")}${r.driver ? " · " + esc(r.driver) : ""}</div>
+          <div class="meta">${esc(r.person || r.note || "-")}${r.driver ? " · " + esc(r.driver) : ""}</div>
           <div class="nums">
             ${r.fkey ? `<span class="year ${catCls(r.fkey)}">${esc(r.fkey)}</span>` : ""}
             ${inbStr ? `<span class="inb-date">${inbStr}</span>` : ""}
@@ -718,7 +753,7 @@ $("locQ").onkeydown = e => { if (e.key === "Enter") $("locOk").click(); };
 (async function boot() {
   const pw = localStorage.getItem(PW_KEY);
   if (pw && typeof window.NEARBY_ENC === "string") {
-    try { RECS = normalize(await decryptData(pw)); start(); return; }
+    try { RECS = applyExtra(normalize(await decryptData(pw)), await loadExtra(pw)); start(); return; }
     catch (e) { localStorage.removeItem(PW_KEY); }
   }
   renderLock();
