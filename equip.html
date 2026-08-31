@@ -3,18 +3,18 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
-<title>로지스올 지게차 견적</title>
-<meta name="description" content="현장 조건 기반 지게차 임대 견적 — 견적 필수 확인 15항목 자동 점검">
+<title>그룹사 장비 견적</title>
+<meta name="description" content="현장 조건 기반 장비 임대 견적 — 견적 필수 확인 15항목 자동 점검">
 <meta name="theme-color" content="#00843D">
-<link rel="manifest" href="./forklift.webmanifest">
+<link rel="manifest" href="./equip.webmanifest">
 <link rel="icon" href="./icon-192.png">
 <link rel="apple-touch-icon" href="./icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="지게차견적">
+<meta name="apple-mobile-web-app-title" content="장비견적">
 <meta name="mobile-web-app-capable" content="yes">
 <style>
-/* ══════════ 로지스올 지게차 견적앱 ══════════ */
+/* ══════════ 그룹사 장비 견적앱 ══════════ */
 :root{
   --green:#00843D; --green-d:#006B31; --green-l:#E5F3EC;
   --navy:#16324F; --ink:#1a1a1a; --sub:#666; --mut:#999;
@@ -124,17 +124,15 @@ h1.big{font-size:23px;font-weight:800;letter-spacing:-.03em}
 #priceBox{display:none}
 #vizWrap{display:flex;flex-direction:column;align-items:center;margin-top:6px}
 #viz{width:100%;max-width:560px;position:relative;touch-action:pan-y}
+#viz img.photo{width:100%;height:auto;display:block;border-radius:12px;
+  background:#f4f5f6;object-fit:contain;aspect-ratio:560/400;-webkit-user-drag:none;user-select:none}
 #viz svg{width:100%;height:auto;display:block}
-#viz img.photo{width:100%;height:auto;display:block;border-radius:12px;background:#f4f5f6;
-  object-fit:contain;aspect-ratio:560/400;-webkit-user-drag:none;user-select:none}
 #viz.spin{cursor:grab}
 #viz.spin:active{cursor:grabbing}
-#viz.spin img.photo{border-radius:12px}
 #viz:focus-visible{outline:2px solid var(--blue);outline-offset:3px;border-radius:12px}
 /* 360° 배지 · 드래그 안내 — 회전 시퀀스가 있을 때만 뜬다 */
 .spinBadge{position:absolute;top:10px;left:10px;background:rgba(20,20,20,.72);color:#fff;
-  font-size:11px;font-weight:800;letter-spacing:.06em;border-radius:20px;padding:5px 11px;
-  display:flex;align-items:center;gap:5px;pointer-events:none}
+  font-size:11px;font-weight:800;letter-spacing:.06em;border-radius:20px;padding:5px 11px;pointer-events:none}
 .spinHint{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);background:rgba(20,20,20,.72);
   color:#fff;font-size:11.5px;font-weight:700;border-radius:20px;padding:6px 14px;white-space:nowrap;
   pointer-events:none;transition:opacity .3s}
@@ -367,7 +365,7 @@ h1.big{font-size:23px;font-weight:800;letter-spacing:-.03em}
 <header id="gnb">
   <div class="row1">
     <button class="back" id="backBtn" onclick="back()" style="display:none">‹</button>
-    <div class="logo" id="logoBox"><img src="./icon-192.png" alt=""><span>LOGISALL</span></div>
+    <div class="logo" id="logoBox"><img src="./icon-192.png" alt=""><span>GROUP</span></div>
     <div class="htt" id="hTitle" style="display:none"></div>
     <div class="rt">
       <span id="offBadge">오프라인</span>
@@ -400,7 +398,7 @@ h1.big{font-size:23px;font-weight:800;letter-spacing:-.03em}
       <div class="t"><b id="rcTitle">작성 중인 견적</b><span id="rcSub"></span></div>
       <button class="go" onclick="go('build')">이어하기</button>
     </div>
-    <h1 class="big">어떤 지게차가 필요하세요?</h1>
+    <h1 class="big">어떤 장비가 필요하세요?</h1>
     <div class="lead">현장 조건에 맞는 기종을 고르면 <b>견적 필수 확인 15항목</b>을 자동으로 점검해 드립니다.<br>월 임대료는 장기(36개월) 기준 참고가이며 최종가는 현장 실사 후 확정됩니다.</div>
     <div class="chips" id="catChips" style="margin-top:18px"></div>
     <div id="mdlGrid"></div>
@@ -476,8 +474,8 @@ h1.big{font-size:23px;font-weight:800;letter-spacing:-.03em}
 
 <script>
 /* ═════════════════════════════════════════════════════════
-   로지스올 지게차 견적앱
-   · 견적 로직 = KPP 물류장비 「견적 필수 확인」 15항목
+   그룹사 장비 견적앱
+   · 견적 로직 = 당사 운영장비 「견적 필수 확인」 15항목
    · 단가는 전부 참고용 — 최종가는 현장 실사 후 확정
    ═════════════════════════════════════════════════════════ */
 
@@ -496,14 +494,14 @@ const MODELS=[
   tons:[1.5,2.0,2.5], base:{'1.5':1010000,'2':1110000,'2.5':1210000},
   power:'battery', desc:'좁은 통로 · 고층 랙 (통로폭 2.5m 내외)'},
  {id:'picker', cat:'창고장비', kind:'picker', name:'오더피커', en:'Order Picker',
-  tons:[1.0], base:{'1':1160000}, power:'battery', desc:'다품종 피킹 중심 물류센터'},
+  tons:[1.0], base:{'1':1160000}, power:'battery', desc:'다품종 피킹 중심 운영센터'},
  {id:'stacker', cat:'창고장비', kind:'stacker', name:'보행식 스태커', en:'Walkie Stacker',
   tons:[1.0,1.5], base:{'1':510000,'1.5':560000}, power:'battery', desc:'소형 창고 · 저빈도 적재'},
- {id:'ppt', cat:'창고장비', kind:'ppt', name:'전동 파렛트트럭', en:'Electric Pallet Truck',
+ {id:'ppt', cat:'창고장비', kind:'ppt', name:'전동 유니트트럭', en:'Electric Pallet Truck',
   tons:[1.5,2.0], base:{'1.5':360000,'2':410000}, power:'battery', desc:'수평 이동 전용 — 단상 충전으로 충분'},
 ];
 const COLORS=[
- {id:'green', nm:'로지스올 그린', c1:'#0d9a52', c2:'#006b31', body:'#00843D'},
+ {id:'green', nm:'그룹사 그린', c1:'#0d9a52', c2:'#006b31', body:'#00843D'},
  {id:'orange',nm:'세이프티 오렌지', c1:'#ff8a4d', c2:'#d94f10', body:'#F26522'},
  {id:'yellow',nm:'인더스트리얼 옐로우', c1:'#ffd45e', c2:'#d99a00', body:'#F2B705'},
  {id:'white', nm:'퓨어 화이트', c1:'#ffffff', c2:'#d8dadc', body:'#EDEFF0'},
@@ -511,14 +509,14 @@ const COLORS=[
 ];
 const BEST={
  '전체':      {p:'44%', tail:'가 <b>리튬(LFP) 전동</b>을 선택하셨습니다.', d:[['리튬(LFP)',44,'#1f7a4d'],['디젤',31,'#555'],['납산 전동',25,'#8aa0b4']]},
- '물류센터':  {p:'61%', tail:'가 <b>리튬(LFP) 전동</b>을 선택하셨습니다.', d:[['리튬(LFP)',61,'#1f7a4d'],['납산 전동',24,'#8aa0b4'],['디젤',15,'#555']]},
+ '운영센터':  {p:'61%', tail:'가 <b>리튬(LFP) 전동</b>을 선택하셨습니다.', d:[['리튬(LFP)',61,'#1f7a4d'],['납산 전동',24,'#8aa0b4'],['디젤',15,'#555']]},
  '제조':      {p:'46%', tail:'가 <b>디젤</b>을 선택하셨습니다.', d:[['디젤',46,'#555'],['리튬(LFP)',34,'#1f7a4d'],['LPG',20,'#c98a2d']]},
  '식품·저온': {p:'72%', tail:'가 <b>리튬(LFP) 전동</b>을 선택하셨습니다.', d:[['리튬(LFP)',72,'#1f7a4d'],['납산 전동',20,'#8aa0b4'],['기타',8,'#999']]},
 };
 const OPT_ATT=[
  {id:'ss',nm:'사이드시프트',d:'포크 좌우 이동 — 정밀 적재',p:40000},
  {id:'hf',nm:'힌지드 포크',d:'포크 틸팅 — 덤핑 작업',p:60000},
- {id:'cl',nm:'클램프',d:'롤·베일 등 무파렛트 하역',p:150000},
+ {id:'cl',nm:'클램프',d:'롤·베일 등 무유니트 하역',p:150000},
 ];
 const OPT_SAFE=[
  {id:'rcam',nm:'후방 카메라',d:'후진 사각 제거',p:25000},
@@ -559,7 +557,7 @@ function lsGet(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d
 function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
 function saveDraft(){U.touched=true;lsSet(KEY.draft,S);}
 
-/* ═════════ 지게차 SVG ═════════ */
+/* ═════════ 장비 SVG ═════════ */
 function tireCircle(cx,cy,r,tire){
   const hub=r*0.42; let tread='';
   if(tire==='pneu'){for(let a=0;a<360;a+=30){const rd=a*Math.PI/180;
@@ -902,7 +900,7 @@ const CHECK=[
   v:()=>({txt:nmOf(OPT_SAFE,S.safe)||'없음',ok:true})},
  {n:11,g:'충전 · 전기',t:'충전기 방식 — 단상 / 삼상·외장', only:isBattery,
   v:()=>({txt:chargerUse()==='three'?'삼상(외장) 충전기':'단상 충전기',ok:true}),
-  note:'단상으로 충분: 파렛트트럭·스태커·소형, 야간충전, 단기임대 / 삼상 검토: 2.5t 이상, 80V 대용량 납산, 2~3교대'},
+  note:'단상으로 충분: 유니트트럭·스태커·소형, 야간충전, 단기임대 / 삼상 검토: 2.5t 이상, 80V 대용량 납산, 2~3교대'},
  {n:12,g:'충전 · 전기',t:'배전반 여유 용량 · 설치 위치 · 몇 대까지 가능한지', only:isBattery,
   v:()=>S.panelCap?({txt:S.panelCap==='ok'?'여유 있음':'여유 부족 — 공사 검토',ok:true}):({txt:'미확인 — 현장 실사 필요',ok:false}),
   note:'전동 제안은 충전 인프라에서 막히면 계약이 늦어집니다.'},
@@ -912,7 +910,7 @@ const CHECK=[
       :({txt:'미확인',ok:false})},
  {n:14,g:'법 · 행정',t:'건설기계등록 대상 여부',
   v:()=>({txt:regCheck().txt,ok:true}),
-  note:'타이어식 지게차는 등록 대상. ①전동식 ②솔리드타이어 ③도로가 아닌 장소에서만 운행 — 3가지를 모두 충족하는 전동지게차만 제외됩니다.'},
+  note:'타이어식 장비는 등록 대상. ①전동식 ②솔리드타이어 ③도로가 아닌 장소에서만 운행 — 3가지를 모두 충족하는 전동장비만 제외됩니다.'},
  {n:15,g:'법 · 행정',t:'안전검사 · 보험 · 번호판 처리 주체(임대사/고객) 명확화', man:true,
   v:()=>({txt:'계약 시 명확화',ok:true})},
 ];
@@ -1055,7 +1053,7 @@ function tabPower(){
     <div class="hintNote" id="colorNote">색상은 도장 사양 예시입니다. 임대 장비는 보유 재고 색상 기준으로 배정됩니다.</div></div>`;
 }
 function tabMast(){
-  if(!hasMast())return tonSec()+`<div class="psec"><div class="hintNote ok">전동 파렛트트럭은 저상 리프트(약 0.2m) 전용으로 마스트 선택이 없습니다.</div></div>`;
+  if(!hasMast())return tonSec()+`<div class="psec"><div class="hintNote ok">전동 유니트트럭은 저상 리프트(약 0.2m) 전용으로 마스트 선택이 없습니다.</div></div>`;
   const m=model();
   const tireT=['cb','cbe'].includes(m.kind)?`<div class="tiles c3">
     ${tile(S.tire==='solid',"set('tire','solid')",`<b>솔리드</b><div class="d">실내·평탄 바닥</div>${priceTag(0)}`)}
@@ -1218,7 +1216,7 @@ function openSave(){
   const p=calc(), st=ckStats();
   openSheet('견적 저장',
     `<div class="fldRow"><div class="fld"><label>업체명 · 현장명</label>
-      <input id="svCust" placeholder="예) OO물류 김해센터" value="${esc(U.editId?(quotes().find(q=>q.id===U.editId)||{}).cust||'':'')}"></div></div>
+      <input id="svCust" placeholder="예) OO운영 김해센터" value="${esc(U.editId?(quotes().find(q=>q.id===U.editId)||{}).cust||'':'')}"></div></div>
      <div class="fldRow" style="margin-top:10px"><div class="fld"><label>메모</label>
       <textarea id="svMemo" placeholder="예) 3월 성수기 대비 2대 추가 검토, 담당 박부장"></textarea></div></div>
      <div class="hintNote" style="margin-top:12px">${esc(model().name)} ${S.ton}t · ${TERMS.find(t=>t.id===S.term).nm} · 월 ${W(p.final)}</div>
@@ -1292,7 +1290,7 @@ function openSum(){
 /* ═════════ 견적요청 양식 텍스트 ═════════ */
 function quoteText(cust){
   const p=calc(), L=ckList(), st=ckStats();
-  const out=['[지게차 임대 견적요청]'];
+  const out=['[장비 임대 견적요청]'];
   if(cust)out.push(`■ 업체/현장: ${cust}`);
   out.push(`■ 기종: ${model().name} ${S.ton}t (${powerNm()})`);
   let g='';
@@ -1303,11 +1301,11 @@ function quoteText(cust){
   });
   out.push(`■ 참고 월 임대료: ${W(p.final)}${S.units>1?` × ${S.units}대 = ${W(p.total)}`:''}`);
   out.push(`  (필수 확인 ${st.done}/${st.total} · 현장 실사 후 최종 확정)`);
-  out.push('— 로지스올 지게차 임대 · 문의 1800-5540');
+  out.push('— 그룹사 장비 임대 · 문의 1800-5540');
   return out.join('\n');
 }
 function shareText(txt){
-  if(navigator.share){navigator.share({title:'지게차 임대 견적',text:txt}).catch(()=>{});return;}
+  if(navigator.share){navigator.share({title:'장비 임대 견적',text:txt}).catch(()=>{});return;}
   if(navigator.clipboard){navigator.clipboard.writeText(txt).then(()=>toast('견적 내용을 복사했습니다')).catch(()=>prompt('복사하세요',txt));return;}
   prompt('복사하세요',txt);
 }
@@ -1328,7 +1326,7 @@ addEventListener('appinstalled',()=>{hideInstall();toast('앱이 설치되었습
 function netState(){$('offBadge').classList.toggle('on',!navigator.onLine);}
 addEventListener('online',netState);addEventListener('offline',netState);
 if(location.protocol.startsWith('http')&&'serviceWorker' in navigator){
-  addEventListener('load',()=>navigator.serviceWorker.register('./forklift-sw.js').catch(()=>{}));
+  addEventListener('load',()=>navigator.serviceWorker.register('./equip-sw.js').catch(()=>{}));
 }
 
 /* ═════════ 시작 ═════════ */

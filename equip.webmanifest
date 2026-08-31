@@ -1,10 +1,10 @@
 {
-  "name": "로지스올 지게차 견적",
-  "short_name": "지게차견적",
-  "description": "현장 조건 기반 지게차 임대 견적 — 견적 필수 확인 15항목 자동 점검",
+  "name": "그룹사 장비 견적",
+  "short_name": "장비견적",
+  "description": "현장 조건 기반 장비 임대 견적 — 견적 필수 확인 15항목 자동 점검",
   "lang": "ko",
   "dir": "ltr",
-  "start_url": "./forklift.html",
+  "start_url": "./equip.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
@@ -17,8 +17,8 @@
     { "src": "./icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ],
   "shortcuts": [
-    { "name": "새 견적 만들기", "short_name": "새 견적", "url": "./forklift.html?v=home" },
-    { "name": "내 견적함", "short_name": "견적함", "url": "./forklift.html?v=saved" },
-    { "name": "견적 필수 15항목", "short_name": "체크리스트", "url": "./forklift.html?v=check" }
+    { "name": "새 견적 만들기", "short_name": "새 견적", "url": "./equip.html?v=home" },
+    { "name": "내 견적함", "short_name": "견적함", "url": "./equip.html?v=saved" },
+    { "name": "견적 필수 15항목", "short_name": "체크리스트", "url": "./equip.html?v=check" }
   ]
 }
