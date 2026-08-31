@@ -16,7 +16,8 @@
 
 지금 Pages는 `claude/forklift-quote-app-7vjj9b` 를 보고 있어서 `lms0517.github.io/lms2026/` 에는 옛 화면이 뜹니다.
 
-`Settings → Pages → Branch` 를 **`claude/sales-hub` / `(root)`** 로 바꾸면 허브 화면이 나옵니다.
+`Settings → Pages → Branch` 를 **`claude/sales-hub` / `(root)`** 로 바꾸면 대시보드가 바로 뜹니다.
+(`index.html` 은 대시보드로 보내는 리다이렉트입니다. 앱 모음은 `hub.html` 에 있습니다.)
 바꾸면 `lms0517.github.io/lms2026/equip.html` 주소는 없어지고 `…/apps/equip/equip.html` 이 됩니다.
 기존 주소를 살려야 하면 루트에 리다이렉트 파일을 하나 두면 됩니다.
 
