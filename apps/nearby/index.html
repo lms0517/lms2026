@@ -70,6 +70,7 @@ button{ border:none; background:none; cursor:pointer; }
 .card .top{ display:flex; justify-content:space-between; align-items:flex-start; gap:8px; }
 .card .left-col{ flex:1; min-width:0; }
 .card .nm-row{ display:flex; align-items:baseline; flex-wrap:wrap; gap:4px; margin-bottom:5px; }
+.card .kdot{ width:9px; height:9px; border-radius:50%; flex:none; align-self:center; }
 .card .dist{ font-size:18px; font-weight:700; color:#1976d2; }
 .card .name{ font-size:15px; font-weight:600; word-break:keep-all; overflow-wrap:break-word; }
 .card .addr-short{ font-size:12px; color:#666; }
@@ -319,9 +320,23 @@ function fkeyOf(cat, sub) {
 }
 const catCls = k => k.indexOf("25년") === 0 ? "y25" : k === "영업지원" ? "yyj"
   : k === "26년일반" ? "yg" : k === "26년건자재" ? "yc" : "yn";
-const CAT_COLOR = { "25년일반": "#fb8c00", "25년건자재": "#f4511e", "26년일반": "#e53935",
-  "26년건자재": "#8e24aa", "신규업체": "#2e7d32", "영업지원": "#00695c" };
-function catColor(k) { return CAT_COLOR[k] || "#e53935"; }
+/* 분류는 영업 관점 셋이다. 25·26년 일반/건자재는 회수 관리용 구분이라
+   카드 배지로만 남기고 거르는 기준으로는 쓰지 않는다.                */
+const KIND = {
+  deal:  { label: "계약처",    color: "#1d4ed8" },
+  debt:  { label: "미수금업체", color: "#dc2626" },
+  rival: { label: "경쟁사",    color: "#d97706" }
+};
+const KIND_ORDER = ["deal", "debt", "rival"];
+/* 입고미회수 업체는 KPP 파렛트를 쓰고 있는 곳이므로 전부 계약처다.
+   기록에 분류가 붙어 있으면 그 값이 이긴다.                          */
+function kindOf(r) {
+  const k = String(r.kind || r.분류 || "").trim();
+  if (k === "미수금" || k === "미수금업체" || k === "debt") return "debt";
+  if (k === "경쟁사" || k === "rival") return "rival";
+  return "deal";
+}
+function kindColor(k) { return (KIND[k] || KIND.deal).color; }
 function qtyOf(r) {
   if (r.inboundDisplay && String(r.inboundDisplay).includes("/")) {
     const p = String(r.inboundDisplay).split("/").map(x => x.trim()).filter(Boolean);
@@ -382,6 +397,7 @@ function normalize(arr) {
   return (arr || []).map(r => {
     const o = Object.assign({}, r);
     o.fkey = fkeyOf(r.category, r.subcat);
+    o.kind = kindOf(r);
     o.qty = qtyOf(r);
     if (r.lat && r.lng) { o.lat = +r.lat; o.lng = +r.lng; o.approx = false; }
     else {
@@ -403,17 +419,17 @@ function start() {
   else render();
 }
 
-function catList() {
-  const set = new Set();
-  RECS.forEach(r => { if (r.fkey) set.add(r.fkey); });
-  return [...set].sort();
+function kindCounts() {
+  const c = { all: RECS.length, deal: 0, debt: 0, rival: 0 };
+  RECS.forEach(r => c[r.kind]++);
+  return c;
 }
 function renderCatRow() {
-  const cats = catList();
+  const n = kindCounts();
   $("catRow").innerHTML = '<span class="lb">분류</span>' +
-    `<button class="chip ${state.cats === null ? "on" : ""}" data-c="">전체</button>` +
-    cats.map(c => `<button class="chip ${state.cats === c ? "on" : ""}" data-c="${esc(c)}">
-      <span class="kd" style="background:${catColor(c)}"></span>${esc(c)}</button>`).join("");
+    `<button class="chip ${state.cats === null ? "on" : ""}" data-c="">전체 ${n.all.toLocaleString()}</button>` +
+    KIND_ORDER.map(k => `<button class="chip ${state.cats === k ? "on" : ""}" data-c="${k}">
+      <span class="kd" style="background:${KIND[k].color}"></span>${KIND[k].label} ${n[k].toLocaleString()}</button>`).join("");
   $("catRow").querySelectorAll(".chip").forEach(b => b.onclick = () => {
     state.cats = b.dataset.c || null; state.shown = 60;
     renderCatRow(); render();
@@ -458,7 +474,7 @@ function geocode(q) {
 /* ═══════ 목록 ═══════ */
 function compute() {
   let pool = RECS;
-  if (state.cats) pool = pool.filter(r => r.fkey === state.cats);
+  if (state.cats) pool = pool.filter(r => r.kind === state.cats);
   const a = state.anchor;
   if (!a) return pool.slice(0, 0);
   const withD = pool.filter(r => r.lat && r.lng)
@@ -477,6 +493,7 @@ function cardHtml(r) {
     <div class="top">
       <div class="left-col">
         <div class="nm-row">
+          <span class="kdot" style="background:${kindColor(r.kind)}"></span>
           <div class="dist">${d}</div>
           <div class="name">${esc(r.name)}</div>
           <span class="addr-short">${esc(r.addrShort || r.addr || "")}${r.approx ? " (시·군 중심)" : ""}</span>
@@ -586,9 +603,9 @@ const LEVEL_SCALE = { 1: "20m", 2: "30m", 3: "50m", 4: "100m", 5: "250m", 6: "50
 function syncScale() { if (kmap) $("mapScaleVal").textContent = LEVEL_SCALE[kmap.getLevel()] || ""; }
 
 function renderLegend() {
-  const cats = state.cats ? [state.cats] : catList();
-  $("mapLegend").innerHTML = cats.map(c =>
-    `<span style="display:inline-flex;align-items:center;gap:4px;"><span style="width:11px;height:11px;border-radius:50%;background:${catColor(c)};"></span>${esc(c)}</span>`).join("") +
+  const ks = state.cats ? [state.cats] : KIND_ORDER;
+  $("mapLegend").innerHTML = ks.map(k =>
+    `<span style="display:inline-flex;align-items:center;gap:4px;"><span style="width:11px;height:11px;border-radius:50%;background:${KIND[k].color};"></span>${KIND[k].label}</span>`).join("") +
     '<span style="color:#1976d2;">⚑ 기준 위치</span>';
 }
 function clearMarkers() {
@@ -602,7 +619,7 @@ function drawMarkers(fit) {
   const bounds = new kakao.maps.LatLngBounds();
   items.forEach(r => {
     const pos = new kakao.maps.LatLng(r.lat, r.lng);
-    const col = catColor(r.fkey);
+    const col = kindColor(r.kind);
     const m = new kakao.maps.Marker({ position: pos, image: r.qty > 0 ? qtyImage(r.qty, col) : pinImage(col) });
     kakao.maps.event.addListener(m, "click", () => openInfo(r));
     markers.push(m); bounds.extend(pos);
@@ -627,7 +644,7 @@ function openInfo(r) {
   const tel = String(r.tel || r.personTel || "").replace(/\D/g, "");
   $("mapInfo").innerHTML = `
     <div class="mi-h"><div class="mi-n">${esc(r.name)}</div><button class="mi-x" id="miX">✕</button></div>
-    <div class="mi-r">${r.fkey ? esc(r.fkey) + " · " : ""}${r.dist != null ? r.dist.toFixed(2) + "km" : ""}${r.person ? " · 담당 " + esc(r.person) : ""}</div>
+    <div class="mi-r">${KIND[r.kind].label}${r.fkey ? " · " + esc(r.fkey) : ""}${r.dist != null ? " · " + r.dist.toFixed(2) + "km" : ""}${r.person ? " · 담당 " + esc(r.person) : ""}</div>
     ${(r.inboundDisplay || r.inbound) ? `<div class="mi-r">입고 <b>${esc(String(r.inboundDisplay || r.inbound))}</b>${last ? " · 최종 " + esc(last) : ""}</div>` : ""}
     ${r.addr ? `<div class="mi-r">${esc(r.addr)}${r.approx ? " (시·군 중심)" : ""}</div>` : ""}
     ${r.code ? `<div class="mi-r">코드 ${esc(r.code)}</div>` : ""}
