@@ -1,0 +1,1343 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<title>그룹사 장비 견적</title>
+<meta name="description" content="현장 조건 기반 장비 임대 견적 — 견적 필수 확인 15항목 자동 점검">
+<meta name="theme-color" content="#00843D">
+<link rel="manifest" href="./equip.webmanifest">
+<link rel="icon" href="./icon-192.png">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="장비견적">
+<meta name="mobile-web-app-capable" content="yes">
+<style>
+/* ══════════ 그룹사 장비 견적앱 ══════════ */
+:root{
+  --green:#00843D; --green-d:#006B31; --green-l:#E5F3EC;
+  --navy:#16324F; --ink:#1a1a1a; --sub:#666; --mut:#999;
+  --beige:#f2efe9; --beige-d:#e8e2d8; --line:#e6e6e6; --line-d:#cfcfcf;
+  --bg:#fff; --panel:#f7f7f7; --blue:#007fa8; --best:#e63312; --warn:#c0392b; --warn-bg:#fdf1f0;
+  --sb:env(safe-area-inset-bottom,0px); --st:env(safe-area-inset-top,0px);
+  --sans:"Pretendard","Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",system-ui,sans-serif;
+  --tabH:60px; --barH:70px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{height:100%}
+body{height:100%;font-family:var(--sans);color:var(--ink);background:var(--bg);font-size:15px;line-height:1.5;
+  overscroll-behavior-y:none;display:flex;flex-direction:column}
+button{font:inherit;border:none;background:none;cursor:pointer;color:inherit}
+input,select,textarea{font:inherit;color:var(--ink)}
+::-webkit-scrollbar{width:8px;height:8px}::-webkit-scrollbar-thumb{background:#d5d5d5;border-radius:4px}
+
+/* ══════ 헤더 ══════ */
+#gnb{background:var(--beige);border-bottom:1px solid var(--beige-d);flex-shrink:0;padding-top:var(--st);z-index:30}
+#gnb .row1{display:flex;align-items:center;gap:11px;padding:12px 16px}
+#gnb .logo{display:flex;align-items:center;gap:8px;font-weight:800;font-size:16px;letter-spacing:-.02em}
+#gnb .logo img{width:28px;height:28px;border-radius:7px}
+#gnb .back{display:flex;align-items:center;gap:4px;font-size:15px;font-weight:800;padding:4px 6px 4px 0}
+#gnb .htt{font-weight:800;font-size:16px;letter-spacing:-.02em;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#gnb .htt small{display:block;font-size:11px;font-weight:600;color:var(--sub);letter-spacing:0}
+#gnb .rt{margin-left:auto;display:flex;align-items:center;gap:6px}
+.iconbtn{width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;
+  font-size:17px;background:rgba(0,0,0,.05)}
+.iconbtn:active{background:rgba(0,0,0,.11)}
+#offBadge{display:none;font-size:11px;font-weight:800;color:#8a6d00;background:#fdf3d0;border-radius:20px;padding:4px 10px}
+#offBadge.on{display:block}
+/* 스텝 */
+#steps{display:none;padding:0 16px}
+#steps.on{display:flex;align-items:flex-end;overflow-x:auto;scrollbar-width:none}
+#steps::-webkit-scrollbar{display:none}
+.stepTab{display:flex;align-items:center;gap:7px;padding:8px 16px 11px 0;color:var(--mut);position:relative;white-space:nowrap}
+.stepTab .no{font-size:13px;font-weight:700}.stepTab .nm{font-size:14.5px;font-weight:800;letter-spacing:-.02em}
+.stepTab.on{color:var(--ink)}
+.stepTab.on:after{content:'';position:absolute;left:0;right:16px;bottom:0;height:3px;background:var(--ink)}
+.stepTab+.stepTab{border-left:1px solid var(--line-d);padding-left:16px}
+#crumbs{display:none;gap:6px;align-items:center;padding:0 16px 10px;overflow-x:auto;scrollbar-width:none;font-size:12.5px}
+#crumbs.on{display:flex}#crumbs::-webkit-scrollbar{display:none}
+#crumbs .cr{color:var(--mut);font-weight:600;white-space:nowrap;padding:3px 0}
+#crumbs .cr.on{color:var(--ink);font-weight:800}
+#crumbs .gt{color:#c3bbae;font-size:10px}
+
+/* ══════ 본문 ══════ */
+#app{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.view{display:none}.view.on{display:block;animation:fade .22s ease-out}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.pad{padding:20px 16px calc(var(--tabH) + var(--sb) + 24px)}
+h1.big{font-size:23px;font-weight:800;letter-spacing:-.03em}
+.lead{color:var(--sub);font-size:13.5px;margin-top:6px;line-height:1.6}
+.secH{display:flex;align-items:center;gap:8px;margin:26px 2px 11px}
+.secH b{font-size:15.5px;font-weight:800;letter-spacing:-.02em}
+.secH .more{margin-left:auto;font-size:12.5px;font-weight:700;color:var(--blue)}
+
+/* 설치 배너 */
+#instBanner{display:none;align-items:center;gap:12px;background:var(--navy);color:#fff;border-radius:12px;
+  padding:14px 16px;margin-bottom:18px}
+#instBanner.on{display:flex}
+#instBanner .t{flex:1;min-width:0}
+#instBanner b{font-size:14px;display:block}
+#instBanner span{font-size:11.5px;opacity:.8;line-height:1.45;display:block;margin-top:2px}
+#instBanner .go{background:#fff;color:var(--navy);border-radius:8px;padding:9px 14px;font-size:13px;font-weight:800;flex-shrink:0}
+#instBanner .cl{opacity:.6;font-size:16px;padding:4px}
+
+/* 이어하기 카드 */
+#resumeCard{display:none;border:1.5px solid var(--green);background:var(--green-l);border-radius:12px;
+  padding:14px 16px;margin-bottom:18px;align-items:center;gap:12px}
+#resumeCard.on{display:flex}
+#resumeCard .t{flex:1;min-width:0}
+#resumeCard b{font-size:14px;display:block;letter-spacing:-.02em}
+#resumeCard span{font-size:11.5px;color:var(--green-d);display:block;margin-top:2px}
+#resumeCard .go{background:var(--green);color:#fff;border-radius:8px;padding:9px 15px;font-size:13px;font-weight:800;flex-shrink:0}
+
+/* 칩 */
+.chips{display:flex;gap:7px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.chips::-webkit-scrollbar{display:none}
+.chip{border:1.5px solid var(--line-d);border-radius:20px;padding:7px 15px;font-size:13.5px;font-weight:700;
+  color:var(--sub);white-space:nowrap;flex-shrink:0;transition:.12s}
+.chip.on{background:var(--ink);border-color:var(--ink);color:#fff}
+
+/* 기종 카드 */
+#mdlGrid{display:grid;grid-template-columns:1fr;gap:12px;margin-top:14px}
+.mcard{border:1px solid var(--line);border-radius:12px;padding:15px 16px;background:#fff;position:relative;
+  display:flex;gap:14px;align-items:center;transition:.15s;width:100%;text-align:left}
+.mcard:active{background:var(--panel);transform:scale(.99)}
+.mcard .thumb{width:104px;height:82px;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.mcard .thumb svg{width:100%;height:100%}
+.mcard .info{flex:1;min-width:0}
+.mcard .cat{font-size:10.5px;font-weight:800;letter-spacing:.07em;color:var(--green)}
+.mcard h3{font-size:16.5px;font-weight:800;letter-spacing:-.03em;margin:2px 0 1px}
+.mcard .en{font-size:11px;color:var(--mut)}
+.mcard .ds{font-size:11.5px;color:var(--sub);margin-top:5px;line-height:1.45}
+.mcard .tons{display:flex;gap:4px;flex-wrap:wrap;margin-top:7px}
+.mcard .ton{font-size:11px;font-weight:700;color:var(--sub);background:#f1f1f1;border-radius:4px;padding:2px 7px}
+.mcard .prc{margin-top:9px;font-size:12px;color:var(--mut);display:flex;align-items:baseline;gap:5px}
+.mcard .prc b{font-size:15.5px;color:var(--ink);letter-spacing:-.02em}
+
+/* ══════ 견적 만들기 ══════ */
+#buildWrap{display:flex;flex-direction:column}
+#stage{padding:16px 16px 0}
+#stTitle{font-size:19px;font-weight:800;letter-spacing:-.03em}
+#stSub{font-size:12.5px;color:var(--sub);margin-top:4px;display:flex;flex-wrap:wrap;gap:4px 12px;align-items:center}
+#stSub .lk{color:var(--blue);font-weight:700}
+#priceBox{display:none}
+#vizWrap{display:flex;flex-direction:column;align-items:center;margin-top:6px}
+#viz{width:100%;max-width:560px;position:relative;touch-action:pan-y}
+#viz img.photo{width:100%;height:auto;display:block;border-radius:12px;
+  background:#f4f5f6;object-fit:contain;aspect-ratio:560/400;-webkit-user-drag:none;user-select:none}
+#viz svg{width:100%;height:auto;display:block}
+#viz.spin{cursor:grab}
+#viz.spin:active{cursor:grabbing}
+#viz:focus-visible{outline:2px solid var(--blue);outline-offset:3px;border-radius:12px}
+/* 360° 배지 · 드래그 안내 — 회전 시퀀스가 있을 때만 뜬다 */
+.spinBadge{position:absolute;top:10px;left:10px;background:rgba(20,20,20,.72);color:#fff;
+  font-size:11px;font-weight:800;letter-spacing:.06em;border-radius:20px;padding:5px 11px;pointer-events:none}
+.spinHint{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);background:rgba(20,20,20,.72);
+  color:#fff;font-size:11.5px;font-weight:700;border-radius:20px;padding:6px 14px;white-space:nowrap;
+  pointer-events:none;transition:opacity .3s}
+.spinHint.off{opacity:0}
+.spinLoad{position:absolute;top:10px;right:10px;background:rgba(20,20,20,.6);color:#fff;font-size:11px;
+  font-weight:700;border-radius:20px;padding:5px 11px;pointer-events:none}
+#deg{font-size:13px;font-weight:700;color:#777;letter-spacing:.06em}
+#deg.off{visibility:hidden}
+@media (prefers-reduced-motion:reduce){.spinHint{transition:none}}
+#vuToggle{display:flex;margin:14px auto 0;width:100%;max-width:300px;border:1px solid var(--line-d);border-radius:6px;overflow:hidden}
+#vuToggle button{flex:1;padding:10px 0;font-size:13px;font-weight:700;color:var(--sub);background:var(--beige)}
+#vuToggle button.on{background:var(--blue);color:#fff}
+#specView{display:none;width:100%;max-width:560px;margin-top:12px}
+#specView table{width:100%;border-collapse:collapse;font-size:13.5px}
+#specView th,#specView td{border-bottom:1px solid var(--line);padding:10px 4px;text-align:left}
+#specView th{color:var(--sub);font-weight:600;width:44%}#specView td{font-weight:700}
+#stageNote{font-size:11px;color:var(--mut);line-height:1.55;margin:14px 0 0}
+#panel{padding:22px 16px calc(var(--barH) + var(--sb) + 20px);border-top:1px solid var(--line);margin-top:18px}
+#panelTitle{font-size:19px;font-weight:800;letter-spacing:-.03em;margin-bottom:15px}
+.psec{margin-bottom:28px}
+.psec .ph{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:11px}
+.psec .ph b{font-size:15px;font-weight:800;letter-spacing:-.02em}
+.psec .ph .cur{font-size:11.5px;color:var(--sub);text-align:right}
+.hintNote{font-size:12px;color:var(--sub);background:var(--panel);border:1px solid var(--line);border-radius:7px;
+  padding:10px 12px;margin-top:10px;line-height:1.55}
+.hintNote.warn{color:var(--warn);background:var(--warn-bg);border-color:#f0cdc9}
+.hintNote.ok{color:var(--green-d);background:var(--green-l);border-color:#bfe0cd}
+.hintNote b{font-weight:800}
+
+/* Best 통계 */
+#bestCard{background:var(--panel);border-radius:11px;padding:16px 16px 20px;margin-bottom:24px}
+#bestCard .bhd{display:flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600}
+#bestCard .btag{background:var(--best);color:#fff;font-size:10.5px;font-weight:800;border-radius:3px;padding:2px 6px}
+#bestTabs{display:flex;border-bottom:1px solid var(--line-d);margin:12px 0 14px;overflow-x:auto;scrollbar-width:none}
+#bestTabs::-webkit-scrollbar{display:none}
+#bestTabs button{flex:1;min-width:74px;padding:8px 4px;font-size:12.5px;font-weight:600;color:var(--mut);
+  border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap}
+#bestTabs button.on{color:var(--blue);border-color:var(--blue);font-weight:800}
+#bestMsg{font-size:13.5px;line-height:1.6}#bestMsg b{color:var(--blue)}
+#donuts{display:flex;gap:14px;justify-content:center;align-items:flex-end;margin-top:16px}
+.donut{display:flex;flex-direction:column;align-items:center;gap:7px;width:96px;text-align:center}
+.donut .cir{border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:inset 0 0 0 1px rgba(0,0,0,.06)}
+.donut .pctT{font-weight:800;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.35)}
+.donut .lb{font-size:11.5px;line-height:1.3;color:#333;font-weight:700}
+
+/* 옵션 타일 */
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tiles.c3{grid-template-columns:repeat(3,1fr)}
+.tile{border:1.5px solid var(--line-d);border-radius:9px;padding:12px 12px;position:relative;background:#fff;
+  text-align:left;transition:.12s}
+.tile.on{border-color:var(--ink);box-shadow:0 0 0 1px var(--ink)}
+.tile.on:before{content:'✓';position:absolute;top:-8px;right:-6px;width:21px;height:21px;border-radius:50%;
+  background:var(--blue);color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center}
+.tile b{display:block;font-size:13.5px;letter-spacing:-.02em}
+.tile .d{font-size:11px;color:var(--mut);margin-top:2px;line-height:1.4}
+.tile .p{font-size:12px;font-weight:800;margin-top:6px}
+.tile .p.zero{color:var(--mut);font-weight:600}
+.tile .rec{position:absolute;top:9px;right:10px;font-size:9.5px;font-weight:800;color:var(--best)}
+.tile.dis{opacity:.4;pointer-events:none}
+
+/* 색상 */
+#swGrid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.sw{aspect-ratio:1.3;border-radius:5px;position:relative;border:1px solid rgba(0,0,0,.12);
+  background:linear-gradient(135deg,var(--c1),var(--c2))}
+.sw.on:after{content:'✓';position:absolute;top:-7px;right:-5px;width:21px;height:21px;border-radius:50%;
+  background:var(--blue);color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center}
+
+/* 폼 */
+.fldRow{display:flex;gap:9px;flex-wrap:wrap}
+.fld{flex:1;min-width:140px}
+.fld label{display:block;font-size:11.5px;font-weight:700;color:var(--sub);margin-bottom:5px}
+.fld select,.fld input,.fld textarea{width:100%;border:1.5px solid var(--line-d);border-radius:7px;padding:11px;
+  font-size:15px;background:#fff}
+.fld textarea{resize:vertical;min-height:64px;line-height:1.5}
+.stepper{display:flex;align-items:center;border:1.5px solid var(--line-d);border-radius:7px;overflow:hidden}
+.stepper button{width:44px;padding:10px 0;font-size:17px;font-weight:700;background:var(--panel)}
+.stepper .v{flex:1;text-align:center;font-weight:800;font-size:15px}
+
+/* ══════ 견적함 ══════ */
+.qcard{border:1px solid var(--line);border-radius:12px;padding:14px 15px;margin-bottom:10px;background:#fff}
+.qcard .qh{display:flex;align-items:flex-start;gap:9px}
+.qcard .qn{font-size:15.5px;font-weight:800;letter-spacing:-.02em;flex:1;min-width:0}
+.qcard .qd{font-size:11px;color:var(--mut);flex-shrink:0}
+.qcard .qm{font-size:12.5px;color:var(--sub);margin-top:3px;line-height:1.5}
+.qcard .qp{font-size:17px;font-weight:800;letter-spacing:-.02em;margin-top:8px}
+.qcard .qp small{font-size:11.5px;font-weight:600;color:var(--mut);margin-left:5px}
+.qcard .qflag{display:inline-block;font-size:10.5px;font-weight:800;border-radius:5px;padding:2px 7px;margin-top:7px}
+.qcard .qflag.w{background:var(--warn-bg);color:var(--warn)}
+.qcard .qflag.o{background:var(--green-l);color:var(--green-d)}
+.qacts{display:flex;gap:7px;margin-top:12px;border-top:1px solid var(--line);padding-top:11px}
+.qacts button{flex:1;padding:9px 0;font-size:12.5px;font-weight:700;color:var(--sub);background:var(--panel);border-radius:7px}
+.qacts button.del{color:var(--warn)}
+.empty{text-align:center;padding:56px 20px;color:var(--mut);font-size:13.5px;line-height:1.7}
+.empty .ei{font-size:40px;margin-bottom:10px}
+
+/* ══════ 체크리스트 ══════ */
+#ckTop{background:var(--navy);color:#fff;border-radius:12px;padding:16px 18px;margin-bottom:18px}
+#ckTop .cn{font-size:12.5px;opacity:.85}
+#ckTop .cv{font-size:25px;font-weight:800;letter-spacing:-.02em;margin-top:2px}
+#ckTop .cbar{height:7px;background:rgba(255,255,255,.22);border-radius:4px;margin-top:11px;overflow:hidden}
+#ckTop .cbar i{display:block;height:100%;background:#5ddc9a;border-radius:4px;transition:width .45s}
+#ckTop .cs{font-size:11.5px;opacity:.75;margin-top:8px;line-height:1.5}
+.ckGrp{font-size:12px;font-weight:800;letter-spacing:.04em;color:var(--green-d);margin:20px 2px 8px}
+.ckItem{display:flex;gap:11px;border:1px solid var(--line);border-radius:10px;padding:12px 13px;margin-bottom:8px;background:#fff}
+.ckItem .no{width:23px;height:23px;border-radius:50%;background:var(--panel);color:var(--sub);font-size:11.5px;
+  font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.ckItem.done .no{background:var(--green);color:#fff}
+.ckItem.miss .no{background:var(--warn);color:#fff}
+.ckItem .cb{flex:1;min-width:0}
+.ckItem .ct{font-size:13.5px;font-weight:700;line-height:1.45;letter-spacing:-.01em}
+.ckItem .cvv{font-size:12.5px;color:var(--sub);margin-top:4px;line-height:1.5}
+.ckItem .cvv b{color:var(--ink);font-weight:800}
+.ckItem .cnote{font-size:11.5px;color:var(--mut);margin-top:4px;line-height:1.5}
+.ckItem .cmiss{color:var(--warn);font-weight:800}
+.ckItem .tgl{flex-shrink:0;align-self:center;width:46px;height:27px;border-radius:14px;background:#d8d8d8;position:relative;transition:.16s}
+.ckItem .tgl:after{content:'';position:absolute;top:3px;left:3px;width:21px;height:21px;border-radius:50%;background:#fff;transition:.16s;
+  box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.ckItem .tgl.on{background:var(--green)}
+.ckItem .tgl.on:after{transform:translateX(19px)}
+
+/* ══════ 하단 액션바 / 탭바 ══════ */
+#actionbar{display:none;position:fixed;left:0;right:0;bottom:0;z-index:40;background:rgba(255,255,255,.97);
+  backdrop-filter:blur(8px);border-top:1px solid var(--line);padding:9px 14px calc(9px + var(--sb));
+  align-items:center;gap:11px}
+#actionbar.on{display:flex}
+#actionbar>*{max-width:none}
+#abPrice{flex:1;min-width:0}
+#abPrice .l{font-size:10.5px;color:var(--sub);font-weight:600}
+#abPrice .v{font-size:19px;font-weight:800;letter-spacing:-.03em}
+#abPrice .v small{font-size:12px;font-weight:600;margin-left:3px}
+#abBtns{display:flex;gap:7px;flex-shrink:0}
+#abBtns button{padding:13px 16px;border-radius:9px;font-size:14px;font-weight:800}
+#abBtns .pv{background:var(--panel);color:var(--sub)}
+#abBtns .nx{background:var(--ink);color:#fff}
+#abBtns .sv{background:var(--green);color:#fff}
+#tabbar{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:40;background:#fff;border-top:1px solid var(--line);
+  padding-bottom:var(--sb)}
+#tabbar.off{display:none}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:9px 0 8px;color:var(--mut)}
+.tab .ti{font-size:19px;line-height:1}
+.tab .tn{font-size:10.5px;font-weight:800}
+.tab.on{color:var(--green)}
+.tab .dot{position:absolute;transform:translate(14px,-3px);background:var(--warn);color:#fff;font-size:9px;
+  font-weight:800;border-radius:9px;padding:1px 5px}
+
+/* ══════ 바텀시트 ══════ */
+#dim{position:fixed;inset:0;background:rgba(20,20,20,.5);z-index:60;opacity:0;pointer-events:none;transition:.2s}
+#dim.on{opacity:1;pointer-events:auto}
+#sheet{position:fixed;left:0;right:0;bottom:0;z-index:65;background:#fff;border-radius:16px 16px 0 0;
+  transform:translateY(102%);transition:transform .26s cubic-bezier(.32,.72,0,1),visibility .26s;
+  visibility:hidden;display:flex;flex-direction:column;max-height:92vh;box-shadow:0 -8px 40px rgba(0,0,0,.22)}
+#sheet.on{transform:none;visibility:visible}
+#sheet .grab{width:38px;height:4px;background:#dcdcdc;border-radius:3px;margin:9px auto 0;flex-shrink:0}
+#sheet .sh{display:flex;align-items:center;padding:12px 18px 12px;border-bottom:1px solid var(--line);flex-shrink:0}
+#sheet .sh b{font-size:17px;font-weight:800;letter-spacing:-.02em}
+#sheet .sh .x{margin-left:auto;font-size:19px;color:var(--sub);padding:2px 6px}
+#sheetBody{overflow-y:auto;padding:16px 18px;font-size:14px;-webkit-overflow-scrolling:touch}
+#sheetFoot{padding:12px 18px calc(12px + var(--sb));border-top:1px solid var(--line);display:flex;gap:8px;flex-shrink:0}
+#sheetFoot button{flex:1;padding:14px 0;font-size:14.5px;font-weight:800;border-radius:9px}
+#sheetFoot .pri{background:var(--green);color:#fff}
+#sheetFoot .sec{background:var(--panel);color:var(--sub)}
+#sheetFoot .dk{background:var(--ink);color:#fff}
+/* 요약 내용 */
+#sumTotal{background:var(--navy);color:#fff;border-radius:10px;padding:15px 17px;margin-bottom:16px}
+#sumTotal .tl{font-size:12px;opacity:.8}
+#sumTotal .tv{font-size:24px;font-weight:800;letter-spacing:-.03em}
+#sumTotal .tx{font-size:13px;opacity:.9;margin-top:2px}
+#sumTotal .tsub{font-size:11.5px;opacity:.7;margin-top:7px;line-height:1.5}
+.sg{margin-bottom:18px}
+.sg>b{display:block;font-size:12px;font-weight:800;color:var(--green-d);letter-spacing:.03em;margin-bottom:7px;
+  border-bottom:2px solid var(--green-l);padding-bottom:5px}
+.sg table{width:100%;border-collapse:collapse}
+.sg td{padding:7px 2px;border-bottom:1px solid #f2f2f2;vertical-align:top;font-size:13px}
+.sg td.k{width:44%;color:var(--sub)}
+.sg td.v{font-weight:700}
+.sg td.v .tagq{font-size:10.5px;color:var(--warn);font-weight:800;margin-left:5px;white-space:nowrap}
+
+#toast{position:fixed;left:50%;bottom:calc(var(--tabH) + var(--sb) + 22px);transform:translateX(-50%) translateY(12px);
+  background:#222;color:#fff;padding:11px 20px;border-radius:22px;font-size:13px;opacity:0;transition:.24s;z-index:99;
+  pointer-events:none;max-width:88vw;text-align:center}
+#toast.on{opacity:1;transform:translateX(-50%)}
+
+/* ══════ 데스크톱 ══════ */
+@media (min-width:900px){
+  #gnb .row1{padding:14px 28px}
+  #steps.on,#crumbs.on{padding-left:28px;padding-right:28px}
+  #app{position:relative}
+  .pad{max-width:1120px;margin:0 auto;padding:28px 28px 60px}
+  #mdlGrid{grid-template-columns:repeat(auto-fill,minmax(330px,1fr))}
+  #buildWrap{flex-direction:row;max-width:1560px;margin:0 auto;min-height:100%}
+  #stage{flex:1.1;padding:26px 32px 40px;min-width:0}
+  #panel{flex:1;max-width:540px;border-top:none;border-left:1px solid var(--line);margin-top:0;
+    padding:26px 30px 60px}
+  #stTitle{font-size:23px}
+  #priceBox{display:flex;flex-direction:column;align-items:flex-end;gap:3px;float:right;text-align:right;margin-top:6px}
+  .prow{display:flex;align-items:baseline;gap:13px}
+  .prow .pl{font-size:12.5px;color:var(--sub)}
+  .prow .pv{font-size:15px;font-weight:700}
+  .prow.big .pl{color:var(--ink);font-weight:700}
+  .prow.big .pv{font-size:24px;font-weight:800;letter-spacing:-.03em}
+  #priceNote{clear:both;text-align:right;font-size:11px;color:var(--mut);padding-top:6px}
+  #vizWrap{clear:both}
+  #buildWrap{padding-bottom:calc(var(--barH) + 10px)}
+  #actionbar{justify-content:center}
+  #actionbar>*{max-width:none}
+  #abPrice{flex:0 1 380px}
+  #abBtns button{min-width:150px}
+  .tab{flex:0 1 160px;flex-direction:row;gap:8px;padding:12px 0;justify-content:center}
+  #tabbar{justify-content:center;gap:10px}
+  .tab .tn{font-size:13px}
+  #toast{bottom:calc(var(--tabH) + 26px)}
+  #sheet{left:50%;right:auto;transform:translate(-50%,102%);width:min(760px,94vw);border-radius:14px;bottom:0;max-height:88vh}
+  #sheet.on{transform:translate(-50%,0);bottom:4vh}
+}
+@media (max-width:899px){
+  #priceNote{display:none}
+  /* 스테이지가 화면을 다 먹지 않도록 — 옵션 패널이 한 스크롤 안에 들어오게 */
+  #viz{max-width:420px}
+  #viz svg{max-height:34vh}
+  /* 요약 표는 항목명 위 / 값 아래로 쌓는다 */
+  .sg td{display:block;border:none;padding:0}
+  .sg td.k{width:auto;font-size:12px;padding-top:9px}
+  .sg td.v{padding-bottom:9px;border-bottom:1px solid #f2f2f2;font-size:13.5px}
+}
+</style>
+</head>
+<body>
+
+<!-- ══════ 헤더 ══════ -->
+<header id="gnb">
+  <div class="row1">
+    <button class="back" id="backBtn" onclick="back()" style="display:none">‹</button>
+    <div class="logo" id="logoBox"><img src="./icon-192.png" alt=""><span>GROUP</span></div>
+    <div class="htt" id="hTitle" style="display:none"></div>
+    <div class="rt">
+      <span id="offBadge">오프라인</span>
+      <button class="iconbtn" id="sumBtn" onclick="openSum()" style="display:none" title="견적 요약">📄</button>
+    </div>
+  </div>
+  <div id="steps">
+    <div class="stepTab" data-st="1" onclick="go('home')"><span class="no">01</span><span class="nm">기종 선택</span></div>
+    <div class="stepTab on" data-st="2"><span class="no">02</span><span class="nm">내 장비 만들기</span></div>
+  </div>
+  <div id="crumbs">
+    <span class="cr" data-t="0">동력 · 외장</span><span class="gt">›</span>
+    <span class="cr" data-t="1">마스트 · 타이어</span><span class="gt">›</span>
+    <span class="cr" data-t="2">옵션 · 안전</span><span class="gt">›</span>
+    <span class="cr" data-t="3">운영 조건</span>
+  </div>
+</header>
+
+<!-- ══════ 본문 ══════ -->
+<main id="app">
+
+  <!-- 홈: 기종 선택 -->
+  <section class="view on" id="v-home"><div class="pad">
+    <div id="instBanner">
+      <div class="t"><b>홈 화면에 앱으로 추가</b><span>설치하면 오프라인(창고·현장)에서도 견적을 만들 수 있습니다</span></div>
+      <button class="go" onclick="doInstall()">설치</button>
+      <button class="cl" onclick="hideInstall()">✕</button>
+    </div>
+    <div id="resumeCard">
+      <div class="t"><b id="rcTitle">작성 중인 견적</b><span id="rcSub"></span></div>
+      <button class="go" onclick="go('build')">이어하기</button>
+    </div>
+    <h1 class="big">어떤 장비가 필요하세요?</h1>
+    <div class="lead">현장 조건에 맞는 기종을 고르면 <b>견적 필수 확인 15항목</b>을 자동으로 점검해 드립니다.<br>월 임대료는 장기(36개월) 기준 참고가이며 최종가는 현장 실사 후 확정됩니다.</div>
+    <div class="chips" id="catChips" style="margin-top:18px"></div>
+    <div id="mdlGrid"></div>
+  </div></section>
+
+  <!-- 견적 만들기 -->
+  <section class="view" id="v-build">
+    <div id="buildWrap">
+      <div id="stage">
+        <div id="stTitle">—</div>
+        <div id="stSub"></div>
+        <div id="priceBox">
+          <div class="prow"><span class="pl">옵션 적용 전 월 임대료</span><span class="pv" id="pBase">—</span></div>
+          <div class="prow big"><span class="pl">옵션 적용 후 월 임대료</span><span class="pv" id="pFinal">—</span></div>
+        </div>
+        <div id="priceNote">*참고용 견적입니다. 현장 실사(통로·바닥·충전 인프라 확인) 후 최종 임대료가 확정됩니다.</div>
+        <div id="vizWrap">
+          <div id="viz" tabindex="0" aria-label="장비 이미지"></div>
+          <div id="deg" class="off">360°</div>
+          <div id="specView"></div>
+        </div>
+        <div id="vuToggle">
+          <button class="on" data-v="ex" onclick="setView('ex')">Exterior</button>
+          <button data-v="sp" onclick="setView('sp')">제원 보기</button>
+        </div>
+        <div id="stageNote">* 상기 이미지는 사양 선택을 돕기 위한 참고용 일러스트입니다. (실제 장비 외관은 제조사·연식에 따라 다를 수 있습니다)</div>
+      </div>
+      <div id="panel">
+        <div id="panelTitle">동력 · 외장</div>
+        <div id="panelBody"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 견적함 -->
+  <section class="view" id="v-saved"><div class="pad">
+    <h1 class="big">내 견적함</h1>
+    <div class="lead">저장한 견적은 이 기기에 보관됩니다. 카톡·문자로 바로 공유할 수 있습니다.</div>
+    <div id="qList" style="margin-top:18px"></div>
+  </div></section>
+
+  <!-- 체크리스트 -->
+  <section class="view" id="v-check"><div class="pad">
+    <h1 class="big">견적 필수 확인</h1>
+    <div class="lead">현재 작성 중인 견적 기준으로 15항목을 자동 점검합니다. 현장 확인이 필요한 항목은 직접 체크하세요.</div>
+    <div id="ckWrap" style="margin-top:18px"></div>
+  </div></section>
+
+</main>
+
+<!-- ══════ 하단 ══════ -->
+<div id="actionbar">
+  <div id="abPrice"><div class="l">월 임대료 (참고)</div><div class="v" id="abV">—</div></div>
+  <div id="abBtns">
+    <button class="pv" onclick="movTab(-1)">이전</button>
+    <button class="nx" id="abNx" onclick="movTab(1)">다음</button>
+  </div>
+</div>
+<nav id="tabbar">
+  <button class="tab on" data-v="home" onclick="go('home')"><span class="ti">🚜</span><span class="tn">견적</span></button>
+  <button class="tab" data-v="saved" onclick="go('saved')"><span class="ti">📁</span><span class="tn">견적함</span></button>
+  <button class="tab" data-v="check" onclick="go('check')"><span class="ti">📋</span><span class="tn">필수확인</span></button>
+</nav>
+
+<div id="dim" onclick="closeSheet()"></div>
+<div id="sheet">
+  <div class="grab"></div>
+  <div class="sh"><b id="sheetTitle">견적 요약</b><button class="x" onclick="closeSheet()">✕</button></div>
+  <div id="sheetBody"></div>
+  <div id="sheetFoot"></div>
+</div>
+<div id="toast"></div>
+
+<script>
+/* ═════════════════════════════════════════════════════════
+   그룹사 장비 견적앱
+   · 견적 로직 = 당사 운영장비 「견적 필수 확인」 15항목
+   · 단가는 전부 참고용 — 최종가는 현장 실사 후 확정
+   ═════════════════════════════════════════════════════════ */
+
+/* ── 기종 마스터 ── */
+const MODELS=[
+ {id:'diesel', cat:'엔진식', kind:'cb', name:'디젤 카운터밸런스', en:'Diesel Counterbalance',
+  tons:[2.0,2.5,3.0,3.5,5.0], base:{'2':780000,'2.5':830000,'3':930000,'3.5':1080000,'5':1450000},
+  power:'diesel', desc:'실외 · 중량물 · 험지 대응의 표준'},
+ {id:'lpg', cat:'엔진식', kind:'cb', name:'LPG 카운터밸런스', en:'LPG Counterbalance',
+  tons:[2.0,2.5,3.0], base:{'2':760000,'2.5':810000,'3':910000},
+  power:'lpg', desc:'매연 부담을 줄인 엔진식'},
+ {id:'elec', cat:'전동식', kind:'cbe', name:'전동 카운터밸런스', en:'Electric Counterbalance',
+  tons:[1.5,2.0,2.5,3.0], base:{'1.5':860000,'2':910000,'2.5':990000,'3':1120000},
+  power:'battery', desc:'실내 · 무매연 · 저소음 — 리튬 전환 상담 가능'},
+ {id:'reach', cat:'창고장비', kind:'reach', name:'리치트럭 (입승식)', en:'Reach Truck',
+  tons:[1.5,2.0,2.5], base:{'1.5':1010000,'2':1110000,'2.5':1210000},
+  power:'battery', desc:'좁은 통로 · 고층 랙 (통로폭 2.5m 내외)'},
+ {id:'picker', cat:'창고장비', kind:'picker', name:'오더피커', en:'Order Picker',
+  tons:[1.0], base:{'1':1160000}, power:'battery', desc:'다품종 피킹 중심 운영센터'},
+ {id:'stacker', cat:'창고장비', kind:'stacker', name:'보행식 스태커', en:'Walkie Stacker',
+  tons:[1.0,1.5], base:{'1':510000,'1.5':560000}, power:'battery', desc:'소형 창고 · 저빈도 적재'},
+ {id:'ppt', cat:'창고장비', kind:'ppt', name:'전동 유니트트럭', en:'Electric Pallet Truck',
+  tons:[1.5,2.0], base:{'1.5':360000,'2':410000}, power:'battery', desc:'수평 이동 전용 — 단상 충전으로 충분'},
+];
+const COLORS=[
+ {id:'green', nm:'그룹사 그린', c1:'#0d9a52', c2:'#006b31', body:'#00843D'},
+ {id:'orange',nm:'세이프티 오렌지', c1:'#ff8a4d', c2:'#d94f10', body:'#F26522'},
+ {id:'yellow',nm:'인더스트리얼 옐로우', c1:'#ffd45e', c2:'#d99a00', body:'#F2B705'},
+ {id:'white', nm:'퓨어 화이트', c1:'#ffffff', c2:'#d8dadc', body:'#EDEFF0'},
+ {id:'navy',  nm:'미드나잇 네이비', c1:'#2c5a86', c2:'#12293f', body:'#16324F'},
+];
+const BEST={
+ '전체':      {p:'44%', tail:'가 <b>리튬(LFP) 전동</b>을 선택하셨습니다.', d:[['리튬(LFP)',44,'#1f7a4d'],['디젤',31,'#555'],['납산 전동',25,'#8aa0b4']]},
+ '운영센터':  {p:'61%', tail:'가 <b>리튬(LFP) 전동</b>을 선택하셨습니다.', d:[['리튬(LFP)',61,'#1f7a4d'],['납산 전동',24,'#8aa0b4'],['디젤',15,'#555']]},
+ '제조':      {p:'46%', tail:'가 <b>디젤</b>을 선택하셨습니다.', d:[['디젤',46,'#555'],['리튬(LFP)',34,'#1f7a4d'],['LPG',20,'#c98a2d']]},
+ '식품·저온': {p:'72%', tail:'가 <b>리튬(LFP) 전동</b>을 선택하셨습니다.', d:[['리튬(LFP)',72,'#1f7a4d'],['납산 전동',20,'#8aa0b4'],['기타',8,'#999']]},
+};
+const OPT_ATT=[
+ {id:'ss',nm:'사이드시프트',d:'포크 좌우 이동 — 정밀 적재',p:40000},
+ {id:'hf',nm:'힌지드 포크',d:'포크 틸팅 — 덤핑 작업',p:60000},
+ {id:'cl',nm:'클램프',d:'롤·베일 등 무유니트 하역',p:150000},
+];
+const OPT_SAFE=[
+ {id:'rcam',nm:'후방 카메라',d:'후진 사각 제거',p:25000},
+ {id:'fcam',nm:'포크 카메라',d:'고소 적재 시야 확보',p:30000},
+ {id:'ai',nm:'AI 인체인식',d:'보행자 감지 경보·감속',p:70000},
+ {id:'fp',nm:'지문인식 시동',d:'무자격 운전 원천 차단',p:20000},
+ {id:'sp',nm:'속도 제한',d:'구역별 속도 제어',p:15000},
+];
+const OPT_ENV=[
+ {id:'cold',nm:'냉동·저온 사양',d:'-25℃ 콜드체인 대응',p:120000},
+ {id:'food',nm:'식품 사양',d:'논마킹 · 방청 강화',p:45000},
+ {id:'dust',nm:'분진 대응',d:'필터·실링 강화',p:35000},
+ {id:'exp',nm:'방폭 사양',d:'위험물 취급 구역',p:300000},
+];
+const LIFTS=[3.0,3.3,4.0,4.5,5.0,6.0];
+const TERMS=[
+ {id:'s6',nm:'단기 (1~6개월)',mul:1.6},{id:'m12',nm:'12개월',mul:1.2},
+ {id:'m36',nm:'36개월 (표준)',mul:1.0},{id:'m60',nm:'60개월',mul:0.92},
+];
+
+/* ── 상태 ── */
+const DEF={
+ modelId:'elec', ton:2.5, color:'green', battery:'li', charger:'auto',
+ mast:'2f', lift:3.3, tire:'solid', att:[], safe:['rcam'], env:[],
+ term:'m36', units:1, shift:1, indoor:'in', aisle:'', road:'no',
+ driver:'', panelCap:'', liCompat:'', checks:{},
+};
+let S=Object.assign({},DEF,{att:[],safe:['rcam'],env:[],checks:{}});
+const U={view:'home', tab:0, viewMode:'ex', cat:'전체', bestTab:'전체', touched:false, editId:null};
+
+const KEY={draft:'lf.draft', quotes:'lf.quotes', inst:'lf.instHidden'};
+const $=id=>document.getElementById(id);
+const W=v=>v.toLocaleString('ko-KR')+' 원';
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const model=()=>MODELS.find(m=>m.id===S.modelId)||MODELS[2];
+function toast(m){const t=$('toast');t.textContent=m;t.classList.add('on');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('on'),2100);}
+function lsGet(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}}
+function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+function saveDraft(){U.touched=true;lsSet(KEY.draft,S);}
+
+/* ═════════ 장비 SVG ═════════ */
+function tireCircle(cx,cy,r,tire){
+  const hub=r*0.42; let tread='';
+  if(tire==='pneu'){for(let a=0;a<360;a+=30){const rd=a*Math.PI/180;
+    tread+=`<line x1="${cx+Math.cos(rd)*(r-2)}" y1="${cy+Math.sin(rd)*(r-2)}" x2="${cx+Math.cos(rd)*(r-7)}" y2="${cy+Math.sin(rd)*(r-7)}" stroke="#666" stroke-width="2.4" stroke-linecap="round"/>`;}}
+  const rim=tire==='nonmark'?'#b9bdc2':'#2b2b2b';
+  return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${rim}"/>${tread}
+    <circle cx="${cx}" cy="${cy}" r="${hub}" fill="#d9d9d9" stroke="#8a8a8a" stroke-width="2"/>
+    <circle cx="${cx}" cy="${cy}" r="${hub*0.35}" fill="#8a8a8a"/>`;
+}
+function mastSvg(x,groundY,topY,stages,forkY){
+  const gap=7,n=stages==='3f'?3:2,rails=[];
+  for(let i=0;i<n;i++){const off=i*gap,t=topY+i*14;
+    rails.push(`<rect x="${x+off}" y="${t}" width="5" height="${groundY-t}" rx="2" fill="#3d4348"/>`);
+    rails.push(`<rect x="${x+off+16}" y="${t}" width="5" height="${groundY-t}" rx="2" fill="#3d4348"/>`);}
+  const cross=[];
+  for(let y=topY+16;y<groundY-14;y+=34) cross.push(`<rect x="${x}" y="${y}" width="${16+(n-1)*gap+5}" height="4" fill="#565d63"/>`);
+  const carr=`<rect x="${x-6}" y="${forkY-34}" width="10" height="40" rx="2" fill="#2f3438"/>
+   <rect x="${x-64}" y="${forkY}" width="66" height="7" rx="2.5" fill="#39404a"/>
+   <rect x="${x-64}" y="${forkY-30}" width="8" height="34" rx="2" fill="#39404a"/>`;
+  return rails.join('')+cross.join('')+carr;
+}
+function svgCB(o){
+  const mastTop=150-(o.lift-3)*30, c=o.body, dk='rgba(0,0,0,.22)';
+  return `<svg viewBox="0 0 560 400" xmlns="http://www.w3.org/2000/svg">
+  <ellipse cx="290" cy="342" rx="225" ry="26" fill="#f0efec" stroke="#dcdad4"/>
+  ${mastSvg(190,330,mastTop,o.mast,318)}
+  <line x1="222" y1="252" x2="248" y2="272" stroke="#777" stroke-width="7" stroke-linecap="round"/>
+  <path d="M222 318 L222 250 Q222 240 234 238 L330 232 Q392 232 412 252 L420 268 Q424 276 424 288 L424 318 Z" fill="${c}" stroke="rgba(0,0,0,.18)"/>
+  <path d="M330 232 Q392 232 412 252 L420 268 Q424 276 424 288 L424 318 L392 318 L392 240 Z" fill="${dk}"/>
+  <rect x="398" y="256" width="18" height="5" rx="2.5" fill="rgba(0,0,0,.25)"/>
+  <rect x="398" y="268" width="18" height="5" rx="2.5" fill="rgba(0,0,0,.25)"/>
+  <rect x="222" y="306" width="202" height="14" fill="rgba(0,0,0,.14)"/>
+  <path d="M238 238 L246 148 M382 234 L374 148 M240 150 Q310 138 380 150" fill="none" stroke="#3d4348" stroke-width="8" stroke-linecap="round"/>
+  <rect x="246" y="138" width="130" height="10" rx="5" fill="#3d4348"/>
+  <path d="M300 196 q-20 0 -20 -18 l0 -6 q0 -6 8 -6 l16 0 q8 0 8 8 l0 10 q6 12 -12 12" fill="#2f3438"/>
+  <rect x="262" y="196" width="56" height="34" rx="6" fill="rgba(0,0,0,.16)"/>
+  <line x1="268" y1="206" x2="252" y2="188" stroke="#2f3438" stroke-width="6" stroke-linecap="round"/>
+  <circle cx="250" cy="186" r="7" fill="none" stroke="#2f3438" stroke-width="4"/>
+  ${o.kind==='cbe'
+    ?`<rect x="300" y="252" width="82" height="52" rx="6" fill="rgba(0,0,0,.28)"/>
+      <text x="341" y="284" font-size="20" font-weight="800" fill="#ffe25e" text-anchor="middle" font-family="sans-serif">${o.batt==='li'?'LFP':'PB'}</text>`
+    :`<rect x="404" y="222" width="10" height="18" rx="3" fill="#555"/><ellipse cx="409" cy="220" rx="7" ry="4" fill="#333"/>`}
+  ${tireCircle(252,316,34,o.tire)}${tireCircle(392,320,26,o.tire)}
+  <text x="180" y="374" font-size="13" font-weight="700" fill="#9a938a" font-family="sans-serif">FORK ▸</text></svg>`;
+}
+function svgReach(o){
+  const mastTop=120-(o.lift-3)*22, c=o.body;
+  return `<svg viewBox="0 0 560 400" xmlns="http://www.w3.org/2000/svg">
+  <ellipse cx="290" cy="342" rx="215" ry="26" fill="#f0efec" stroke="#dcdad4"/>
+  ${mastSvg(210,330,mastTop,'3f',316)}
+  <rect x="140" y="320" width="112" height="10" rx="4" fill="#3d4348"/>${tireCircle(158,330,12,'nonmark')}
+  <path d="M252 322 L252 210 Q252 200 264 200 L352 200 Q368 200 368 216 L368 322 Z" fill="${c}" stroke="rgba(0,0,0,.18)"/>
+  <path d="M340 200 L352 200 Q368 200 368 216 L368 322 L340 322 Z" fill="rgba(0,0,0,.22)"/>
+  <rect x="300" y="222" width="52" height="42" rx="6" fill="rgba(0,0,0,.18)"/>
+  <line x1="318" y1="236" x2="334" y2="226" stroke="#2f3438" stroke-width="5" stroke-linecap="round"/>
+  <path d="M262 202 L262 128 M358 202 L358 128" stroke="#3d4348" stroke-width="7" stroke-linecap="round"/>
+  <rect x="254" y="120" width="112" height="9" rx="4.5" fill="#3d4348"/>
+  ${tireCircle(330,324,24,'nonmark')}
+  <text x="180" y="374" font-size="13" font-weight="700" fill="#9a938a" font-family="sans-serif">FORK ▸</text></svg>`;
+}
+function svgPicker(o){
+  const mastTop=110-(o.lift-3)*18, c=o.body;
+  return `<svg viewBox="0 0 560 400" xmlns="http://www.w3.org/2000/svg">
+  <ellipse cx="290" cy="342" rx="215" ry="26" fill="#f0efec" stroke="#dcdad4"/>
+  ${mastSvg(240,330,mastTop,'3f',200)}
+  <rect x="176" y="168" width="70" height="42" rx="5" fill="${c}" stroke="rgba(0,0,0,.18)"/>
+  <rect x="176" y="160" width="70" height="10" rx="4" fill="#3d4348"/>
+  <path d="M182 168 L182 132 M240 168 L240 132" stroke="#3d4348" stroke-width="5" stroke-linecap="round"/>
+  <rect x="176" y="128" width="70" height="7" rx="3.5" fill="#3d4348"/>
+  <path d="M246 322 L246 240 Q246 230 258 230 L350 230 Q366 230 366 246 L366 322 Z" fill="${c}" stroke="rgba(0,0,0,.18)"/>
+  <path d="M338 230 L350 230 Q366 230 366 246 L366 322 L338 322 Z" fill="rgba(0,0,0,.22)"/>
+  ${tireCircle(280,326,20,'nonmark')}${tireCircle(340,326,20,'nonmark')}</svg>`;
+}
+function svgStacker(o){
+  const mastTop=Math.max(170-(o.lift-3)*20,80), c=o.body;
+  return `<svg viewBox="0 0 560 400" xmlns="http://www.w3.org/2000/svg">
+  <ellipse cx="290" cy="342" rx="200" ry="24" fill="#f0efec" stroke="#dcdad4"/>
+  ${mastSvg(230,330,mastTop,'2f',318)}
+  <path d="M272 322 L272 246 Q272 236 284 236 L330 236 Q344 236 344 250 L344 322 Z" fill="${c}" stroke="rgba(0,0,0,.18)"/>
+  <line x1="344" y1="252" x2="396" y2="216" stroke="#3d4348" stroke-width="8" stroke-linecap="round"/>
+  <ellipse cx="402" cy="212" rx="14" ry="8" transform="rotate(-32 402 212)" fill="#2f3438"/>
+  ${tireCircle(300,328,16,'nonmark')}${tireCircle(212,332,9,'nonmark')}</svg>`;
+}
+function svgPPT(o){
+  const c=o.body;
+  return `<svg viewBox="0 0 560 400" xmlns="http://www.w3.org/2000/svg">
+  <ellipse cx="290" cy="342" rx="200" ry="24" fill="#f0efec" stroke="#dcdad4"/>
+  <rect x="130" y="308" width="170" height="10" rx="4" fill="#39404a"/>${tireCircle(160,326,10,'nonmark')}
+  <path d="M300 330 L300 258 Q300 248 312 248 L352 248 Q368 248 368 264 L368 330 Z" fill="${c}" stroke="rgba(0,0,0,.18)"/>
+  <path d="M344 248 L352 248 Q368 248 368 264 L368 330 L344 330 Z" fill="rgba(0,0,0,.22)"/>
+  <line x1="368" y1="266" x2="424" y2="222" stroke="#3d4348" stroke-width="8" stroke-linecap="round"/>
+  <ellipse cx="430" cy="217" rx="15" ry="9" transform="rotate(-34 430 217)" fill="#2f3438"/>
+  ${tireCircle(334,330,17,'nonmark')}</svg>`;
+}
+function svgOf(kind,o){
+  switch(kind){case 'reach':return svgReach(o);case 'picker':return svgPicker(o);
+    case 'stacker':return svgStacker(o);case 'ppt':return svgPPT(o);default:return svgCB(o);}
+}
+/* ═════════ 장비 이미지 — 360° 회전 · 사진 · 일러스트 ═════════
+   photos/ 폴더에 파일을 넣으면 일러스트 대신 실물이 뜬다. 있는 것부터 채우면 된다.
+
+     ① 360° 회전 — photos/<기종>-360/01.jpg, 02.jpg, 03.jpg …
+        장비를 한 바퀴 돌며 같은 높이·같은 거리에서 찍은 사진을 순서대로 넣는다.
+        24장(15° 간격) 권장 · 최소 12장 · 최대 48장. 번호는 두 자리(01부터).
+     ② 단일 사진 — photos/<기종>.jpg
+     ③ 둘 다 없으면 일러스트로 자동 대체된다.
+
+   <기종> = diesel · lpg · elec · reach · picker · stacker · ppt
+   엔진식에서 "전동(리튬) 전환"을 고르면 <기종>-electric 을 먼저 찾는다.
+   확장자는 jpg · png · webp 순으로 찾는다.                                    */
+const PHOTO_DIR='photos/', PHOTO_EXTS=['.jpg','.png','.webp'], SPIN_MAX=48;
+const mediaCache={};                      /* 기종별 조회 결과 — 한 번만 찾는다 */
+const pad2=n=>String(n).padStart(2,'0');
+const loadImg=url=>new Promise(res=>{const i=new Image();i.onload=()=>res(i);i.onerror=()=>res(null);i.src=url;});
+
+function stemsOf(){
+  const m=model(), out=[];
+  if(S.battery&&m.power!=='battery')out.push(m.id+'-electric');
+  out.push(m.id,m.kind);
+  return out;
+}
+/* 01번이 있으면 시퀀스로 보고 끊길 때까지 이어서 받는다 */
+async function findSpin(stem,onProgress){
+  for(const ex of PHOTO_EXTS){
+    const first=await loadImg(`${PHOTO_DIR}${stem}-360/01${ex}`);
+    if(!first)continue;
+    const frames=[first];
+    for(let n=2;n<=SPIN_MAX;n++){
+      onProgress&&onProgress(frames.length);
+      const im=await loadImg(`${PHOTO_DIR}${stem}-360/${pad2(n)}${ex}`);
+      if(!im)break;
+      frames.push(im);
+    }
+    return frames;
+  }
+  return null;
+}
+async function findSingle(stem){
+  for(const ex of PHOTO_EXTS){const im=await loadImg(PHOTO_DIR+stem+ex);if(im)return im;}
+  return null;
+}
+async function resolveMedia(stem,onProgress){
+  if(mediaCache[stem])return mediaCache[stem];
+  const spin=await findSpin(stem,onProgress);
+  const single=spin?null:await findSingle(stem);
+  return mediaCache[stem]={spin,single};
+}
+
+let vizToken=0, spinStop=null, mounted=null;
+function drawIllust(){
+  const col=COLORS.find(c=>c.id===S.color).body;
+  $('viz').innerHTML=svgOf(model().kind,{kind:model().kind,body:col,lift:S.lift,mast:S.mast,tire:S.tire,batt:S.battery});
+  $('viz').classList.remove('spin');
+  mounted='illust';
+  setStageMode('illust');
+}
+/* 이미 떠 있는 사진과 같은 것이 뜰 차례면 그대로 둔다 —
+   색상·마스트를 바꿀 때마다 회전이 처음으로 되감기지 않게 */
+function mountedKeyNow(){
+  for(const st of stemsOf()){
+    const m=mediaCache[st];
+    if(!m)return null;                           /* 아직 안 찾아봤다 */
+    if(m.spin)return st+'|spin';
+    if(m.single)return st+'|photo';
+  }
+  return 'illust';
+}
+function renderViz(){
+  const key=mountedKeyNow();
+  if(key&&key!=='illust'&&key===mounted)return;  /* 사진은 사양에 따라 바뀌지 않는다 */
+  if(spinStop){spinStop();spinStop=null;}
+  drawIllust();                                  /* 실물이 뜨기 전까지 일러스트를 보여 둔다 */
+  const token=++vizToken;
+  const chip=(txt)=>{
+    if(token!==vizToken)return;
+    let c=$('viz').querySelector('.spinLoad');
+    if(!txt){c&&c.remove();return}
+    if(!c){c=document.createElement('div');c.className='spinLoad';$('viz').appendChild(c);}
+    c.textContent=txt;
+  };
+  (async()=>{
+    for(const st of stemsOf()){
+      const m=await resolveMedia(st,n=>chip(`360° 사진 ${n}장 불러오는 중…`));
+      if(token!==vizToken)return;                /* 그 사이 다른 사양을 골랐다 */
+      chip(null);
+      if(m.spin){mountSpin(m.spin,st);return}
+      if(m.single){mountPhoto(m.single,st);return}
+    }
+  })();
+}
+function mountPhoto(src,stem){
+  const el=$('viz');
+  el.innerHTML='';el.classList.remove('spin');
+  const img=new Image();
+  img.className='photo';img.src=src.src;img.alt=model().name+' 대표 장비 사진';img.draggable=false;
+  el.appendChild(img);
+  mounted=stem+'|photo';
+  setStageMode('photo');
+}
+/* 드래그·스와이프·화살표로 프레임을 넘겨 한 바퀴 돌린다 */
+function mountSpin(frames,stem){
+  const el=$('viz'), N=frames.length;
+  el.innerHTML='';el.classList.add('spin');
+  mounted=stem+'|spin';
+  const img=new Image();
+  img.className='photo';img.alt=`${model().name} 360도 회전 사진 (드래그해서 돌려보세요)`;img.draggable=false;
+  el.appendChild(img);
+  const badge=document.createElement('div');
+  badge.className='spinBadge';badge.textContent='360°';
+  const hint=document.createElement('div');
+  hint.className='spinHint';hint.textContent='↔ 드래그해서 돌려보세요';
+  el.append(badge,hint);
+
+  let idx=0;
+  const show=i=>{idx=((i%N)+N)%N;img.src=frames[idx].src;};
+  show(0);
+  setStageMode('spin');
+
+  let auto=0, used=false;
+  const stopAuto=()=>{if(auto){clearInterval(auto);auto=0;}};
+  const markUsed=()=>{if(used)return;used=true;stopAuto();hint.classList.add('off');};
+  /* 처음 한 바퀴만 자동으로 돌려 회전이 된다는 걸 보여준다 */
+  if(!matchMedia('(prefers-reduced-motion: reduce)').matches){
+    let turned=0;
+    auto=setInterval(()=>{show(idx+1);if(++turned>=N)stopAuto();},2400/N);
+  }
+  const perFrame=()=>Math.max(5,el.clientWidth/N);
+  let dragging=false,lastX=0,acc=0;
+  const down=e=>{dragging=true;lastX=e.clientX;acc=0;markUsed();el.setPointerCapture&&el.setPointerCapture(e.pointerId);};
+  const move=e=>{
+    if(!dragging)return;
+    acc+=e.clientX-lastX;lastX=e.clientX;
+    const s=perFrame();
+    while(Math.abs(acc)>=s){show(idx+(acc>0?1:-1));acc-=Math.sign(acc)*s;}
+  };
+  const up=e=>{dragging=false;try{el.releasePointerCapture(e.pointerId)}catch(_){}};
+  const key=e=>{
+    if(e.key==='ArrowRight'){markUsed();show(idx+1);e.preventDefault();}
+    if(e.key==='ArrowLeft'){markUsed();show(idx-1);e.preventDefault();}
+  };
+  el.addEventListener('pointerdown',down);
+  el.addEventListener('pointermove',move);
+  el.addEventListener('pointerup',up);
+  el.addEventListener('pointercancel',up);
+  el.addEventListener('keydown',key);
+  spinStop=()=>{
+    stopAuto();
+    el.removeEventListener('pointerdown',down);el.removeEventListener('pointermove',move);
+    el.removeEventListener('pointerup',up);el.removeEventListener('pointercancel',up);
+    el.removeEventListener('keydown',key);
+  };
+}
+/* 이미지 종류에 따라 안내 문구와 360° 표시를 맞춘다 */
+function setStageMode(mode){
+  const note=$('stageNote'), deg=$('deg'), cnote=$('colorNote');
+  deg&&deg.classList.toggle('off',mode!=='spin');
+  if(note)note.textContent=mode==='illust'
+    ? '* 상기 이미지는 사양 선택을 돕기 위한 참고용 일러스트입니다. (실제 장비 외관은 제조사·연식에 따라 다를 수 있습니다)'
+    : mode==='spin'
+    ? '* 상기 사진은 해당 기종의 대표 장비를 360°로 촬영한 것입니다. 좌우로 드래그하면 돌려볼 수 있습니다. 실제 배정 장비는 제조사·연식·보유 재고에 따라 외관과 색상이 다를 수 있습니다.'
+    : '* 상기 사진은 해당 기종의 대표 장비 사진입니다. 실제 배정 장비는 제조사·연식·보유 재고에 따라 외관과 색상이 다를 수 있습니다.';
+  if(cnote)cnote.textContent=mode==='illust'
+    ? '색상은 도장 사양 예시입니다. 임대 장비는 보유 재고 색상 기준으로 배정됩니다.'
+    : '색상은 도장 사양 예시입니다. 위 사진은 대표 장비라 선택한 색상과 다르게 보입니다. 임대 장비는 보유 재고 색상 기준으로 배정됩니다.';
+}
+
+/* ═════════ 계산 · 판정 ═════════ */
+const hasMast=()=>model().kind!=='ppt';
+const isBattery=()=>model().power==='battery';
+function chargerNeed(){ /* 필수 11항 */
+  if(!isBattery())return null;
+  if(['ppt','stacker','picker'].includes(model().kind)&&S.shift===1)return 'single';
+  if(S.ton>=2.5||S.shift>=2)return 'three';
+  return 'single';
+}
+const chargerUse=()=>S.charger==='auto'?chargerNeed():S.charger;
+function calc(){
+  const m=model(), base=m.base[String(S.ton)]||Object.values(m.base)[0], items=[];
+  if(isBattery()&&S.battery==='li') items.push(['리튬(LFP) 배터리',Math.round(base*0.15)]);
+  if(hasMast()){
+    if(S.mast==='3f')items.push(['3단 마스트',80000]);
+    if(S.mast==='2fl')items.push(['2단 프리리프트',40000]);
+    if(S.lift>=6)items.push(['인상높이 6.0m',100000]);
+    else if(S.lift>=4.5)items.push(['인상높이 4.5m 이상',50000]);
+    if(S.tire==='nonmark'&&['cb','cbe'].includes(m.kind))items.push(['논마킹 솔리드 타이어',20000]);
+  }
+  [[OPT_ATT,S.att],[OPT_SAFE,S.safe],[OPT_ENV,S.env]].forEach(([L,sel])=>
+    L.filter(o=>sel.includes(o.id)).forEach(o=>items.push([o.nm,o.p])));
+  if(isBattery()){const ch=chargerUse();
+    items.push([ch==='three'?'삼상(외장) 충전기':'단상 충전기', ch==='three'?60000:20000]);}
+  const opt=items.reduce((a,[,p])=>a+p,0);
+  const term=TERMS.find(t=>t.id===S.term);
+  const shiftMul=S.shift===3?1.25:S.shift===2?1.15:1;
+  const unitDisc=S.units>=3?0.95:1;
+  const baseAdj=Math.round(base*term.mul*shiftMul/1000)*1000;
+  const final=Math.round((base+opt)*term.mul*shiftMul*unitDisc/1000)*1000;
+  return {base:baseAdj, final, items, term, total:final*S.units};
+}
+function regCheck(){ /* 필수 14항 */
+  const exempt=isBattery()&&S.tire!=='pneu'&&S.road==='no';
+  return exempt
+   ?{ok:true, txt:'제외 요건 충족', msg:'건설기계 등록 <b>제외</b> 요건 충족 — ①전동식 ②솔리드타이어 ③도로가 아닌 장소에서만 운행'}
+   :{ok:false,txt:'등록 대상', msg:'건설기계 <b>등록 대상</b>입니다 — 안전검사·보험·번호판 처리 주체(임대사/고객)를 계약 시 명확히 합니다.'};
+}
+function aisleHint(){ /* 필수 3항 */
+  const a=parseFloat(S.aisle); if(!a)return '';
+  if(a<1.9)return `<div class="hintNote warn">통로폭 ${a}m — 카운터밸런스·리치 진입이 어렵습니다. <b>VNA(삼방향) · 오더피커</b> 검토가 필요합니다.</div>`;
+  if(a<2.7)return `<div class="hintNote ${model().kind==='reach'?'ok':'warn'}">통로폭 ${a}m — <b>리치트럭</b> 권장 구간입니다.${model().kind==='reach'?' 현재 선택 기종과 일치합니다.':''}</div>`;
+  return `<div class="hintNote ok">통로폭 ${a}m — 카운터밸런스 운용 가능 구간입니다.</div>`;
+}
+const nmOf=(L,sel)=>L.filter(o=>sel.includes(o.id)).map(o=>o.nm).join(', ');
+const INDOOR={in:'실내 위주',out:'실외 위주',both:'실내·실외 혼용'};
+const TIRE={solid:'솔리드',pneu:'공기압',nonmark:'논마킹 솔리드(우레탄)'};
+const MAST={'2f':'2단 표준','2fl':'2단 프리리프트','3f':'3단'};
+const powerNm=()=>model().power==='diesel'?'디젤':model().power==='lpg'?'LPG':(S.battery==='li'?'전동 · 리튬(LFP)':'전동 · 납산');
+
+/* ═════════ 견적 필수 확인 15항목 ═════════ */
+const CHECK=[
+ {n:1,g:'장비 사양',t:'톤수 — 실제 최대 적재물 무게 기준',
+  v:()=>({txt:`${S.ton.toFixed(1)} t`,ok:true}), note:'인상 높이가 올라가면 허용 하중이 줄어듭니다(하중곡선).'},
+ {n:2,g:'장비 사양',t:'최대 인상 높이 · 천장/도어 높이 제한', man:true,
+  v:()=>({txt:hasMast()?`인상 ${S.lift.toFixed(1)} m · ${MAST[S.mast]} 마스트`:'저상 리프트 (약 0.2m)',ok:true}),
+  note:'천장·도어 높이는 현장 실측이 필요합니다 — 마스트 하강 높이가 도어보다 낮아야 진입합니다.'},
+ {n:3,g:'장비 사양',t:'통로 폭 · 랙 높이 → 카운터밸런스 / 리치 / VNA / 오더피커 분기',
+  v:()=>S.aisle?({txt:`통로 ${S.aisle} m · ${model().name}`,ok:true}):({txt:'통로폭 미입력',ok:false})},
+ {n:4,g:'장비 사양',t:'실내·실외 · 바닥 상태(솔리드 타이어 여부)',
+  v:()=>({txt:`${INDOOR[S.indoor]} · ${TIRE[S.tire]}`,ok:true})},
+ {n:5,g:'장비 사양',t:'어태치먼트 필요 여부 — 사이드시프트, 힌지드 포크, 클램프 등', man:true,
+  v:()=>({txt:nmOf(OPT_ATT,S.att)||'없음',ok:true}),
+  note:'어태치먼트로 밀기·바닥 긁기 작업을 하면 반납 시 분쟁이 됩니다 — 실제 작업 방식을 확인하세요.'},
+ {n:6,g:'장비 사양',t:'특수환경 — 냉동·저온, 분진, 식품, 방폭', man:true,
+  v:()=>({txt:nmOf(OPT_ENV,S.env)||'해당 없음',ok:true})},
+ {n:7,g:'운영 조건',t:'일 가동시간 · 교대(1/2/3교대) → 배터리·충전 방식이 갈린다',
+  v:()=>({txt:`${S.shift}교대`,ok:true})},
+ {n:8,g:'운영 조건',t:'임대 기간(단기/장기) · 대수',
+  v:()=>({txt:`${TERMS.find(t=>t.id===S.term).nm} · ${S.units}대`,ok:true})},
+ {n:9,g:'운영 조건',t:'운전자 확보 여부 — 자격 · 안전 특별교육',
+  v:()=>S.driver?({txt:S.driver==='yes'?'자격 보유 운전자 확보':'교육 필요',ok:true}):({txt:'미확인',ok:false})},
+ {n:10,g:'운영 조건',t:'요구 안전 사양 — 후방/포크 카메라, AI 인체인식, 지문인식, 속도제한',
+  v:()=>({txt:nmOf(OPT_SAFE,S.safe)||'없음',ok:true})},
+ {n:11,g:'충전 · 전기',t:'충전기 방식 — 단상 / 삼상·외장', only:isBattery,
+  v:()=>({txt:chargerUse()==='three'?'삼상(외장) 충전기':'단상 충전기',ok:true}),
+  note:'단상으로 충분: 유니트트럭·스태커·소형, 야간충전, 단기임대 / 삼상 검토: 2.5t 이상, 80V 대용량 납산, 2~3교대'},
+ {n:12,g:'충전 · 전기',t:'배전반 여유 용량 · 설치 위치 · 몇 대까지 가능한지', only:isBattery,
+  v:()=>S.panelCap?({txt:S.panelCap==='ok'?'여유 있음':'여유 부족 — 공사 검토',ok:true}):({txt:'미확인 — 현장 실사 필요',ok:false}),
+  note:'전동 제안은 충전 인프라에서 막히면 계약이 늦어집니다.'},
+ {n:13,g:'충전 · 전기',t:'납산 → 리튬 전환 시 기존 충전기 사용 가능 여부',
+  only:()=>isBattery()&&S.battery==='li',
+  v:()=>S.liCompat?({txt:S.liCompat==='yes'?'기존 충전기 사용 가능':S.liCompat==='no'?'전용 충전기 필요':'신규 도입 — 해당 없음',ok:true})
+      :({txt:'미확인',ok:false})},
+ {n:14,g:'법 · 행정',t:'건설기계등록 대상 여부',
+  v:()=>({txt:regCheck().txt,ok:true}),
+  note:'타이어식 장비는 등록 대상. ①전동식 ②솔리드타이어 ③도로가 아닌 장소에서만 운행 — 3가지를 모두 충족하는 전동장비만 제외됩니다.'},
+ {n:15,g:'법 · 행정',t:'안전검사 · 보험 · 번호판 처리 주체(임대사/고객) 명확화', man:true,
+  v:()=>({txt:'계약 시 명확화',ok:true})},
+];
+const ckList=()=>CHECK.filter(c=>!c.only||c.only());
+function ckState(c){
+  const r=c.v();
+  const done=r.ok && (!c.man || !!S.checks[c.n]);
+  return {...r, done, man:!!c.man};
+}
+function ckStats(){
+  const L=ckList(), st=L.map(ckState);
+  return {total:L.length, done:st.filter(s=>s.done).length, miss:L.filter((c,i)=>!st[i].done).map(c=>c.n)};
+}
+
+/* ═════════ 화면 전환 ═════════ */
+function go(v,push){
+  U.view=v;
+  document.querySelectorAll('.view').forEach(e=>e.classList.toggle('on',e.id==='v-'+v));
+  document.querySelectorAll('#tabbar .tab').forEach(t=>t.classList.toggle('on',t.dataset.v===v));
+  const build=v==='build';
+  $('steps').classList.toggle('on',build);
+  $('crumbs').classList.toggle('on',build);
+  $('actionbar').classList.toggle('on',build);
+  $('tabbar').classList.toggle('off',build);
+  $('backBtn').style.display=build?'block':'none';
+  $('logoBox').style.display=build?'none':'flex';
+  $('hTitle').style.display=build?'block':'none';
+  $('sumBtn').style.display=build?'flex':'none';
+  if(build)renderBuild();
+  if(v==='home')renderHome();
+  if(v==='saved')renderSaved();
+  if(v==='check')renderCheck();
+  $('app').scrollTop=0;
+  if(push!==false){try{history.replaceState(null,'','?v='+v)}catch(e){}}
+}
+function back(){go('home')}
+function movTab(d){
+  const t=U.tab+d;
+  if(t<0){go('home');return}
+  if(t>3){openSum();return}
+  U.tab=t;renderBuild();scrollPanel();
+}
+/* 모바일에서는 탭을 옮기면 스테이지를 지나 옵션 영역으로 바로 올려준다 */
+function scrollPanel(){
+  if(innerWidth>=900)return;
+  const p=$('panel'),a=$('app');
+  a.scrollTo({top:p.offsetTop-a.offsetTop-4,behavior:'smooth'});
+}
+function setView(v){
+  U.viewMode=v;
+  document.querySelectorAll('#vuToggle button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
+  $('viz').style.display=v==='ex'?'block':'none';
+  $('deg').style.display=v==='ex'?'block':'none';
+  $('specView').style.display=v==='sp'?'block':'none';
+  if(v==='sp')renderSpec();
+}
+
+/* ═════════ 홈 ═════════ */
+function renderHome(){
+  const cats=['전체','엔진식','전동식','창고장비'];
+  $('catChips').innerHTML=cats.map(c=>`<button class="chip ${U.cat===c?'on':''}" onclick="U.cat='${c}';renderHome()">${c}</button>`).join('');
+  $('mdlGrid').innerHTML=MODELS.filter(m=>U.cat==='전체'||m.cat===U.cat).map(m=>{
+    const minP=Math.min(...Object.values(m.base));
+    return `<button class="mcard" onclick="pickModel('${m.id}')">
+      <div class="thumb">${svgOf(m.kind,{kind:m.kind,body:'#8f979e',lift:3.3,mast:'2f',tire:'solid',batt:'li'})}</div>
+      <div class="info">
+        <div class="cat">${m.cat}</div><h3>${m.name}</h3><div class="en">${m.en}</div>
+        <div class="ds">${m.desc}</div>
+        <div class="tons">${m.tons.map(t=>`<span class="ton">${t}t</span>`).join('')}</div>
+        <div class="prc">월 임대료 <b>${minP.toLocaleString()}</b>원~</div>
+      </div></button>`;
+  }).join('');
+  /* 이어하기 */
+  const rc=$('resumeCard');
+  if(U.touched){
+    rc.classList.add('on');
+    const p=calc(), st=ckStats();
+    $('rcTitle').textContent=`${model().name} ${S.ton}t`;
+    $('rcSub').textContent=`월 ${W(p.final)} · 필수확인 ${st.done}/${st.total}`;
+  }else rc.classList.remove('on');
+}
+function pickModel(id){
+  S.modelId=id;
+  const m=model();
+  if(!m.tons.includes(S.ton))S.ton=m.tons[Math.min(1,m.tons.length-1)];
+  if(!hasMast()){S.mast='2f';S.lift=3.0;}
+  if(m.kind==='cbe'&&S.tire==='pneu')S.tire='solid';
+  U.tab=0;saveDraft();go('build');
+}
+
+/* ═════════ 견적 만들기 ═════════ */
+const TABS=['동력 · 외장','마스트 · 타이어','옵션 · 안전','운영 조건'];
+function renderBuild(){
+  const m=model(), p=calc();
+  $('hTitle').innerHTML=`${esc(m.name)} ${S.ton}t<small>${TERMS.find(t=>t.id===S.term).nm} · ${S.units}대</small>`;
+  $('stTitle').textContent=`${m.name} ${S.ton}t - ${TERMS.find(t=>t.id===S.term).nm}`;
+  $('stSub').innerHTML=`<span>${m.en} · ${powerNm()} · ${hasMast()?`인상 ${S.lift.toFixed(1)}m`:'저상 리프트'}</span>
+    <span class="lk" onclick="go('home')">기종변경 ›</span>`;
+  $('pBase').textContent=W(p.base);$('pFinal').textContent=W(p.final);
+  $('abV').innerHTML=`${W(p.final)}${S.units>1?`<small>× ${S.units}대</small>`:''}`;
+  renderViz(); if(U.viewMode==='sp')renderSpec();
+  document.querySelectorAll('#crumbs .cr').forEach(c=>c.classList.toggle('on',+c.dataset.t===U.tab));
+  $('panelTitle').textContent=TABS[U.tab];
+  $('abNx').textContent=U.tab===3?'요약':'다음';
+  $('panelBody').innerHTML=[tabPower,tabMast,tabOpt,tabOps][U.tab]();
+  saveDraft();
+}
+document.querySelectorAll('#crumbs .cr').forEach(c=>c.onclick=()=>{U.tab=+c.dataset.t;renderBuild();scrollPanel();});
+const tile=(on,click,inner,dis)=>`<button class="tile ${on?'on':''} ${dis?'dis':''}" onclick="${click}">${inner}</button>`;
+const priceTag=p=>p?`<div class="p">+ 월 ${p.toLocaleString()}원</div>`:`<div class="p zero">기본 포함</div>`;
+
+function tabPower(){
+  const m=model(), b=BEST[U.bestTab];
+  const donuts=b.d.map(([nm,pct,col],i)=>{const sz=104-i*16;
+    return `<div class="donut"><div class="cir" style="width:${sz}px;height:${sz}px;background:radial-gradient(circle at 35% 30%, ${col} 0%, ${col} 60%, rgba(0,0,0,.25))">
+      <span class="pctT" style="font-size:${24-i*4}px">${pct}<small style="font-size:.6em">%</small></span></div>
+      <div class="lb">${nm}</div></div>`;}).join('');
+  const bestTabs=Object.keys(BEST).map(k=>`<button class="${U.bestTab===k?'on':''}" onclick="U.bestTab='${k}';renderBuild()">${k}</button>`).join('');
+  let pw;
+  if(m.power==='battery'){
+    pw=`<div class="tiles">
+      ${tile(S.battery==='li',"set('battery','li')",`<span class="rec">BEST</span><b>리튬 (LFP)</b><div class="d">기회충전 — 식사·휴게 중 충전, 배터리 교체 불필요</div><div class="p">+ 기준가의 15%</div>`)}
+      ${tile(S.battery==='pb',"set('battery','pb')",`<b>납산 배터리</b><div class="d">초기 비용 절감 — 교대 시 예비 배터리 검토</div>${priceTag(0)}`)}</div>
+      ${S.shift>=2&&S.battery==='pb'?'<div class="hintNote warn">2~3교대 + 납산은 배터리 교체 인력·충전실 공간이 추가로 듭니다. 리튬(기회충전) 비교를 권장합니다.</div>':''}`;
+  }else{
+    pw=`<div class="tiles">
+      ${tile(true,"",`<b>${m.power==='diesel'?'디젤 엔진':'LPG 엔진'}</b><div class="d">${m.power==='diesel'?'실외·중량물 표준 동력':'매연 저감형 엔진식'}</div>${priceTag(0)}`)}
+      ${tile(false,"go('home')",`<b>전동(리튬) 전환</b><div class="d">실내작업·매연/소음 민원 시</div><div class="p zero">기종변경 ›</div>`)}</div>
+      <div class="hintNote">실내 작업 비중이 높거나 매연·소음 민원이 있다면 <b>전동(리튬) 전환</b>을 검토하세요 — 연료·정비까지 총소유비용(TCO) 기준으로 비교합니다.</div>`;
+  }
+  const cc=COLORS.find(c=>c.id===S.color);
+  return `<div id="bestCard">
+    <div class="bhd"><span class="btag">Best</span> 다른 고객들이 가장 많이 선택한 사양입니다!</div>
+    <div id="bestTabs">${bestTabs}</div>
+    <div id="bestMsg">${m.name} 고객 중 <b>${b.p}</b>${b.tail}</div>
+    <div id="donuts">${donuts}</div></div>
+  <div class="psec"><div class="ph"><b>동력 · 배터리</b></div>${pw}</div>
+  <div class="psec"><div class="ph"><b>외장 색상</b><span class="cur">${cc.nm}</span></div>
+    <div id="swGrid">${COLORS.map(c=>`<button class="sw ${S.color===c.id?'on':''}" style="--c1:${c.c1};--c2:${c.c2}" title="${c.nm}" onclick="set('color','${c.id}')"></button>`).join('')}</div>
+    <div class="hintNote" id="colorNote">색상은 도장 사양 예시입니다. 임대 장비는 보유 재고 색상 기준으로 배정됩니다.</div></div>`;
+}
+function tabMast(){
+  if(!hasMast())return tonSec()+`<div class="psec"><div class="hintNote ok">전동 유니트트럭은 저상 리프트(약 0.2m) 전용으로 마스트 선택이 없습니다.</div></div>`;
+  const m=model();
+  const tireT=['cb','cbe'].includes(m.kind)?`<div class="tiles c3">
+    ${tile(S.tire==='solid',"set('tire','solid')",`<b>솔리드</b><div class="d">실내·평탄 바닥</div>${priceTag(0)}`)}
+    ${tile(S.tire==='pneu',"set('tire','pneu')",`<b>공기압</b><div class="d">실외·요철 노면</div>${priceTag(0)}`,m.kind==='cbe')}
+    ${tile(S.tire==='nonmark',"set('tire','nonmark')",`<b>논마킹</b><div class="d">식품·바닥오염 방지</div>${priceTag(20000)}`)}</div>
+    <div class="hintNote">타이어는 건설기계 등록과도 연결됩니다 — <b>솔리드 타이어</b>는 전동식 등록 제외 요건 중 하나입니다.</div>`
+    :`<div class="hintNote ok">창고장비는 우레탄(논마킹) 휠 기본 사양입니다.</div>`;
+  return tonSec()
+   +`<div class="psec"><div class="ph"><b>마스트</b></div><div class="tiles c3">
+      ${tile(S.mast==='2f',"set('mast','2f')",`<b>2단 표준</b><div class="d">일반 창고</div>${priceTag(0)}`)}
+      ${tile(S.mast==='2fl',"set('mast','2fl')",`<b>2단 프리리프트</b><div class="d">컨테이너 내부</div>${priceTag(40000)}`)}
+      ${tile(S.mast==='3f',"set('mast','3f')",`<b>3단</b><div class="d">저천장 + 고인상</div>${priceTag(80000)}`)}</div></div>
+     <div class="psec"><div class="ph"><b>최대 인상 높이</b><span class="cur">${S.lift.toFixed(1)} m</span></div>
+      <div class="tiles c3">${LIFTS.map(l=>tile(S.lift===l,`set('lift',${l})`,
+        `<b>${l.toFixed(1)} m</b>${l>=6?priceTag(100000):l>=4.5?priceTag(50000):priceTag(0)}`)).join('')}</div>
+      <div class="hintNote">천장·도어 높이 제한과 랙 최상단 높이를 함께 확인하세요. 마스트 하강 높이가 도어보다 낮아야 진입할 수 있습니다.</div></div>
+     <div class="psec"><div class="ph"><b>타이어</b></div>${tireT}</div>`;
+}
+function tonSec(){
+  return `<div class="psec"><div class="ph"><b>톤수 (최대 적재하중)</b><span class="cur">실제 최대 적재물 무게 기준</span></div>
+  <div class="tiles c3">${model().tons.map(t=>tile(S.ton===t,`set('ton',${t})`,
+    `<b>${t.toFixed(1)} t</b><div class="p zero">월 ${model().base[String(t)].toLocaleString()}원~</div>`)).join('')}</div>
+  <div class="hintNote">인상 높이가 올라가면 허용 하중이 줄어듭니다(하중곡선). 최대 높이에서 드는 실제 무게 기준으로 여유 있게 선택하세요.</div></div>`;
+}
+function tabOpt(){
+  const grp=(title,list,sel,key)=>`<div class="psec"><div class="ph"><b>${title}</b><span class="cur">${sel.length}개 선택</span></div>
+    <div class="tiles">${list.map(o=>tile(sel.includes(o.id),`togOpt('${key}','${o.id}')`,
+      `<b>${o.nm}</b><div class="d">${o.d}</div>${priceTag(o.p)}`)).join('')}</div></div>`;
+  return grp('어태치먼트',OPT_ATT,S.att,'att')+grp('안전 사양',OPT_SAFE,S.safe,'safe')+grp('특수환경 사양',OPT_ENV,S.env,'env')
+   +`<div class="hintNote">어태치먼트로 밀기·바닥 긁기 작업을 하면 충격이 누적돼 반납 시 분쟁이 될 수 있습니다 — 실제 작업 방식을 계약 전에 알려주세요.</div>`;
+}
+function tabOps(){
+  const reg=regCheck(), need=chargerNeed();
+  const chSec=isBattery()?`<div class="psec"><div class="ph"><b>충전기</b><span class="cur">${need==='three'?'삼상 권장':'단상 가능'}</span></div>
+    <div class="tiles c3">
+      ${tile(S.charger==='auto',"set('charger','auto')",`<b>자동 추천</b><div class="d">조건 기준 산정</div>`)}
+      ${tile(S.charger==='single',"set('charger','single')",`<b>단상</b><div class="d">야간충전·소형·단기</div>${priceTag(20000)}`)}
+      ${tile(S.charger==='three',"set('charger','three')",`<b>삼상(외장)</b><div class="d">2.5t↑ · 2~3교대</div>${priceTag(60000)}`)}</div>
+    <div class="fldRow" style="margin-top:10px">
+      <div class="fld"><label>배전반 여유 용량 (필수 12)</label>
+        <select onchange="set('panelCap',this.value)">
+          <option value="" ${S.panelCap===''?'selected':''}>미확인 (현장 실사 필요)</option>
+          <option value="ok" ${S.panelCap==='ok'?'selected':''}>여유 있음</option>
+          <option value="tight" ${S.panelCap==='tight'?'selected':''}>여유 부족 — 공사 검토</option>
+        </select></div>
+      ${S.battery==='li'?`<div class="fld"><label>기존 충전기 사용 가능 (필수 13)</label>
+        <select onchange="set('liCompat',this.value)">
+          <option value="" ${S.liCompat===''?'selected':''}>미확인</option>
+          <option value="yes" ${S.liCompat==='yes'?'selected':''}>사용 가능</option>
+          <option value="no" ${S.liCompat==='no'?'selected':''}>전용 충전기 필요</option>
+          <option value="new" ${S.liCompat==='new'?'selected':''}>신규 도입 — 해당 없음</option>
+        </select></div>`:''}
+    </div>
+    ${S.panelCap===''?'<div class="hintNote">전동 제안은 충전 인프라에서 막히면 계약이 늦어집니다 — 배전반 여유 용량·설치 위치·가능 대수를 실사에서 확인합니다.</div>':''}</div>`:'';
+  return `<div class="psec"><div class="ph"><b>임대 기간</b></div>
+    <div class="tiles">${TERMS.map(t=>tile(S.term===t.id,`set('term','${t.id}')`,
+      `<b>${t.nm}</b><div class="d">${t.mul===1?'기준 임대료':t.mul>1?`기준가 × ${t.mul}`:`기준가 × ${t.mul} 할인`}</div>`)).join('')}</div></div>
+  <div class="psec"><div class="ph"><b>대수 · 교대</b></div><div class="fldRow">
+    <div class="fld"><label>대수 ${S.units>=3?'(3대 이상 5% 할인)':''}</label>
+      <div class="stepper"><button onclick="set('units',Math.max(1,S.units-1))">−</button>
+      <span class="v">${S.units}대</span><button onclick="set('units',S.units+1)">+</button></div></div>
+    <div class="fld"><label>가동 교대 — 배터리·충전 방식이 갈립니다</label>
+      <select onchange="set('shift',+this.value)">
+        <option value="1" ${S.shift===1?'selected':''}>1교대 (주간)</option>
+        <option value="2" ${S.shift===2?'selected':''}>2교대 (할증 15%)</option>
+        <option value="3" ${S.shift===3?'selected':''}>3교대 (할증 25%)</option></select></div></div></div>
+  <div class="psec"><div class="ph"><b>작업 환경</b></div><div class="fldRow">
+    <div class="fld"><label>실내 / 실외</label>
+      <select onchange="set('indoor',this.value)">
+        <option value="in" ${S.indoor==='in'?'selected':''}>실내 위주</option>
+        <option value="out" ${S.indoor==='out'?'selected':''}>실외 위주</option>
+        <option value="both" ${S.indoor==='both'?'selected':''}>실내·실외 혼용</option></select></div>
+    <div class="fld"><label>통로 폭 (m) — 기종 적합성</label>
+      <input inputmode="decimal" placeholder="예) 2.4" value="${esc(S.aisle)}" onchange="set('aisle',this.value)"></div></div>
+    ${aisleHint()}</div>
+  ${chSec}
+  <div class="psec"><div class="ph"><b>운전자 · 법규</b></div><div class="fldRow">
+    <div class="fld"><label>운전자 확보 (자격·특별교육)</label>
+      <select onchange="set('driver',this.value)">
+        <option value="" ${S.driver===''?'selected':''}>미확인</option>
+        <option value="yes" ${S.driver==='yes'?'selected':''}>자격 보유 운전자 확보</option>
+        <option value="no" ${S.driver==='no'?'selected':''}>교육 필요</option></select></div>
+    <div class="fld"><label>도로 주행 여부</label>
+      <select onchange="set('road',this.value)">
+        <option value="no" ${S.road==='no'?'selected':''}>도로 외 장소만 운행</option>
+        <option value="yes" ${S.road==='yes'?'selected':''}>도로 주행 있음</option></select></div></div>
+    <div class="hintNote ${reg.ok?'ok':'warn'}">${reg.msg}</div></div>`;
+}
+function set(k,v){S[k]=v;renderBuild();}
+function togOpt(key,id){const a=S[key],i=a.indexOf(id);i>=0?a.splice(i,1):a.push(id);renderBuild();}
+
+function renderSpec(){
+  const p=calc(), reg=regCheck();
+  const rows=[
+    ['기종',`${model().name} (${model().en})`],
+    ['최대 적재하중',`${S.ton.toFixed(1)} t`],
+    ['동력',powerNm()],
+    hasMast()?['마스트 / 인상높이',`${MAST[S.mast]} / ${S.lift.toFixed(1)} m`]:['리프트','저상 (약 0.2m)'],
+    ['타이어',TIRE[S.tire]],
+    isBattery()?['충전기',chargerUse()==='three'?'삼상(외장)':'단상']:['연료',model().power==='diesel'?'경유':'LPG'],
+    ['임대 조건',`${TERMS.find(t=>t.id===S.term).nm} · ${S.units}대 · ${S.shift}교대`],
+    ['건설기계 등록',reg.txt],
+    ['월 임대료 (참고)',W(p.final)],
+  ];
+  $('specView').innerHTML=`<table>${rows.map(([k,v])=>`<tr><th>${k}</th><td>${v}</td></tr>`).join('')}</table>`;
+}
+
+/* ═════════ 견적 필수 확인 화면 ═════════ */
+function renderCheck(){
+  const L=ckList(), st=ckStats(), pct=Math.round(st.done/st.total*100);
+  let html=`<div id="ckTop">
+    <div class="cn">${esc(model().name)} ${S.ton}t · ${TERMS.find(t=>t.id===S.term).nm}</div>
+    <div class="cv">${st.done} / ${st.total} 확인</div>
+    <div class="cbar"><i style="width:${pct}%"></i></div>
+    <div class="cs">${st.miss.length?`미확인 ${st.miss.length}건 — ${st.miss.map(n=>n+'번').join(', ')}`:'모든 필수 항목이 확인되었습니다. 견적 확정 가능합니다.'}</div></div>`;
+  let g='';
+  L.forEach(c=>{
+    const s=ckState(c);
+    if(c.g!==g){g=c.g;html+=`<div class="ckGrp">[${g}]</div>`;}
+    html+=`<div class="ckItem ${s.done?'done':'miss'}">
+      <div class="no">${s.done?'✓':c.n}</div>
+      <div class="cb">
+        <div class="ct">${c.n}. ${c.t}</div>
+        <div class="cvv">${s.ok?`<b>${esc(s.txt)}</b>`:`<span class="cmiss">${esc(s.txt)}</span>`}</div>
+        ${c.note?`<div class="cnote">${c.note}</div>`:''}
+        ${c.man&&s.ok&&!S.checks[c.n]?`<div class="cnote cmiss">현장 확인 후 체크하세요</div>`:''}
+      </div>
+      ${c.man?`<div class="tgl ${S.checks[c.n]?'on':''}" onclick="togCheck(${c.n})"></div>`:''}
+    </div>`;
+  });
+  html+=`<button class="chip" style="width:100%;margin-top:16px;padding:14px;border-radius:10px;justify-content:center"
+    onclick="go('build')">견적 화면으로 돌아가기 ›</button>`;
+  $('ckWrap').innerHTML=html;
+}
+function togCheck(n){S.checks[n]=!S.checks[n];saveDraft();renderCheck();}
+
+/* ═════════ 견적함 ═════════ */
+const quotes=()=>lsGet(KEY.quotes,[]);
+function renderSaved(){
+  const list=quotes();
+  if(!list.length){
+    $('qList').innerHTML=`<div class="empty"><div class="ei">📁</div>저장된 견적이 없습니다.<br>견적을 만든 뒤 <b>저장</b>하면 여기에 쌓입니다.</div>`;return;
+  }
+  $('qList').innerHTML=list.map(q=>{
+    const miss=q.miss||0;
+    return `<div class="qcard">
+      <div class="qh"><div class="qn">${esc(q.cust||'(업체명 없음)')}</div><div class="qd">${esc(q.date)}</div></div>
+      <div class="qm">${esc(q.title)}</div>
+      ${q.memo?`<div class="qm" style="color:var(--mut)">📝 ${esc(q.memo)}</div>`:''}
+      <div class="qp">${W(q.price)}<small>월 · ${q.units}대 기준 ${W(q.total)}</small></div>
+      <div class="qflag ${miss?'w':'o'}">${miss?`필수 미확인 ${miss}건`:'필수 15항목 확인 완료'}</div>
+      <div class="qacts">
+        <button onclick="loadQuote('${q.id}')">불러오기</button>
+        <button onclick="shareQuote('${q.id}')">공유</button>
+        <button class="del" onclick="delQuote('${q.id}')">삭제</button>
+      </div></div>`;
+  }).join('');
+}
+function openSave(){
+  const p=calc(), st=ckStats();
+  openSheet('견적 저장',
+    `<div class="fldRow"><div class="fld"><label>업체명 · 현장명</label>
+      <input id="svCust" placeholder="예) OO운영 김해센터" value="${esc(U.editId?(quotes().find(q=>q.id===U.editId)||{}).cust||'':'')}"></div></div>
+     <div class="fldRow" style="margin-top:10px"><div class="fld"><label>메모</label>
+      <textarea id="svMemo" placeholder="예) 3월 성수기 대비 2대 추가 검토, 담당 박부장"></textarea></div></div>
+     <div class="hintNote" style="margin-top:12px">${esc(model().name)} ${S.ton}t · ${TERMS.find(t=>t.id===S.term).nm} · 월 ${W(p.final)}</div>
+     ${st.miss.length?`<div class="hintNote warn">필수 확인 ${st.miss.length}건이 미확인 상태입니다 (${st.miss.map(n=>n+'번').join(', ')}). 저장은 가능하지만 고객 제출 전 확인이 필요합니다.</div>`:'<div class="hintNote ok">필수 15항목이 모두 확인되었습니다.</div>'}`,
+    [{t:'저장',c:'pri',f:'doSave()'},{t:'취소',c:'sec',f:'closeSheet()'}]);
+  setTimeout(()=>$('svCust')&&$('svCust').focus(),300);
+}
+function doSave(){
+  const st=ckStats(), p=calc();
+  const d=new Date();
+  const q={
+    id:'q'+d.getTime(),
+    date:`${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`,
+    cust:($('svCust')||{}).value||'', memo:($('svMemo')||{}).value||'',
+    title:`${model().name} ${S.ton}t · ${powerNm()} · ${TERMS.find(t=>t.id===S.term).nm}`,
+    price:p.final, total:p.total, units:S.units, miss:st.miss.length,
+    state:JSON.parse(JSON.stringify(S)),
+  };
+  const list=quotes(); list.unshift(q); lsSet(KEY.quotes,list);
+  closeSheet(); toast('견적함에 저장했습니다'); go('saved');
+}
+function loadQuote(id){
+  const q=quotes().find(x=>x.id===id); if(!q)return;
+  S=Object.assign({},DEF,q.state);
+  S.att=S.att||[];S.safe=S.safe||[];S.env=S.env||[];S.checks=S.checks||{};
+  U.tab=0;saveDraft();go('build');toast('견적을 불러왔습니다');
+}
+function delQuote(id){
+  lsSet(KEY.quotes,quotes().filter(q=>q.id!==id));
+  renderSaved();toast('삭제했습니다');
+}
+function shareQuote(id){
+  const q=quotes().find(x=>x.id===id); if(!q)return;
+  const keep=S; S=Object.assign({},DEF,q.state); const txt=quoteText(q.cust); S=keep;
+  shareText(txt);
+}
+
+/* ═════════ 요약 시트 ═════════ */
+function openSheet(title,body,btns){
+  $('sheetTitle').textContent=title;
+  $('sheetBody').innerHTML=body;
+  $('sheetFoot').innerHTML=btns.map(b=>`<button class="${b.c}" onclick="${b.f}">${b.t}</button>`).join('');
+  $('dim').classList.add('on');$('sheet').classList.add('on');
+}
+function closeSheet(){$('dim').classList.remove('on');$('sheet').classList.remove('on');}
+function openSum(){
+  const p=calc(), st=ckStats(), L=ckList();
+  const grp=[...new Set(L.map(c=>c.g))].map(g=>{
+    const rows=L.filter(c=>c.g===g).map(c=>{
+      const s=ckState(c);
+      return `<tr><td class="k">${c.n}. ${c.t}</td><td class="v">${esc(s.txt)}${s.done?'':'<span class="tagq">확인 필요</span>'}</td></tr>`;
+    }).join('');
+    return `<div class="sg"><b>${g}</b><table>${rows}</table></div>`;
+  }).join('');
+  const body=`<div id="sumTotal">
+      <div class="tl">옵션 적용 후 월 임대료</div>
+      <div class="tv">${W(p.final)}</div>
+      ${S.units>1?`<div class="tx">× ${S.units}대 = 월 ${W(p.total)}</div>`:''}
+      <div class="tsub">${esc(model().name)} ${S.ton}t · ${TERMS.find(t=>t.id===S.term).nm} · ${S.shift}교대<br>참고용 견적 — 현장 실사 후 최종 확정</div></div>
+    <div class="hintNote ${st.miss.length?'warn':'ok'}" style="margin:0 0 16px">
+      견적 필수 확인 <b>${st.done}/${st.total}</b>${st.miss.length?` — 미확인 ${st.miss.map(n=>n+'번').join(', ')}`:' — 모두 확인 완료'}</div>
+    ${grp}
+    <div class="sg"><b>임대료 내역 (참고)</b><table>
+      <tr><td class="k">기준 임대료 (기간·교대 반영)</td><td class="v">${W(p.base)}</td></tr>
+      ${p.items.map(([n,v])=>`<tr><td class="k">${esc(n)}</td><td class="v">+ ${v.toLocaleString()}원</td></tr>`).join('')}
+      <tr><td class="k"><b>월 임대료 합계</b></td><td class="v"><b>${W(p.final)}</b></td></tr></table></div>`;
+  openSheet('견적 요약 · 필수 15항목',body,
+    [{t:'📤 공유',c:'dk',f:'shareText(quoteText())'},{t:'💾 견적함 저장',c:'pri',f:'openSave()'}]);
+}
+
+/* ═════════ 견적요청 양식 텍스트 ═════════ */
+function quoteText(cust){
+  const p=calc(), L=ckList(), st=ckStats();
+  const out=['[장비 임대 견적요청]'];
+  if(cust)out.push(`■ 업체/현장: ${cust}`);
+  out.push(`■ 기종: ${model().name} ${S.ton}t (${powerNm()})`);
+  let g='';
+  L.forEach(c=>{
+    if(c.g!==g){g=c.g;out.push(`■ ${g}`);}
+    const s=ckState(c);
+    out.push(` ${c.n}. ${c.t.split(' — ')[0].split(' → ')[0]}: ${s.txt}${s.done?'':' ※확인 필요'}`);
+  });
+  out.push(`■ 참고 월 임대료: ${W(p.final)}${S.units>1?` × ${S.units}대 = ${W(p.total)}`:''}`);
+  out.push(`  (필수 확인 ${st.done}/${st.total} · 현장 실사 후 최종 확정)`);
+  out.push('— 그룹사 장비 임대 · 문의 1800-5540');
+  return out.join('\n');
+}
+function shareText(txt){
+  if(navigator.share){navigator.share({title:'장비 임대 견적',text:txt}).catch(()=>{});return;}
+  if(navigator.clipboard){navigator.clipboard.writeText(txt).then(()=>toast('견적 내용을 복사했습니다')).catch(()=>prompt('복사하세요',txt));return;}
+  prompt('복사하세요',txt);
+}
+
+/* ═════════ PWA — 설치 · 오프라인 ═════════ */
+let deferredPrompt=null;
+addEventListener('beforeinstallprompt',e=>{
+  e.preventDefault();deferredPrompt=e;
+  if(!lsGet(KEY.inst,false))$('instBanner').classList.add('on');
+});
+function doInstall(){
+  if(!deferredPrompt){toast('브라우저 메뉴 → "홈 화면에 추가"를 눌러주세요');return;}
+  deferredPrompt.prompt();
+  deferredPrompt.userChoice.then(()=>{deferredPrompt=null;hideInstall();});
+}
+function hideInstall(){lsSet(KEY.inst,true);$('instBanner').classList.remove('on');}
+addEventListener('appinstalled',()=>{hideInstall();toast('앱이 설치되었습니다');});
+function netState(){$('offBadge').classList.toggle('on',!navigator.onLine);}
+addEventListener('online',netState);addEventListener('offline',netState);
+if(location.protocol.startsWith('http')&&'serviceWorker' in navigator){
+  addEventListener('load',()=>navigator.serviceWorker.register('./equip-sw.js').catch(()=>{}));
+}
+
+/* ═════════ 시작 ═════════ */
+(function init(){
+  const d=lsGet(KEY.draft,null);
+  if(d&&d.modelId){S=Object.assign({},DEF,d);S.att=S.att||[];S.safe=S.safe||[];S.env=S.env||[];S.checks=S.checks||{};U.touched=true;}
+  netState();
+  const v=new URLSearchParams(location.search).get('v');
+  renderHome();
+  go(['home','saved','check','build'].includes(v)?v:'home',false);
+})();
+</script>
+</body>
+</html>

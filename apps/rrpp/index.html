@@ -1,0 +1,1469 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#123c7a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>당사 S3 유니트 제안</title>
+<!--
+  ⚠ 매입가(대외비)가 이 파일에 내장되어 있습니다.
+  저장소를 공개(public)로 두면 매입가가 외부에 노출됩니다 — 반드시 비공개(private)로 운영하세요.
+  헤더 ⚙ → "매입가 데이터"에서 JSON을 불러오면 그 기기에서는 불러온 값이 우선 적용됩니다.
+-->
+<style>
+  *, *::before, *::after { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; background: #f3f4f6; overscroll-behavior-y: none; }
+  body { font-family: -apple-system, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; }
+  #root { max-width: 480px; margin: 0 auto; min-height: 100vh; background: #fff; }
+  input, select, textarea, button { font-family: inherit; font-size: 16px; -webkit-appearance: none; appearance: none; }
+  select { -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath fill='%236b7280' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px !important; }
+  input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
+  input, select { width: 100%; padding: 11px 12px; border: 1px solid #d1d5db; border-radius: 9px; background: #fff; color: #111; font-size: 14px; line-height: 1.2; }
+  input:focus, select:focus { outline: none; border-color: #123c7a; box-shadow: 0 0 0 3px rgba(18,60,122,0.12); }
+  input, select, textarea { transition: border-color .15s ease, box-shadow .15s ease; }
+  button { transition: transform .09s ease, box-shadow .15s ease, background .15s ease, color .15s ease, border-color .15s ease; }
+  button:active:not(:disabled) { transform: scale(0.97); }
+  .selChip { width:100%; box-sizing:border-box; padding:11px 8px; border-radius:10px; font-size:14px; font-family:inherit; font-weight:700; border:none; background:#e8edf2; color:#123c7a; text-align:center; text-align-last:center; cursor:pointer; box-shadow:4px 4px 8px #c3c8cd,-3px -3px 7px #ffffff; }
+  .selChip:focus, .selChip:active { outline:none; }
+  .selChip option { background:#fff; color:#111; font-weight:400; }
+  .selChip option:checked { background:#eff6ff; color:#123c7a; font-weight:600; }
+  .selFlat { width:100%; box-sizing:border-box; border:none; border-radius:10px; background:#e8edf2; color:#334155; font-weight:700; font-size:13px; text-align:center; text-align-last:center; cursor:pointer; box-shadow:4px 4px 8px #c3c8cd,-3px -3px 7px #ffffff; }
+  .selFlat:focus, .selFlat:active { outline:none; }
+  ::-webkit-scrollbar { display: none; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js" crossorigin></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.3/babel.min.js" crossorigin></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" crossorigin></script>
+<script type="text/babel" data-presets="react">
+const { useState, useMemo, useRef } = React;
+
+// ════════════════════════ 규격 정보 (매입가 제외) ════════════════════════
+// 매입가(new/used)는 이 파일에 두지 않는다. 기기 저장(localStorage)에서 불러온다.
+const PALLET_SPECS = {
+  R10:  { size: '1000*1000*120', weight: 8 },
+  R11L: { size: '1100*1100*120', weight: 8 },
+  R11M: { size: '1100*1100*130', weight: 9.5 },
+  R11:  { size: '1100*1100*150', weight: 10.5 },
+  R11D: { size: '1100*1100*150', weight: 11.5 },
+  RP11: { size: '1100*1100*120', weight: 9.2 },
+  R11H: { size: '1100*1100*150', weight: 16 },
+  R12:  { size: '1200*1000*150', weight: 10.5 },
+  R13L: { size: '1300*1100*120', weight: 10.6 },
+  R13:  { size: '1300*1100*130', weight: 13.5 },
+};
+
+const DELIVERY_QTY = {
+  R10:  { '1톤': 40,  '2.5톤': 160, '5톤': 240, '8톤': 280,  '11톤': 320, '15톤': 360 },
+  R11:  { '1톤': 32,  '2.5톤': 128, '5톤': 192, '8톤': 224,  '11톤': 256, '15톤': 288 },
+  R11D: { '1톤': 32,  '2.5톤': 128, '5톤': 192, '8톤': 224,  '11톤': 256, '15톤': 288 },
+  R11H: { '1톤': 32,  '2.5톤': 128, '5톤': 192, '8톤': 224,  '11톤': 256, '15톤': 288 },
+  R11L: { '1톤': 40,  '2.5톤': 160, '5톤': 240, '8톤': 280,  '11톤': 320, '15톤': 360 },
+  R11M: { '1톤': 36,  '2.5톤': 144, '5톤': 216, '8톤': 252,  '11톤': 288, '15톤': 324 },
+  R12:  { '1톤': 32,  '2.5톤': 128, '5톤': 192, '8톤': 224,  '11톤': 256, '15톤': null },
+  R13:  { '1톤': 36,  '2.5톤': 108, '5톤': 180, '8톤': null, '11톤': 216, '15톤': 252 },
+  R13L: { '1톤': 40,  '2.5톤': 120, '5톤': 200, '8톤': null, '11톤': 240, '15톤': 280 },
+  RP11: { '1톤': 40,  '2.5톤': 160, '5톤': 240, '8톤': 280,  '11톤': 280, '15톤': 360 },
+};
+
+const VEHICLE_ORDER = ['1톤','2.5톤','5톤','8톤','11톤','15톤'];
+
+const TRANSPORT_FEE = {
+  '상차도': { min: 1500, max: 4000 },
+  '도착도': { min: 1000, max: 2500 },
+};
+
+const PALLET_KEYS = Object.keys(PALLET_SPECS);
+
+// ── 매입가(대외비): 앱에 암호문으로 내장 ──
+// 평문은 저장소에 올라가지 않는다. 비밀번호를 한 번 입력하면 복호화해서 그 기기에만 저장한다.
+// 암호문 생성: 매입가_암호화도구.html (로컬 전용, 저장소에 올리지 말 것)
+const ENC_COST = 'zBVhzyCuJKbCXmn2PyClOxR3i8/lv9ZPuJ4AZmjRInoqY9obCUKY7OZirWFcXbxxF++GcRP1Jb4Sm9kg0IZk72nqWd8NVIuIkupZmi2GvFQRdI3/tj4weTjfT0XT0ejRcD4u/PzwqdM5BHvqEDD8XCd5iqSptcewbSN4hd02qzsCe/u0vson1K2rB5Ef59XTEfwzzxCiwcJNjafLyhI0RTNbiJsYiosvGAHHBqWqzTf7b/c7I+whaYeUYQTIRQd9f6+kdH0sTnKilj5DGzaojolVsKGu8iE8DBAJh9FSqWgQMsc5K7xLcnAEu01apRXKwndyCcFRnjtaLYEpIFnnVGxb5UvwX9i9PGAfyxv3Rew0n/zu6lfgsl18RnpyxGIxrXagMZHtgKqngrGWZhQpU5jDqrpzSP5EHYjliYKny2PS+frBMmP9weEpV7eLO2KlcqRGqPxNAL6O5yQXLJlWt8DIjboa/6ZeR5+9Zb4oiwvDZA==';
+const ENC_ITER = 150000;
+async function decryptCost(password) {
+  const raw = Uint8Array.from(atob(ENC_COST), c => c.charCodeAt(0));
+  const salt = raw.slice(0, 16), iv = raw.slice(16, 28), ct = raw.slice(28);
+  const baseKey = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveKey']);
+  const key = await crypto.subtle.deriveKey({ name: 'PBKDF2', salt, iterations: ENC_ITER, hash: 'SHA-256' }, baseKey, { name: 'AES-GCM', length: 256 }, false, ['decrypt']);
+  const buf = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ct); // 비번 틀리면 throw
+  return JSON.parse(new TextDecoder().decode(buf));
+}
+const hasEncCost = () => /^[A-Za-z0-9+/=]+$/.test(ENC_COST) && ENC_COST.length > 40;
+
+const COST_KEY = 'bm_s3_cost';
+const SHOWCOST_KEY = 'bm_s3_showcost';
+function loadCost() {
+  try { const o = JSON.parse(localStorage.getItem(COST_KEY) || '{}'); return (o && typeof o === 'object' && !Array.isArray(o)) ? o : {}; }
+  catch (e) { return {}; }
+}
+
+function fmt(n) { return Math.round(n).toLocaleString(); }
+function pr(n) { return (n === null || n === undefined) ? '—' : fmt(n); }
+function fmtW(n) { return n % 1 === 0 ? n.toFixed(0) : n.toFixed(1); }
+
+// ── 3D 시뮬레이션 계산 ──
+function parseSize(s) {
+  const m = String(s || '').split('*').map(x => parseFloat(x));
+  return { L: m[0] || 1100, W: m[1] || 1100, H: m[2] || 150 };
+}
+// 유니트 1단에 박스 몇 개 — 0°/90° 두 방향 중 많은 쪽
+function packLayer(pL, pW, bL, bW) {
+  if (!bL || !bW) return null;
+  const a = Math.floor(pL / bL) * Math.floor(pW / bW);
+  const b = Math.floor(pL / bW) * Math.floor(pW / bL);
+  return a >= b
+    ? { n: a, cols: Math.floor(pL / bL), rows: Math.floor(pW / bW), rot: false }
+    : { n: b, cols: Math.floor(pL / bW), rows: Math.floor(pW / bL), rot: true };
+}
+
+function recommendVehicle(palletType, qty) {
+  if (!qty || !DELIVERY_QTY[palletType]) return null;
+  for (const veh of VEHICLE_ORDER) {
+    const cap = DELIVERY_QTY[palletType][veh];
+    if (cap !== null && cap >= qty) return veh;
+  }
+  return null;
+}
+
+const INIT = {
+  company: '',
+  palletType: 'R11',
+  marginRate: 7,
+  conditionView: '모두',
+  condition: '중고',
+  qty: '',
+  transportQtyType: '상차도',
+  transportFeeType: '없음',
+  transportFee: '',
+  deliveryQtyType: '100매이하',
+  deliveryQtyCustom: '',
+  sellPrice: '',
+  monthUsage: '',
+  currentPrice: '',
+  memo: '',
+  location: '구미',
+  product: '',
+  exportCountry: '',
+  recoveryRate: '',
+  existingUse: '',
+  competitor: '',
+  // 3D 시뮬레이션 입력
+  boxL: '', boxW: '', boxH: '',
+  maxH: '1500',
+  storeQty: '', storeStack: '2', aisle: '1.6',
+};
+
+// ════════════════════════ 3D 뷰 (Three.js) ════════════════════════
+const MM = 0.001; // mm → m
+function Sim3D({ mode, P, pack, layers, box, store, simRef, full }) {
+  const mountRef = React.useRef(null);
+  const ctxRef = React.useRef({});
+
+  // 1) 초기화 (한 번)
+  React.useEffect(() => {
+    const THREE = window.THREE;
+    const mount = mountRef.current;
+    if (!THREE || !mount) return;
+    const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setClearColor(0xeef2f7, 1);
+    mount.appendChild(renderer.domElement);
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(42, 1, 0.05, 200);
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x8899aa, 1.05));
+    const dir = new THREE.DirectionalLight(0xffffff, 0.55);
+    dir.position.set(3, 6, 4); scene.add(dir);
+    const root = new THREE.Group(); scene.add(root);
+    const grid = new THREE.GridHelper(20, 40, 0xc3ccd8, 0xdde3ea);
+    grid.position.y = -0.002; scene.add(grid);
+
+    const orbit = { theta: Math.PI * 0.22, phi: Math.PI * 0.34, r: 4, target: new THREE.Vector3(0, 0.4, 0) };
+    const applyCam = () => {
+      const { theta, phi, r, target } = orbit;
+      camera.position.set(
+        target.x + r * Math.sin(phi) * Math.sin(theta),
+        target.y + r * Math.cos(phi),
+        target.z + r * Math.sin(phi) * Math.cos(theta));
+      camera.lookAt(target);
+    };
+    const c = ctxRef.current;
+    Object.assign(c, { THREE, renderer, scene, camera, root, orbit, applyCam, grid });
+
+    // 터치·마우스 오빗
+    const pts = new Map(); let last = null, lastDist = 0;
+    const el = renderer.domElement;
+    el.style.touchAction = 'none'; el.style.display = 'block'; el.style.borderRadius = '10px';
+    const down = e => { el.setPointerCapture(e.pointerId); pts.set(e.pointerId, { x: e.clientX, y: e.clientY }); last = { x: e.clientX, y: e.clientY }; };
+    const move = e => {
+      if (!pts.has(e.pointerId)) return;
+      pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (pts.size >= 2) {
+        const [a, b] = [...pts.values()];
+        const d = Math.hypot(a.x - b.x, a.y - b.y);
+        if (lastDist) { orbit.r = Math.max(0.6, Math.min(40, orbit.r * (lastDist / d))); applyCam(); }
+        lastDist = d;
+      } else if (last) {
+        orbit.theta -= (e.clientX - last.x) * 0.008;
+        orbit.phi = Math.max(0.12, Math.min(Math.PI / 2.03, orbit.phi - (e.clientY - last.y) * 0.006));
+        last = { x: e.clientX, y: e.clientY }; applyCam();
+      }
+    };
+    const up = e => { pts.delete(e.pointerId); if (pts.size < 2) lastDist = 0; if (!pts.size) last = null; };
+    const wheel = e => { e.preventDefault(); orbit.r = Math.max(0.6, Math.min(40, orbit.r * (1 + Math.sign(e.deltaY) * 0.12))); applyCam(); };
+    el.addEventListener('pointerdown', down); el.addEventListener('pointermove', move);
+    el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
+    el.addEventListener('wheel', wheel, { passive: false });
+
+    const resize = () => {
+      const w = mount.clientWidth || 320, h = mount.clientHeight || 240;
+      renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
+    };
+    resize(); applyCam();
+    const ro = new ResizeObserver(resize); ro.observe(mount);
+    renderer.setAnimationLoop(() => renderer.render(scene, camera));
+
+    // 제안서 PDF용 스냅샷 등록
+    if (simRef) simRef.current.snap = () => { try { renderer.render(scene, camera); return renderer.domElement.toDataURL('image/jpeg', 0.82); } catch (e) { return null; } };
+
+    return () => {
+      renderer.setAnimationLoop(null); ro.disconnect();
+      el.removeEventListener('pointerdown', down); el.removeEventListener('pointermove', move);
+      el.removeEventListener('pointerup', up); el.removeEventListener('pointercancel', up);
+      el.removeEventListener('wheel', wheel);
+      renderer.dispose(); if (el.parentNode) el.parentNode.removeChild(el);
+      if (simRef) simRef.current.snap = null;
+    };
+  }, []);
+
+  // 2) 내용 갱신
+  React.useEffect(() => {
+    const c = ctxRef.current; if (!c.THREE) return;
+    const { THREE, root, orbit, applyCam } = c;
+    while (root.children.length) { const o = root.children.pop(); o.traverse && o.traverse(x => { x.geometry && x.geometry.dispose(); }); }
+
+    const matP = new THREE.MeshLambertMaterial({ color: 0x1e5aa8 });
+    const matB = new THREE.MeshLambertMaterial({ color: 0xd7a35c });
+    const matS = new THREE.MeshLambertMaterial({ color: 0x93a3b5 });
+    const L = P.L * MM, W = P.W * MM, H = P.H * MM;
+
+    const pallet = (full3d) => {
+      const g = new THREE.Group();
+      if (!full3d) { const s = new THREE.Mesh(new THREE.BoxGeometry(L, H, W), matP); s.position.y = H / 2; g.add(s); return g; }
+      const deckH = H * 0.2, botH = H * 0.16, blockH = H - deckH - botH, bs = Math.min(L, W) * 0.17;
+      const top = new THREE.Mesh(new THREE.BoxGeometry(L, deckH, W), matP);
+      top.position.y = H - deckH / 2; g.add(top);
+      [-1, 0, 1].forEach(ix => [-1, 0, 1].forEach(iz => {
+        const b = new THREE.Mesh(new THREE.BoxGeometry(bs, blockH, bs), matP);
+        b.position.set(ix * (L / 2 - bs / 2), botH + blockH / 2, iz * (W / 2 - bs / 2)); g.add(b);
+      }));
+      [-1, 0, 1].forEach(iz => {
+        const r = new THREE.Mesh(new THREE.BoxGeometry(L, botH, bs), matP);
+        r.position.set(0, botH / 2, iz * (W / 2 - bs / 2)); g.add(r);
+      });
+      return g;
+    };
+
+    let span = Math.max(L, W) * 1.9, cy = H;
+
+    if (mode === 'pallet') {
+      root.add(pallet(true));
+      cy = H * 1.5; span = Math.max(L, W) * 2.1;
+    } else if (mode === 'cargo') {
+      root.add(pallet(true));
+      if (pack && pack.n > 0 && layers > 0) {
+        const bl = (pack.rot ? box.W : box.L) * MM, bw = (pack.rot ? box.L : box.W) * MM, bh = box.H * MM;
+        const ox = -(pack.cols * bl) / 2 + bl / 2, oz = -(pack.rows * bw) / 2 + bw / 2;
+        const geo = new THREE.BoxGeometry(bl * 0.97, bh * 0.97, bw * 0.97);
+        const cap = Math.min(layers, Math.ceil(600 / Math.max(1, pack.n)));
+        for (let ly = 0; ly < cap; ly++)
+          for (let ix = 0; ix < pack.cols; ix++)
+            for (let iz = 0; iz < pack.rows; iz++) {
+              const m = new THREE.Mesh(geo, matB);
+              m.position.set(ox + ix * bl, H + bh / 2 + ly * bh, oz + iz * bw);
+              root.add(m);
+            }
+        cy = (H + layers * bh) * 0.55; span = Math.max(L, W, layers * bh) * 2.0;
+      }
+    } else {
+      const n = Math.min(store.bays, 150);
+      const cols = Math.max(1, Math.ceil(Math.sqrt(n)));
+      const gx = L * 1.12, gz = W * 1.12;
+      const stackH = H * store.stack + 0.12 * store.stack;
+      const unit = new THREE.BoxGeometry(L, stackH, W);
+      for (let i = 0; i < n; i++) {
+        const r = Math.floor(i / cols), cc = i % cols;
+        const m = new THREE.Mesh(unit, i % 2 ? matS : matP);
+        m.position.set((cc - (cols - 1) / 2) * gx, stackH / 2, (r - (Math.ceil(n / cols) - 1) / 2) * gz);
+        root.add(m);
+      }
+      span = Math.max(cols * gx, Math.ceil(n / cols) * gz) * 1.5 || 3;
+      cy = stackH;
+    }
+    orbit.target.set(0, cy * 0.5, 0);
+    orbit.r = Math.max(0.9, span);
+    applyCam();
+  }, [mode, P.L, P.W, P.H, pack && pack.n, pack && pack.rot, layers, box.L, box.W, box.H, store.bays, store.stack]);
+
+  return <div ref={mountRef} style={{ width: '100%', height: full ? 'calc(100vh - 190px)' : 240, background: '#eef2f7', borderRadius: 10, overflow: 'hidden' }} />;
+}
+
+function S3App() {
+  const [f, setF] = useState(INIT);
+  const [tab, setTab] = useState('quote');
+  const [custOpen, setCustOpen] = useState(true);
+  const [prodOpen, setProdOpen] = useState(true);
+  const [saleOpen, setSaleOpen] = useState(true);
+  const [showModal, setShowModal] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [showLogModal, setShowLogModal] = useState(false);
+  const [showSaveMenu, setShowSaveMenu] = useState(false);
+  const [logCopied, setLogCopied] = useState(false);
+  // 매입가(기기 저장)
+  const [cost, setCost] = useState(loadCost);
+  const [showCost, setShowCost] = useState(() => localStorage.getItem(SHOWCOST_KEY) === '1');
+  const [showData, setShowData] = useState(false);
+  const [costText, setCostText] = useState('');
+  const [costStat, setCostStat] = useState('');
+  // 3D
+  const [sim3d, setSim3d] = useState(false);
+  const [simMode, setSimMode] = useState('pallet');
+  const [simFull, setSimFull] = useState(false);
+  const simRef = useRef({ snap: null });
+  // 매입가 잠금해제(암호문 복호화)
+  const [unlockPw, setUnlockPw] = useState('');
+  const [unlockBusy, setUnlockBusy] = useState(false);
+  const [unlockErr, setUnlockErr] = useState('');
+  const textareaRef = useRef();
+  const logTextareaRef = useRef();
+  const costFileRef = useRef();
+
+  const upd = (k, v) => setF(p => ({ ...p, [k]: v }));
+
+  const hasCost = PALLET_KEYS.some(k => cost[k] && (typeof cost[k].new === 'number' || typeof cost[k].used === 'number'));
+
+  const applyCost = (raw) => {
+    let o;
+    try { o = JSON.parse(raw); } catch (e) { setCostStat('❌ JSON 형식이 올바르지 않습니다.'); return; }
+    if (!o || typeof o !== 'object' || Array.isArray(o)) { setCostStat('❌ 규격별 객체 형태의 JSON이어야 합니다.'); return; }
+    const clean = {}; let n = 0;
+    PALLET_KEYS.forEach(k => {
+      const v = o[k];
+      if (v && typeof v === 'object') {
+        const e = {};
+        if (typeof v.new === 'number') e.new = v.new;
+        if (typeof v.used === 'number') e.used = v.used;
+        if (e.new !== undefined || e.used !== undefined) { clean[k] = e; n++; }
+      }
+    });
+    if (!n) { setCostStat('❌ 인식된 규격이 없습니다. 규격 코드(R11 등)를 확인하세요.'); return; }
+    localStorage.setItem(COST_KEY, JSON.stringify(clean));
+    setCost(clean); setCostText(''); setCostStat('✅ ' + n + '개 규격 매입가를 불러왔습니다. 이 기기에만 저장됩니다.');
+  };
+  const clearCost = () => {
+    localStorage.removeItem(COST_KEY); setCost({}); setCostStat('🗑️ 저장된 매입가를 삭제했습니다.');
+  };
+  const toggleShowCost = () => {
+    setShowCost(v => { const nv = !v; localStorage.setItem(SHOWCOST_KEY, nv ? '1' : '0'); return nv; });
+  };
+  // 내장 암호문을 비밀번호로 복호화해 이 기기에 저장
+  const doUnlock = async () => {
+    const pw = unlockPw.trim();
+    if (!pw) { setUnlockErr('비밀번호를 입력하세요'); return; }
+    setUnlockBusy(true); setUnlockErr('');
+    try {
+      const obj = await decryptCost(pw);
+      const clean = {};
+      Object.keys(obj || {}).forEach(k => {
+        const v = obj[k] || {};
+        const nn = Number(v.new), uu = Number(v.used);
+        if (Number.isFinite(nn) || Number.isFinite(uu)) {
+          clean[k] = { new: Number.isFinite(nn) ? nn : null, used: Number.isFinite(uu) ? uu : null };
+        }
+      });
+      localStorage.setItem(COST_KEY, JSON.stringify(clean));
+      setCost(clean); setUnlockPw('');
+    } catch (e) {
+      setUnlockErr('비밀번호가 맞지 않습니다');
+    }
+    setUnlockBusy(false);
+  };
+
+  const spec = PALLET_SPECS[f.palletType];
+  const c0 = cost[f.palletType] || {};
+  const pInfo = spec ? {
+    size: spec.size, weight: spec.weight,
+    new:  typeof c0.new  === 'number' ? c0.new  : null,
+    used: typeof c0.used === 'number' ? c0.used : null,
+  } : null;
+
+  const mr = (f.marginRate || 7) / 100;
+  const isDochakdo = f.transportQtyType === '도착도';
+  const feeAmt = parseFloat(String(f.transportFee).replace(/,/g, '')) || 0;
+  const deliveryQty = f.deliveryQtyType === '직접입력'
+    ? (parseInt(f.deliveryQtyCustom) || 0)
+    : f.deliveryQtyType === '200매' ? 200 : 100;
+  const perUnitFee = (() => {
+    if (!isDochakdo) return 0;
+    if (f.transportFeeType === '매당') return feeAmt;
+    if (f.transportFeeType === '차량당') return deliveryQty > 0 ? feeAmt / deliveryQty : 0;
+    return 0;
+  })();
+  const tf = Math.round(perUnitFee);
+  const newPrice7  = (pInfo && pInfo.new  !== null) ? Math.round((pInfo.new  * (1 + mr) + tf) / 10) * 10 : null;
+  const usedPrice7 = (pInfo && pInfo.used !== null) ? Math.round((pInfo.used * (1 + mr) + tf) / 10) * 10 : null;
+
+  const qty          = parseInt(f.qty) || 0;
+  const sellPrice    = parseFloat(String(f.sellPrice).replace(/,/g, '')) || 0;
+  const transportFee = parseFloat(String(f.transportFee).replace(/,/g, '')) || 0;
+  const monthUsage   = parseInt(String(f.monthUsage).replace(/,/g,'')) || 0;
+  const currentPrice = parseFloat(String(f.currentPrice).replace(/,/g,'')) || 0;
+
+  const buyPrice = pInfo ? (f.condition === '신품' ? pInfo.new : pInfo.used) || 0 : 0;
+  const marginPerUnit = sellPrice > 0 ? sellPrice - buyPrice - transportFee : 0;
+  const marginPct     = buyPrice > 0 && sellPrice > 0 ? (marginPerUnit / sellPrice * 100) : 0;
+  const totalMargin   = marginPerUnit * qty;
+  const monthlyMargin = totalMargin > 0 && monthUsage > 0 && qty > 0
+    ? marginPerUnit * monthUsage : 0;
+
+  const recVeh  = qty > 0 ? recommendVehicle(f.palletType, qty) : null;
+  const vehCaps = DELIVERY_QTY[f.palletType] || {};
+  const totalWeight = qty > 0 && pInfo ? (qty * pInfo.weight / 1000).toFixed(2) : null;
+
+  const tfRange = TRANSPORT_FEE[f.transportQtyType];
+  const tfAvg   = tfRange ? Math.round((tfRange.min + tfRange.max) / 2) : 0;
+
+  // ── 3D 시뮬레이션 계산 ──
+  const P3 = parseSize(pInfo?.size);
+  const box3 = { L: parseFloat(f.boxL) || 0, W: parseFloat(f.boxW) || 0, H: parseFloat(f.boxH) || 0 };
+  const maxH3 = parseFloat(f.maxH) || 1500;
+  const pack3 = (box3.L && box3.W) ? packLayer(P3.L, P3.W, box3.L, box3.W) : null;
+  const layers3 = (pack3 && pack3.n > 0 && box3.H) ? Math.max(0, Math.floor((maxH3 - P3.H) / box3.H)) : 0;
+  const totalBox3 = pack3 ? pack3.n * layers3 : 0;
+  const fillPct3 = (totalBox3 && maxH3 > P3.H)
+    ? (box3.L * box3.W * box3.H * totalBox3) / (P3.L * P3.W * (maxH3 - P3.H)) * 100 : 0;
+  const overhang3 = !!(box3.L && box3.W) && (!pack3 || pack3.n === 0);
+  const storeQty3 = parseInt(String(f.storeQty).replace(/,/g, '')) || 0;
+  const stack3 = parseInt(f.storeStack) || 1;
+  const aisle3 = parseFloat(f.aisle) || 1.6;
+  const bays3 = storeQty3 ? Math.ceil(storeQty3 / stack3) : 0;
+  const areaM2 = bays3 * (P3.L * P3.W / 1e6) * aisle3;
+  const pyeong3 = areaM2 / 3.3058;
+  const store3 = { bays: bays3, stack: stack3 };
+
+  // 현재단가 절감 계산 (단가 기준)
+  const savingPerUnit = currentPrice > 0 && sellPrice > 0 ? currentPrice - sellPrice : 0;
+  const savingPct     = currentPrice > 0 && sellPrice > 0 ? (savingPerUnit / currentPrice * 100) : 0;
+  const monthlySaving = savingPerUnit > 0 && monthUsage > 0 ? savingPerUnit * monthUsage : 0;
+
+  // 고객정보 기반 견적 비교
+  const cmpDiffNew  = (currentPrice > 0 && monthUsage > 0 && newPrice7  !== null) ? (currentPrice - newPrice7)  * monthUsage : 0;
+  const cmpDiffUsed = (currentPrice > 0 && monthUsage > 0 && usedPrice7 !== null) ? (currentPrice - usedPrice7) * monthUsage : 0;
+  const cmpPctNew   = (currentPrice > 0 && newPrice7  !== null) ? ((currentPrice - newPrice7)  / currentPrice * 100) : 0;
+  const cmpPctUsed  = (currentPrice > 0 && usedPrice7 !== null) ? ((currentPrice - usedPrice7) / currentPrice * 100) : 0;
+  const cmpDiff = f.conditionView === '신품' ? cmpDiffNew : cmpDiffUsed;
+  const cmpPct  = f.conditionView === '신품' ? cmpPctNew  : cmpPctUsed;
+
+  // ── 업무일지 텍스트 ──
+  const logText = (() => {
+    const priceForCalc = f.conditionView === '중고' ? usedPrice7 : newPrice7;
+    const salesPerYear = monthUsage > 0 && priceForCalc
+      ? (priceForCalc * monthUsage * 12 / 1e8).toFixed(2) : null;
+
+    const extraParts = [
+      f.exportCountry ? `${f.exportCountry} 등 수출` : '',
+      f.existingUse   ? `기존 ${f.existingUse} 사용` : '',
+      f.competitor    ? `${f.competitor} 사용` : '',
+    ].filter(Boolean);
+
+    const deliveryLabel = f.transportQtyType === '도착도'
+      ? `도착도(${f.transportFeeType === '운반비별도' ? '운반비 별도' : f.transportFeeType === '없음' ? '운반비 없음' : `운반비 ${fmt(feeAmt)}원/${f.transportFeeType === '매당' ? '매' : '차량'}`})`
+      : '상차도';
+
+    const lines = [
+      'S3 유니트영업',
+      `1. 업체명 : ${f.company || '(미입력)'}`,
+      '2. 업무내용',
+      '   - S3 제안',
+      `     ${f.location ? f.location + ', ' : ''}${f.product || ''}`.trim() || null,
+      extraParts.length > 0 ? `     ${extraParts.join(', ')}` : null,
+      `     ${f.palletType} 제안 (${pInfo?.size || ''} 규격), ${deliveryLabel}`,
+      monthUsage > 0 ? `     물동량 ${fmt(monthUsage)}매/월` +
+        (salesPerYear ? `, 예상매출 : ${salesPerYear}억/년` +
+          (f.conditionView === '모두' ? ` (신품 ${pr(newPrice7)}원/중고 ${pr(usedPrice7)}원)` :
+           f.conditionView === '신품' ? ` (신품 ${pr(newPrice7)}원)` :
+           ` (중고 ${pr(usedPrice7)}원)`) : '') : null,
+    ];
+    return lines.filter(Boolean).join('\n');
+  })();
+
+  // ── 색상 ──
+  const C = {
+    primary: '#123c7a', accent: '#e0a32e', bg: '#eef0f4', card: '#e8edf2',
+    border: '#e5e7eb', muted: '#6b7280', green: '#16a34a', red: '#dc2626',
+    yellow: '#92400e', blueBg: '#eff6ff', greenBg: '#f0fdf4', redBg: '#fef2f2', amberBg: '#fffbeb',
+  };
+  // ── 입체(뉴모피즘) 토큰 — 운송견적 앱과 동일 체계 ──
+  const RAISED   = '6px 6px 12px #c8cdd2,-6px -6px 12px #ffffff';   // 볼록한 카드
+  const RAISED_S = '4px 4px 8px #c3c8cd,-3px -3px 7px #ffffff';     // 작은 볼록 요소
+  const SUNK     = 'inset 3px 3px 7px #ccd2d8, inset -3px -3px 7px #ffffff'; // 오목한 패널
+  const KEYCAP   = '0 4px 0 #4a6a88, inset 0 1px 0 rgba(255,255,255,0.6)';   // 눌리는 키캡
+
+  const card    = { background: C.card, borderRadius: 14, border: 'none', padding: '14px 16px', marginBottom: 10, boxShadow: RAISED };
+  const label   = { fontSize: 11, fontWeight: 700, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 5, display: 'block' };
+  const rowStyle= { display: 'flex', gap: 8, marginBottom: 10 };
+  const secTitle= { fontSize: 13, fontWeight: 800, color: C.primary, marginBottom: 10, paddingBottom: 6, borderBottom: `1px solid rgba(18,60,122,0.13)`, display: 'flex', alignItems: 'center', gap: 6 };
+  const btnPri  = { background: 'linear-gradient(135deg,#1e40af,#2563eb)', color: '#fff', border: 'none', borderRadius: 10, padding: '13px 0', width: '100%', fontWeight: 700, fontSize: 15, cursor: 'pointer', boxShadow: '0 3px 12px rgba(37,99,235,.35)' };
+  const btnSec  = {
+    background: 'linear-gradient(180deg,#dbe8f7 0%,#b8d0ed 100%)', color: C.primary,
+    borderTop: '1.5px solid #e8f0fa', borderLeft: '1.5px solid #d0e2f4',
+    borderRight: '1.5px solid #7a9fc0', borderBottom: '3px solid #5a7fa0',
+    borderRadius: 10, padding: '11px 0', width: '100%', fontWeight: 700, fontSize: 14, cursor: 'pointer',
+    boxShadow: KEYCAP,
+  };
+  const btnGhost= { background: '#e8edf2', color: C.muted, border: 'none', borderRadius: 10, padding: '11px 0', width: '100%', fontWeight: 700, fontSize: 13, cursor: 'pointer', boxShadow: RAISED_S };
+  const inset   = (bg) => ({ background: bg, borderRadius: 10, boxShadow: SUNK, border: 'none' });
+
+  const doCopy = async (text, ref, setDone) => {
+    let ok = false;
+    if (navigator.clipboard && window.isSecureContext !== false) {
+      try { await navigator.clipboard.writeText(text); ok = true; } catch {}
+    }
+    if (!ok) {
+      const ta = ref?.current;
+      if (ta) { ta.select(); ta.setSelectionRange(0, 99999); try { ok = document.execCommand('copy'); } catch {} }
+    }
+    if (ok) { setDone(true); setTimeout(() => setDone(false), 2000); }
+  };
+
+  const pickCostFile = (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const rd = new FileReader();
+    rd.onload = ev => applyCost(String(ev.target.result || ''));
+    rd.readAsText(file, 'utf-8');
+    e.target.value = '';
+  };
+
+  // ── PDF 인쇄 (고객 전달물 — 매입가는 절대 인쇄하지 않는다) ──
+  const handlePrint = () => {
+    const today = new Date().toLocaleDateString('ko-KR', { year:'numeric', month:'2-digit', day:'2-digit' });
+    const newP  = pr(newPrice7);
+    const usedP = pr(usedPrice7);
+    const vehRow = recVeh && qty > 0
+      ? `<tr><td>권장 차량</td><td>${recVeh} 1대 (최대 ${fmt(vehCaps[recVeh])}매)</td></tr>` : '';
+    const weightRow = totalWeight ? `<tr><td>총 중량</td><td>${totalWeight}톤</td></tr>` : '';
+    // 3D를 한 번이라도 연 경우에만 스냅샷·계산 블록을 넣는다
+    const snap = (sim3d && simRef.current.snap) ? simRef.current.snap() : null;
+    const simRows = simMode === 'cargo' && totalBox3 > 0 ? `
+  <tr><td>화물 규격</td><td class="r">${box3.L}×${box3.W}×${box3.H}mm</td></tr>
+  <tr><td>단당 적재</td><td class="r">${pack3.n}개</td></tr>
+  <tr><td>적재 단수</td><td class="r">${layers3}단 (최대높이 ${fmt(maxH3)}mm)</td></tr>
+  <tr style="font-weight:700"><td>유니트당 총 적재</td><td class="r">${fmt(totalBox3)}개</td></tr>
+  <tr style="font-weight:700;color:#16a34a"><td>적재 효율</td><td class="r">${fillPct3.toFixed(0)}%</td></tr>`
+      : simMode === 'store' && bays3 > 0 ? `
+  <tr><td>보관 수량</td><td class="r">${fmt(storeQty3)}매 (${stack3}단 적치)</td></tr>
+  <tr><td>적치 위치</td><td class="r">${fmt(bays3)}개소</td></tr>
+  <tr style="font-weight:700"><td>필요 면적</td><td class="r">${areaM2.toFixed(1)}㎡ (${pyeong3.toFixed(1)}평)</td></tr>
+  <tr><td>통로 계수</td><td class="r">×${aisle3}</td></tr>` : '';
+    const sim3dBlock = snap ? `
+<div class="sec">3. 3D 시뮬레이션</div>
+<img src="${snap}" style="width:100%;border:1px solid #e2e8f0;border-radius:8px;margin-top:4px" />
+${simRows ? `<table><tr><th>항목</th><th>내용</th></tr>${simRows}</table>` : ''}` : '';
+
+    const savingBlock = currentPrice > 0 && sellPrice > 0 ? `
+<div class="sec">${snap ? 4 : 3}. 절감 효과</div>
+<table>
+  <tr><th>항목</th><th>내용</th></tr>
+  <tr><td>현재 단가 (고객사)</td><td class="r">${fmt(currentPrice)}원/매</td></tr>
+  <tr><td>${f.palletType} 제안 단가</td><td class="r">${fmt(sellPrice)}원/매</td></tr>
+  <tr style="font-weight:700;color:#16a34a"><td>매당 절감</td><td class="r">▼ ${fmt(savingPerUnit)}원 (${savingPct.toFixed(1)}%)</td></tr>
+  ${monthUsage > 0 ? `<tr style="font-weight:700;color:#16a34a"><td>월 절감 (${fmt(monthUsage)}매)</td><td class="r">▼ ${fmt(savingPerUnit * monthUsage)}원</td></tr>` : ''}
+  ${monthUsage > 0 ? `<tr style="font-weight:700;color:#16a34a"><td>연간 절감 예상</td><td class="r">▼ ${fmt(savingPerUnit * monthUsage * 12)}원</td></tr>` : ''}
+</table>` : '';
+
+    const pdfHtml = `<!DOCTYPE html>
+<html lang="ko"><head><meta charset="UTF-8">
+<title>당사 S3 유니트 제안서 — ${f.company || '고객사'}</title>
+<style>
+@page{size:A4;margin:16mm}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+body{font-family:'Malgun Gothic','맑은 고딕','Apple SD Gothic Neo',sans-serif;color:#1a1a1a;font-size:11px;line-height:1.6}
+.hd{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid #123c7a;padding-bottom:10px;margin-bottom:14px}
+.hd .l .sub{font-size:9px;color:#123c7a;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.hd .l b{font-size:18px;color:#0f172a;display:block;margin-top:3px}
+.hd .r{text-align:right;font-size:9px;color:#64748b;line-height:1.8}
+.to{font-size:13px;font-weight:700;color:#0f172a;margin-bottom:2px}
+.sub2{font-size:10px;color:#64748b;margin-bottom:16px}
+.kpi{display:flex;gap:10px;margin:14px 0}
+.kpi .b{flex:1;border:1px solid #e2e8f0;border-radius:8px;padding:10px;text-align:center}
+.kpi .b.hl{background:#eff6ff;border-color:#93c5fd}
+.kpi .b.g{background:#f0fdf4;border-color:#86efac}
+.kpi .lbl{font-size:9px;color:#64748b;margin-bottom:4px}
+.kpi .v{font-size:16px;font-weight:800;color:#123c7a}
+.kpi .v small{font-size:10px;font-weight:500;margin-left:2px}
+.kpi.two .b .v{font-size:18px}
+.sec{font-size:11.5px;font-weight:700;color:#123c7a;border-left:4px solid #123c7a;padding-left:8px;margin:16px 0 6px}
+table{width:100%;border-collapse:collapse;margin-top:4px;font-size:10.5px}
+th{background:#123c7a;color:#fff;padding:7px 10px;font-weight:700;text-align:left}
+td{padding:6px 10px;border-bottom:1px solid #e5e7eb}
+tr:last-child td{border-bottom:none}
+tr:nth-child(even) td{background:#f8fafc}
+td.r{text-align:right}
+.notice{background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:10px 12px;margin-top:14px;font-size:9.5px;color:#64748b;line-height:1.7}
+.footer{margin-top:20px;padding-top:12px;border-top:1px solid #e5e7eb;font-size:9px;color:#9ca3af;text-align:center}
+.noprint{position:fixed;top:14px;right:14px;background:#123c7a;color:#fff;border:none;padding:9px 18px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
+</style>
+</head><body>
+<button class="noprint" onclick="window.print()">📄 PDF로 저장 / 인쇄</button>
+<div class="hd">
+  <div class="l">
+    <div class="sub">당사 · 당사</div>
+    <b>유니트 제안서</b>
+  </div>
+  <div class="r">작성일 ${today}<br/>S3 재판매 유니트 견적</div>
+</div>
+<div class="to">${f.company || '고객사'} 귀중</div>
+<div class="sub2">${f.palletType} 유니트 납품 제안</div>
+
+<div class="kpi two">
+  <div class="b hl">
+    <div class="lbl">✨ 신품 단가</div>
+    <div class="v">${newP}<small>원/매</small></div>
+  </div>
+  <div class="b g">
+    <div class="lbl">♻️ 중고 단가</div>
+    <div class="v">${usedP}<small>원/매</small></div>
+  </div>
+</div>
+
+<div class="sec">1. 유니트 정보</div>
+<table>
+  <tr><th>항목</th><th>내용</th></tr>
+  <tr><td>유니트 유형</td><td>${f.palletType}</td></tr>
+  <tr><td>규격</td><td>${pInfo?.size || '-'}</td></tr>
+  <tr><td>단위 중량</td><td>${pInfo ? fmtW(pInfo.weight) + 'kg' : '-'}</td></tr>
+  ${qty > 0 ? `<tr><td>납품 수량</td><td>${fmt(qty)}매/회</td></tr>` : ''}
+  ${monthUsage > 0 ? `<tr><td>월 사용량</td><td>${fmt(monthUsage)}매</td></tr>` : ''}
+  ${weightRow}
+  ${vehRow}
+</table>
+
+<div class="sec">2. 제안 단가</div>
+<table>
+  <tr><th>구분</th><th>단가 (원/매)</th></tr>
+  <tr style="font-weight:700;background:#eff6ff"><td>신품</td><td class="r" style="color:#1e40af">${newP}</td></tr>
+  <tr style="font-weight:700;background:#f0fdf4"><td>중고</td><td class="r" style="color:#16a34a">${usedP}</td></tr>
+  ${transportFee > 0 ? `<tr><td>운반비 (${f.transportQtyType})</td><td class="r">${fmt(transportFee)}</td></tr>` : ''}
+</table>
+
+${sim3dBlock}
+${savingBlock}
+
+<div class="notice">
+  ※ 본 제안서는 개략 견적입니다.<br/>
+  ※ 실제 계약 단가는 수량·납기조건·운반 동선에 따라 변동될 수 있습니다.<br/>
+  ※ 정식 계약 시 별도 확정 견적서를 제공합니다.<br/>
+  ${f.memo ? '※ ' + f.memo : ''}
+</div>
+<div class="footer">당사 당사 · 유효기간 30일</div>
+</body></html>`;
+
+    const blob = new Blob([pdfHtml], { type: 'text/html;charset=utf-8' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url; a.target = '_blank'; a.rel = 'noopener';
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 3000);
+  };
+
+  const tabStyle = (active) => active ? {
+    flex: 1, padding: '9px 0', borderRadius: 9, fontSize: 13.5, cursor: 'pointer', fontWeight: 800,
+    letterSpacing: '-0.01em',
+    background: 'linear-gradient(180deg,#dbe8f7 0%,#b8d0ed 100%)', color: C.primary,
+    borderTop: '1.5px solid #e8f0fa', borderLeft: '1.5px solid #d0e2f4',
+    borderRight: '1.5px solid #7a9fc0', borderBottom: '3px solid #5a7fa0',
+    boxShadow: KEYCAP,
+  } : {
+    flex: 1, padding: '9px 0', borderRadius: 9, fontSize: 13.5, cursor: 'pointer', fontWeight: 600,
+    letterSpacing: '-0.01em',
+    background: 'transparent', color: 'rgba(255,255,255,0.62)', border: 'none', borderBottom: '3px solid transparent', boxShadow: 'none',
+  };
+
+  return (
+    <div style={{ background: C.bg, minHeight: '100vh' }}>
+      {/* 헤더 — 운송견적 앱과 동일한 다크 그라디언트 + 그림자로 층 분리 */}
+      <div style={{ background: 'linear-gradient(135deg, #1c2333 0%, #2d3748 100%)', padding: '15px 16px 12px', position: 'sticky', top: 0, zIndex: 100, boxShadow: '0 2px 10px rgba(0,0,0,0.35)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
+          <div style={{ background: 'linear-gradient(160deg,#fbbf24 0%,#d97706 100%)', borderRadius: 9, width: 34, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 3px 8px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.45)' }}>
+            <span style={{ fontSize: 17 }}>📦</span>
+          </div>
+          <div style={{ flex: 1, lineHeight: 1.25, minWidth: 0 }}>
+            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.7)', letterSpacing: 1, fontWeight: 500 }}>
+              <span style={{ color: '#ff4d4d', fontWeight: 800 }}>당사</span> · 당사
+            </div>
+            <div style={{ color: '#fff', fontWeight: 700, fontSize: 16, letterSpacing: '-0.02em' }}>S3 유니트 SYSTEM</div>
+          </div>
+          <button aria-label="매입가 데이터" onClick={() => { setCostStat(''); setShowData(true); }}
+            style={{ background: 'rgba(255,255,255,0.16)', border: '1px solid rgba(255,255,255,0.28)', borderRadius: 9, width: 34, height: 34, color: '#fff', fontSize: 16, cursor: 'pointer', flexShrink: 0 }}>⚙</button>
+        </div>
+        <div style={{ display: 'flex', gap: 8, marginTop: 12, background: 'rgba(0,0,0,0.28)', borderRadius: 12, padding: 5, boxShadow: 'inset 0 2px 5px rgba(0,0,0,0.4)' }}>
+          {[['quote','💰 견적'], ['table','📊 조건표']].map(([t, l]) => (
+            <button key={t} style={tabStyle(tab === t)} onClick={() => setTab(t)}>{l}</button>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ padding: '12px 12px 100px' }}>
+
+        {/* 매입가 잠금해제 — 앱에 암호문으로 내장, 비번 1회 입력 후 이 기기에 저장 */}
+        {!hasCost && hasEncCost() && (
+          <div style={{ ...card, background: 'linear-gradient(135deg, #1c2333 0%, #2d3748 100%)', boxShadow: '0 6px 16px rgba(0,0,0,0.3)' }}>
+            <div style={{ fontSize: 14, fontWeight: 800, color: '#fff', marginBottom: 3 }}>🔒 매입가 잠금해제</div>
+            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.72)', lineHeight: 1.6, marginBottom: 11 }}>
+              매입가는 암호화되어 있습니다. 비밀번호를 한 번만 입력하면 이 기기에 저장되어 다음부터는 바로 열립니다.
+            </div>
+            <input type="password" value={unlockPw} placeholder="비밀번호"
+              onChange={e => { setUnlockPw(e.target.value); setUnlockErr(''); }}
+              onKeyDown={e => { if (e.key === 'Enter') doUnlock(); }}
+              style={{ marginBottom: 9, background: 'rgba(255,255,255,0.95)' }} />
+            {unlockErr && <div style={{ fontSize: 12, color: '#fca5a5', fontWeight: 700, marginBottom: 8 }}>{unlockErr}</div>}
+            <button style={btnSec} disabled={unlockBusy} onClick={doUnlock}>
+              {unlockBusy ? '확인 중…' : '🔓 잠금해제'}
+            </button>
+            <button style={{ ...btnGhost, marginTop: 7, background: 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.8)', boxShadow: 'none' }}
+              onClick={() => { setCostStat(''); setShowData(true); }}>📥 매입가 JSON 직접 불러오기</button>
+          </div>
+        )}
+
+        {/* 암호문이 없는 배포본 — JSON 수동 등록 안내 */}
+        {!hasCost && !hasEncCost() && (
+          <div style={{ background: C.amberBg, border: '1px solid #fcd34d', borderRadius: 12, padding: '12px 14px', marginBottom: 10 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: C.yellow, marginBottom: 4 }}>⚠️ 매입가 데이터가 없습니다</div>
+            <div style={{ fontSize: 12, color: '#78350f', lineHeight: 1.6, marginBottom: 9 }}>
+              보안을 위해 매입가는 앱에 포함되어 있지 않습니다. 매입가 JSON을 한 번 불러오면 이 기기에만 저장되어 단가가 계산됩니다.
+            </div>
+            <button style={{ ...btnSec, borderColor: '#d97706', color: '#b45309', background: '#fffbeb' }}
+              onClick={() => { setCostStat(''); setShowData(true); }}>📥 매입가 불러오기</button>
+          </div>
+        )}
+
+        {tab === 'quote' && (
+          <>
+            {/* ─── 유니트 선택 ─── */}
+            <div style={card}>
+              <div style={secTitle}><span>🪵</span> 유니트 선택</div>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
+                <div style={{ flex: 1 }}>
+                  <span style={label}>유형</span>
+                  <select className="selChip" value={f.palletType} onChange={e => upd('palletType', e.target.value)}>
+                    {PALLET_KEYS.map(k => <option key={k} value={k}>{k}</option>)}
+                  </select>
+                </div>
+                <div style={{ width: 72 }}>
+                  <span style={label}>&nbsp;</span>
+                  <select
+                    value={f.conditionView}
+                    onChange={e => upd('conditionView', e.target.value)}
+                    className="selFlat" style={{ padding: '11px 4px' }}
+                  >
+                    <option value="모두">모두</option>
+                    <option value="신품">신품</option>
+                    <option value="중고">중고</option>
+                  </select>
+                </div>
+                <div style={{ width: 80 }}>
+                  <select
+                    value={f.marginRate}
+                    onChange={e => upd('marginRate', Number(e.target.value))}
+                    className="selFlat" style={{ padding: '11px 8px' }}
+                  >
+                    <option value={7}>기본</option>
+                    <option value={3}>최저가</option>
+                    <option value={5}>5%</option>
+                    <option value={10}>10%</option>
+                    <option value={15}>15%</option>
+                  </select>
+                </div>
+              </div>
+
+              {pInfo && (
+                <div style={{ ...inset('#e4ebf3'), padding: '13px 14px', marginTop: 11 }}>
+                  {/* 단가 표시: conditionView에 따라 */}
+                  {f.conditionView === '모두' && (
+                    <div style={{ display: 'flex', gap: 0, marginBottom: 10 }}>
+                      <div style={{ flex: 1, textAlign: 'center', paddingRight: 10, borderRight: `1px solid #bfdbfe` }}>
+                        <div style={{ fontSize: 11, color: '#1e40af', fontWeight: 700, marginBottom: 3 }}>✨ 신품 단가</div>
+                        <div style={{ fontSize: 22, fontWeight: 800, color: '#1e40af', lineHeight: 1.1 }}>
+                          {pr(newPrice7)}<span style={{ fontSize: 12, fontWeight: 500 }}>원</span>
+                        </div>
+                      </div>
+                      <div style={{ flex: 1, textAlign: 'center', paddingLeft: 10 }}>
+                        <div style={{ fontSize: 11, color: '#15803d', fontWeight: 700, marginBottom: 3 }}>♻️ 중고 단가</div>
+                        <div style={{ fontSize: 22, fontWeight: 800, color: '#15803d', lineHeight: 1.1 }}>
+                          {pr(usedPrice7)}<span style={{ fontSize: 12, fontWeight: 500 }}>원</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  {f.conditionView === '신품' && (
+                    <div style={{ textAlign: 'center', marginBottom: 10 }}>
+                      <div style={{ fontSize: 11, color: '#1e40af', fontWeight: 700, marginBottom: 3 }}>✨ 신품 단가</div>
+                      <div style={{ fontSize: 26, fontWeight: 800, color: '#1e40af', lineHeight: 1.1 }}>
+                        {pr(newPrice7)}<span style={{ fontSize: 13, fontWeight: 500 }}>원</span>
+                      </div>
+                    </div>
+                  )}
+                  {f.conditionView === '중고' && (
+                    <div style={{ textAlign: 'center', marginBottom: 10 }}>
+                      <div style={{ fontSize: 11, color: '#15803d', fontWeight: 700, marginBottom: 3 }}>♻️ 중고 단가</div>
+                      <div style={{ fontSize: 26, fontWeight: 800, color: '#15803d', lineHeight: 1.1 }}>
+                        {pr(usedPrice7)}<span style={{ fontSize: 13, fontWeight: 500 }}>원</span>
+                      </div>
+                    </div>
+                  )}
+                  {/* 기존 대비 비교 — 올라가면(▲) 연두, 내려가면(▼) 빨강 */}
+                  {hasCost && currentPrice > 0 && monthUsage > 0 && (() => {
+                    const rows = f.conditionView === '모두'
+                      ? [{ lbl: '신품', diff: cmpDiffNew, pct: cmpPctNew, ok: newPrice7 !== null },
+                         { lbl: '중고', diff: cmpDiffUsed, pct: cmpPctUsed, ok: usedPrice7 !== null }]
+                      : [{ lbl: null, diff: cmpDiff, pct: cmpPct, ok: (f.conditionView === '신품' ? newPrice7 : usedPrice7) !== null }];
+                    return rows.filter(r => r.ok).map(({ lbl, diff, pct }) => {
+                      const up = diff < 0;
+                      const clr = up ? '#16a34a' : '#dc2626';
+                      const bg  = up ? 'rgba(22,163,74,0.12)' : 'rgba(220,38,38,0.10)';
+                      return (
+                        <div key={lbl || 'single'} style={{ borderTop: `1px solid #bfdbfe`, marginTop: 4, background: bg, borderRadius: 8, padding: '8px 10px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontSize: 11, color: clr, fontWeight: 600 }}>
+                              {lbl ? `${lbl} ` : ''}기존 대비 ({fmt(monthUsage)}매/월)
+                            </span>
+                            <span style={{ fontSize: 15, fontWeight: 800, color: clr }}>
+                              {up ? '▲' : '▼'} {fmt(Math.abs(diff))}원 ({Math.abs(pct).toFixed(0)}%)
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    });
+                  })()}
+                  {/* 하단: 규격·중량 + 차량당 운반비 */}
+                  <div style={{ borderTop: `1px solid #bfdbfe`, paddingTop: 8 }}>
+                    <div style={{ display: 'flex', justifyContent: 'center', gap: 20 }}>
+                      <div style={{ fontSize: 12, color: C.muted }}>
+                        <span style={{ fontWeight: 600, color: '#374151' }}>규격</span> {pInfo.size}
+                      </div>
+                      <div style={{ fontSize: 12, color: C.muted }}>
+                        <span style={{ fontWeight: 600, color: '#374151' }}>중량</span> {fmtW(pInfo.weight)}kg
+                      </div>
+                    </div>
+                    {isDochakdo && f.transportFeeType === '운반비별도' && (
+                      <div style={{ marginTop: 7, textAlign: 'center', fontSize: 12, fontWeight: 700, color: '#dc2626', background: '#fef2f2', borderRadius: 7, padding: '5px 0' }}>
+                        🚚 운반비 별도{feeAmt > 0 ? ` ${fmt(feeAmt)}원/대` : ''}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* ─── 고객정보 (접이식) ─── */}
+            <div style={card}>
+              <div
+                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', marginBottom: prodOpen ? 10 : 0, paddingBottom: prodOpen ? 6 : 0, borderBottom: prodOpen ? `1px solid ${C.border}` : 'none' }}
+                onClick={() => setProdOpen(o => !o)}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 700, color: C.primary }}>
+                  <span>📋</span> 고객정보
+                  {!prodOpen && (f.product || f.location) && (
+                    <span style={{ fontSize: 11, fontWeight: 500, color: C.muted, marginLeft: 4 }}>— {f.location}{f.product ? ' · ' + f.product : ''}</span>
+                  )}
+                </div>
+                <span style={{ fontSize: 16, color: C.muted, transform: prodOpen ? 'rotate(0deg)' : 'rotate(180deg)', transition: 'transform .2s' }}>▲</span>
+              </div>
+              {prodOpen && (
+                <>
+                  <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
+                    <div style={{ flex: 5 }}>
+                      <span style={label}>고객사명</span>
+                      <input value={f.company} onChange={e => upd('company', e.target.value)}
+                        placeholder="예: (주)민승" style={{ padding: '10px 6px', fontSize: 12, background: f.company ? '#eff6ff' : '#fff' }} />
+                    </div>
+                    <div style={{ flex: '0 0 70px' }}>
+                      <span style={label}>소재지</span>
+                      <select value={f.location} onChange={e => upd('location', e.target.value)}
+                        style={{ width: '100%', padding: '10px 4px', border: `1px solid ${C.border}`, borderRadius: 8, background: '#eff6ff', color: '#111', fontSize: 12 }}>
+                        {['구미','대구','영천','안동','김해','창원','진주','제주','부산','양산','울산','포항'].map(v => <option key={v} value={v}>{v}</option>)}
+                      </select>
+                    </div>
+                    <div style={{ flex: 4 }}>
+                      <span style={label}>제품</span>
+                      <input value={f.product} onChange={e => upd('product', e.target.value)}
+                        placeholder="예: 자동차부품" style={{ padding: '10px 6px', fontSize: 12, background: f.product ? '#eff6ff' : '#fff' }} />
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <div style={{ flex: 1 }}>
+                      <span style={label}>수출국(선택)</span>
+                      <input value={f.exportCountry} onChange={e => upd('exportCountry', e.target.value)}
+                        placeholder="예: 미국,일본" style={{ padding: '10px 6px', fontSize: 12, background: f.exportCountry ? '#eff6ff' : '#fff' }} />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <span style={label}>기존사용</span>
+                      <select value={f.existingUse} onChange={e => upd('existingUse', e.target.value)}
+                        style={{ width: '100%', padding: '10px 4px', border: `1px solid ${C.border}`, borderRadius: 8, background: f.existingUse ? '#eff6ff' : '#fff', color: '#111', fontSize: 12 }}>
+                        <option value="">선택</option>
+                        <option value="플라스틱유니트">플라스틱유니트</option>
+                        <option value="목재유니트">목재유니트</option>
+                        <option value="중고유니트">중고유니트</option>
+                      </select>
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <span style={label}>경쟁사(선택)</span>
+                      <input value={f.competitor} onChange={e => upd('competitor', e.target.value)}
+                        placeholder="예: NPC" style={{ padding: '10px 6px', fontSize: 12, background: f.competitor ? '#eff6ff' : '#fff' }} />
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* ─── 판매조건 (접이식) ─── */}
+            <div style={card}>
+              <div
+                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', marginBottom: saleOpen ? 10 : 0, paddingBottom: saleOpen ? 6 : 0, borderBottom: saleOpen ? `1px solid ${C.border}` : 'none' }}
+                onClick={() => setSaleOpen(o => !o)}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 700, color: C.primary }}>
+                  <span>🚚</span> 판매조건
+                  {!saleOpen && (
+                    <span style={{ fontSize: 11, fontWeight: 500, color: C.muted, marginLeft: 4 }}>
+                      {f.transportQtyType}{f.transportQtyType === '도착도' && f.transportFeeType !== '없음' ? ` · ${f.transportFeeType}` : ''}
+                    </span>
+                  )}
+                </div>
+                <span style={{ fontSize: 16, color: C.muted, transform: saleOpen ? 'rotate(0deg)' : 'rotate(180deg)', transition: 'transform .2s' }}>▲</span>
+              </div>
+              {saleOpen && (
+              <>
+              <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
+                <div style={{ flex: '0 0 78px' }}>
+                  <select value={f.recoveryRate} onChange={e => upd('recoveryRate', e.target.value)}
+                    style={{ width: '100%', padding: '11px 6px', border: `1px solid ${C.border}`, borderRadius: 8, background: '#eff6ff', color: '#374151', fontSize: 13, fontWeight: 600, height: '100%' }}>
+                    <option value="">회수율</option>
+                    <option value="0%">0%</option>
+                    <option value="30%">30%</option>
+                    <option value="50%">50%</option>
+                    <option value="70%">70%</option>
+                  </select>
+                </div>
+                {['상차도', '도착도'].map(t => (
+                  <button key={t}
+                    style={f.transportQtyType === t ? {
+                      flex: 1, padding: '10px 0', borderRadius: 10, fontSize: 14, fontWeight: 800, cursor: 'pointer',
+                      background: 'linear-gradient(180deg,#dbe8f7 0%,#b8d0ed 100%)', color: C.primary,
+                      borderTop: '1.5px solid #e8f0fa', borderLeft: '1.5px solid #d0e2f4',
+                      borderRight: '1.5px solid #7a9fc0', borderBottom: '3px solid #5a7fa0',
+                      boxShadow: KEYCAP,
+                    } : {
+                      flex: 1, padding: '10px 0', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer',
+                      background: '#e8edf2', color: C.muted, border: 'none', borderBottom: '3px solid transparent',
+                      boxShadow: RAISED_S,
+                    }}
+                    onClick={() => {
+                      upd('transportQtyType', t);
+                      if (t === '상차도') { upd('transportFee', ''); upd('transportFeeType', '없음'); }
+                      if (t === '도착도' && f.deliveryQtyType === '100매이하' && (f.transportFeeType === '없음' || f.transportFeeType === '운반비별도')) upd('transportFeeType', '매당');
+                    }}>
+                    {t}
+                  </button>
+                ))}
+              </div>
+              {f.transportQtyType === '도착도' && (
+                <>
+                  <div style={{ display: 'flex', gap: 5, alignItems: 'flex-end', marginTop: 2 }}>
+                    <div style={{ flex: '0 0 88px' }}>
+                      <div style={{ fontSize: 10, fontWeight: 700, color: C.muted, marginBottom: 4 }}>수량</div>
+                      <select
+                        value={f.deliveryQtyType}
+                        onChange={e => { upd('deliveryQtyType', e.target.value); upd('deliveryQtyCustom', ''); if (e.target.value === '100매이하' && (f.transportFeeType === '없음' || f.transportFeeType === '운반비별도')) upd('transportFeeType', '매당'); }}
+                        style={{ width: '100%', padding: '9px 4px', border: `1.5px solid ${C.border}`, borderRadius: 8, background: '#f8fafc', color: '#374151', fontWeight: 600, fontSize: 12 }}>
+                        <option value="100매이하">100매↓</option>
+                        <option value="200매">200매↑</option>
+                        <option value="직접입력">직접입력</option>
+                      </select>
+                    </div>
+                    {f.deliveryQtyType === '직접입력' && (
+                      <div style={{ flex: '0 0 64px' }}>
+                        <div style={{ fontSize: 10, fontWeight: 700, color: C.muted, marginBottom: 4 }}>매수</div>
+                        <input type="number" inputMode="numeric" value={f.deliveryQtyCustom}
+                          onChange={e => upd('deliveryQtyCustom', e.target.value)}
+                          placeholder="매" autoFocus
+                          style={{ width: '100%', padding: '9px 6px', fontSize: 12 }} />
+                      </div>
+                    )}
+                    <div style={{ flex: '0 0 80px' }}>
+                      <div style={{ fontSize: 10, fontWeight: 700, color: C.muted, marginBottom: 4, display: 'flex', alignItems: 'center', gap: 3 }}>
+                        운반비
+                        {f.deliveryQtyType === '100매이하' && (
+                          <span style={{ color: '#dc2626', fontWeight: 700, fontSize: 10 }}>(필수)</span>
+                        )}
+                      </div>
+                      <select
+                        value={f.transportFeeType}
+                        onChange={e => { upd('transportFeeType', e.target.value); upd('transportFee', ''); }}
+                        style={{ width: '100%', padding: '9px 4px', border: `1.5px solid ${f.deliveryQtyType === '100매이하' && f.transportFeeType === '없음' ? '#dc2626' : C.primary}`, borderRadius: 8, background: C.blueBg, color: C.primary, fontWeight: 700, fontSize: 12 }}>
+                        {f.deliveryQtyType !== '100매이하' && <option value="없음">없음</option>}
+                        <option value="매당">매당</option>
+                        <option value="차량당">차량당</option>
+                        {f.deliveryQtyType !== '100매이하' && <option value="운반비별도">운반비 별도</option>}
+                      </select>
+                    </div>
+                    {(f.transportFeeType === '매당' || f.transportFeeType === '차량당' || f.transportFeeType === '운반비별도') && (
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 10, fontWeight: 700, color: C.muted, marginBottom: 4 }}>
+                          {f.transportFeeType === '매당' ? '원/매' : f.transportFeeType === '차량당' ? '원/차량' : '별도금액'}
+                        </div>
+                        <input
+                          type="text" inputMode="numeric"
+                          value={f.transportFee}
+                          onChange={e => {
+                            const raw = e.target.value.replace(/,/g, '');
+                            if (/^\d*$/.test(raw)) upd('transportFee', raw ? Number(raw).toLocaleString() : '');
+                          }}
+                          placeholder="금액 입력"
+                          style={{ width: '100%', padding: '9px 6px', fontSize: 12 }} />
+                      </div>
+                    )}
+                  </div>
+                  {isDochakdo && f.deliveryQtyType === '100매이하'
+                    && (f.transportFeeType === '매당' || f.transportFeeType === '차량당')
+                    && !feeAmt && (
+                    <div style={{ marginTop: 7, padding: '7px 10px', background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: 8, fontSize: 12, color: '#dc2626', fontWeight: 700 }}>
+                      ⚠️ 운반비 입력 필수
+                    </div>
+                  )}
+                </>
+              )}
+              </>
+              )}
+            </div>
+
+            {/* ─── 단가비교 (접이식) ─── */}
+            <div style={card}>
+              <div
+                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', marginBottom: custOpen ? 10 : 0, paddingBottom: custOpen ? 6 : 0, borderBottom: custOpen ? `1px solid ${C.border}` : 'none' }}
+                onClick={() => setCustOpen(o => !o)}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 700, color: C.primary }}>
+                  <span>🏢</span> 단가비교
+                  {!custOpen && f.company && (
+                    <span style={{ fontSize: 12, fontWeight: 500, color: C.muted, marginLeft: 4 }}>— {f.company}</span>
+                  )}
+                </div>
+                <span style={{ fontSize: 16, color: C.muted, transform: custOpen ? 'rotate(0deg)' : 'rotate(180deg)', transition: 'transform .2s' }}>▲</span>
+              </div>
+              {custOpen && (
+                <>
+                  <span style={label}>고객사명</span>
+                  <input value={f.company} onChange={e => upd('company', e.target.value)}
+                    placeholder="예: (주)민승식품" style={{ marginBottom: 10, padding: '10px 6px', fontSize: 12, background: f.company ? '#eff6ff' : '#fff' }} />
+                  <div style={rowStyle}>
+                    <div style={{ flex: 1 }}>
+                      <span style={label}>월 사용량 (매)</span>
+                      <input type="text" inputMode="numeric" value={f.monthUsage}
+                        onChange={e => { const r = e.target.value.replace(/,/g,''); if(/^\d*$/.test(r)) upd('monthUsage', r ? Number(r).toLocaleString() : ''); }}
+                        placeholder="예: 200" style={{ padding: '10px 6px', fontSize: 12, background: f.monthUsage ? '#eff6ff' : '#fff' }} />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <span style={label}>현재 단가 (선택)</span>
+                      <input type="text" inputMode="numeric" value={f.currentPrice}
+                        onChange={e => { const r = e.target.value.replace(/,/g,''); if(/^\d*$/.test(r)) upd('currentPrice', r ? Number(r).toLocaleString() : ''); }}
+                        placeholder="예: 10,000" style={{ padding: '10px 6px', fontSize: 12, background: f.currentPrice ? '#eff6ff' : '#fff' }} />
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+            {/* 입력수정/저장 — 접이 외부 */}
+            <div style={{ display: 'flex', gap: 8, marginBottom: 10, marginTop: -4 }}>
+              <button style={{ ...btnGhost, flex: 2, fontSize: 12 }}
+                onClick={() => setF(p => ({ ...INIT, palletType: p.palletType }))}>
+                ← 입력수정 / 초기화
+              </button>
+              <button style={{ ...btnSec, flex: 1, fontSize: 13 }}
+                onClick={() => setShowSaveMenu(true)}>
+                📋 저장
+              </button>
+            </div>
+
+            {/* ─── 3D 시뮬레이션 ─── */}
+            <div style={{ ...card, ...(simFull ? { position: 'fixed', inset: 0, zIndex: 300, margin: 0, borderRadius: 0, overflowY: 'auto' } : {}) }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer',
+                marginBottom: sim3d ? 10 : 0, paddingBottom: sim3d ? 6 : 0, borderBottom: sim3d ? `1px solid ${C.border}` : 'none' }}
+                onClick={() => { if (!simFull) setSim3d(o => !o); }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 700, color: C.primary }}>
+                  <span>🧊</span> 3D 시뮬레이션
+                  {!sim3d && <span style={{ fontSize: 11, fontWeight: 500, color: C.muted, marginLeft: 4 }}>— 적재·보관을 눈으로 보여주기</span>}
+                </div>
+                {simFull
+                  ? <button onClick={e => { e.stopPropagation(); setSimFull(false); }}
+                      style={{ border: 'none', background: C.primary, color: '#fff', borderRadius: 8, padding: '6px 12px', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>✕ 닫기</button>
+                  : <span style={{ fontSize: 16, color: C.muted, transform: sim3d ? 'rotate(0deg)' : 'rotate(180deg)', transition: 'transform .2s' }}>▲</span>}
+              </div>
+
+              {sim3d && (
+                <>
+                  <div style={{ display: 'flex', gap: 5, marginBottom: 9 }}>
+                    {[['pallet','🪵 유니트'], ['cargo','📦 화물 적재'], ['store','🏭 창고 보관']].map(([m, l]) => (
+                      <button key={m} onClick={() => setSimMode(m)}
+                        style={{ flex: 1, padding: '9px 0', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                          border: `1.5px solid ${simMode === m ? C.primary : C.border}`,
+                          background: simMode === m ? C.primary : '#fff', color: simMode === m ? '#fff' : C.muted }}>{l}</button>
+                    ))}
+                  </div>
+
+                  <Sim3D mode={simMode} P={P3} pack={pack3} layers={layers3} box={box3} store={store3} simRef={simRef} full={simFull} />
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 6 }}>
+                    <span style={{ fontSize: 10.5, color: C.muted }}>손가락으로 돌리고 두 손가락으로 확대</span>
+                    {!simFull && (
+                      <button onClick={() => setSimFull(true)}
+                        style={{ border: `1px solid ${C.border}`, background: '#f3f4f6', color: C.muted, borderRadius: 7, padding: '4px 9px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>⛶ 크게 보기</button>
+                    )}
+                  </div>
+
+                  {/* 모드별 입력·결과 */}
+                  {simMode === 'pallet' && (
+                    <div style={{ marginTop: 9, background: C.blueBg, borderRadius: 8, padding: '9px 12px', fontSize: 12.5, color: '#1e40af', fontWeight: 600, textAlign: 'center' }}>
+                      {f.palletType} · {P3.L}×{P3.W}×{P3.H}mm · {pInfo ? fmtW(pInfo.weight) : '-'}kg
+                    </div>
+                  )}
+
+                  {simMode === 'cargo' && (
+                    <>
+                      <div style={{ display: 'flex', gap: 5, marginTop: 10 }}>
+                        {[['boxL','가로(mm)','400'], ['boxW','세로(mm)','300'], ['boxH','높이(mm)','250'], ['maxH','최대높이','1500']].map(([k, lb, ph]) => (
+                          <div key={k} style={{ flex: 1 }}>
+                            <div style={{ fontSize: 10, fontWeight: 700, color: C.muted, marginBottom: 4 }}>{lb}</div>
+                            <input type="number" inputMode="numeric" value={f[k]} onChange={e => upd(k, e.target.value)}
+                              placeholder={ph} style={{ padding: '9px 6px', fontSize: 12 }} />
+                          </div>
+                        ))}
+                      </div>
+                      {overhang3 ? (
+                        <div style={{ marginTop: 9, padding: '9px 12px', background: C.redBg, border: '1px solid #fca5a5', borderRadius: 8, fontSize: 12, color: C.red, fontWeight: 700 }}>
+                          ⚠️ 박스가 유니트({P3.L}×{P3.W}mm)보다 큽니다 — 오버행 발생
+                        </div>
+                      ) : totalBox3 > 0 && (
+                        <div style={{ marginTop: 9, background: C.greenBg, border: '1px solid #86efac', borderRadius: 8, padding: '10px 12px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-around', textAlign: 'center' }}>
+                            {[['단당', pack3.n + '개'], ['단수', layers3 + '단'], ['총', fmt(totalBox3) + '개'], ['적재효율', fillPct3.toFixed(0) + '%']].map(([l, v]) => (
+                              <div key={l}>
+                                <div style={{ fontSize: 10, color: C.muted, marginBottom: 2 }}>{l}</div>
+                                <div style={{ fontSize: 15, fontWeight: 800, color: '#15803d' }}>{v}</div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {simMode === 'store' && (
+                    <>
+                      <div style={{ display: 'flex', gap: 5, marginTop: 10 }}>
+                        <div style={{ flex: 1.4 }}>
+                          <div style={{ fontSize: 10, fontWeight: 700, color: C.muted, marginBottom: 4 }}>보관 수량(매)</div>
+                          <input type="text" inputMode="numeric" value={f.storeQty}
+                            onChange={e => { const r = e.target.value.replace(/,/g, ''); if (/^\d*$/.test(r)) upd('storeQty', r ? Number(r).toLocaleString() : ''); }}
+                            placeholder={monthUsage ? String(monthUsage) : '200'} style={{ padding: '9px 6px', fontSize: 12 }} />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: 10, fontWeight: 700, color: C.muted, marginBottom: 4 }}>단적</div>
+                          <select value={f.storeStack} onChange={e => upd('storeStack', e.target.value)}
+                            style={{ padding: '9px 4px', fontSize: 12, border: `1px solid ${C.border}`, borderRadius: 8 }}>
+                            {[1,2,3,4].map(v => <option key={v} value={v}>{v}단</option>)}
+                          </select>
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: 10, fontWeight: 700, color: C.muted, marginBottom: 4 }}>통로계수</div>
+                          <select value={f.aisle} onChange={e => upd('aisle', e.target.value)}
+                            style={{ padding: '9px 4px', fontSize: 12, border: `1px solid ${C.border}`, borderRadius: 8 }}>
+                            {['1.3','1.6','2.0'].map(v => <option key={v} value={v}>×{v}</option>)}
+                          </select>
+                        </div>
+                      </div>
+                      {bays3 > 0 && (
+                        <div style={{ marginTop: 9, background: C.blueBg, border: '1px solid #bfdbfe', borderRadius: 8, padding: '10px 12px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-around', textAlign: 'center' }}>
+                            {[['적치 위치', fmt(bays3) + '개소'], ['필요 면적', areaM2.toFixed(1) + '㎡'], ['평', pyeong3.toFixed(1) + '평']].map(([l, v]) => (
+                              <div key={l}>
+                                <div style={{ fontSize: 10, color: C.muted, marginBottom: 2 }}>{l}</div>
+                                <div style={{ fontSize: 15, fontWeight: 800, color: '#1e40af' }}>{v}</div>
+                              </div>
+                            ))}
+                          </div>
+                          {bays3 > 150 && <div style={{ fontSize: 10.5, color: C.muted, marginTop: 7, textAlign: 'center' }}>※ 화면에는 150개소까지만 표시됩니다</div>}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </>
+              )}
+            </div>
+
+            {/* ─── 하단 버튼 ─── */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <button style={btnPri} onClick={handlePrint}>
+                📄 제안서 PDF 저장 / 인쇄
+              </button>
+            </div>
+          </>
+        )}
+
+        {/* ═══ 단가표 탭 ═══ */}
+        {tab === 'table' && (
+          <>
+            <div style={card}>
+              <div style={{ ...secTitle, justifyContent: 'space-between' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span>💵</span> {showCost ? `매입가 / 제안단가(기본 ${f.marginRate || 7}%)` : `제안단가(기본 ${f.marginRate || 7}%)`}
+                </span>
+                <button onClick={toggleShowCost}
+                  style={{ border: `1px solid ${showCost ? '#dc2626' : C.border}`, background: showCost ? '#fef2f2' : '#f3f4f6',
+                    color: showCost ? '#dc2626' : C.muted, borderRadius: 7, padding: '4px 9px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
+                  {showCost ? '🙈 매입가 감추기' : '👁 매입가 보기'}
+                </button>
+              </div>
+              {showCost && (
+                <div style={{ background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: 7, padding: '6px 9px', fontSize: 11, color: '#dc2626', fontWeight: 700, marginBottom: 8 }}>
+                  ⚠️ 매입가 표시 중 — 고객에게 화면을 보여줄 때는 감추기
+                </div>
+              )}
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
+                  <thead>
+                    <tr style={{ background: C.primary, color: '#fff' }}>
+                      {['유형','Size','kg'].map(h => (
+                        <th key={h} style={{ padding: '7px 4px', fontWeight: 700, textAlign: 'center', whiteSpace: 'nowrap' }}>{h}</th>
+                      ))}
+                      {showCost && <th style={{ padding: '7px 4px', fontWeight: 700, textAlign: 'center', whiteSpace: 'nowrap' }}>신품</th>}
+                      <th style={{ padding: '7px 4px', fontWeight: 700, textAlign: 'center', whiteSpace: 'nowrap' }}>{`신품+${f.marginRate}%`}</th>
+                      {showCost && <th style={{ padding: '7px 4px', fontWeight: 700, textAlign: 'center', whiteSpace: 'nowrap' }}>중고</th>}
+                      <th style={{ padding: '7px 4px', fontWeight: 700, textAlign: 'center', whiteSpace: 'nowrap' }}>{`중고+${f.marginRate}%`}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {PALLET_KEYS.map((k, i) => {
+                      const s = PALLET_SPECS[k], c = cost[k] || {};
+                      const nc = typeof c.new  === 'number' ? c.new  : null;
+                      const uc = typeof c.used === 'number' ? c.used : null;
+                      const nP = nc !== null ? Math.round(nc * (1 + (f.marginRate||7)/100) / 10) * 10 : null;
+                      const uP = uc !== null ? Math.round(uc * (1 + (f.marginRate||7)/100) / 10) * 10 : null;
+                      return (
+                        <tr key={k} style={{ background: i % 2 === 0 ? '#fff' : '#f8fafc' }}>
+                          <td style={{ padding: '6px 4px', fontWeight: 700, textAlign: 'center', color: C.primary }}>{k}</td>
+                          <td style={{ padding: '6px 4px', textAlign: 'center', fontSize: 9, color: C.muted }}>{s.size}</td>
+                          <td style={{ padding: '6px 4px', textAlign: 'center', color: C.muted }}>{fmtW(s.weight)}</td>
+                          {showCost && <td style={{ padding: '6px 4px', textAlign: 'right', color: '#64748b' }}>{pr(nc)}</td>}
+                          <td style={{ padding: '6px 4px', textAlign: 'right', fontWeight: 700, color: '#1e40af' }}>{pr(nP)}</td>
+                          {showCost && <td style={{ padding: '6px 4px', textAlign: 'right', color: '#64748b' }}>{pr(uc)}</td>}
+                          <td style={{ padding: '6px 4px', textAlign: 'right', fontWeight: 700, color: C.green }}>{pr(uP)}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              {!hasCost && (
+                <div style={{ marginTop: 8, fontSize: 11.5, color: C.muted, textAlign: 'center' }}>
+                  매입가를 불러오면 단가가 계산됩니다.
+                </div>
+              )}
+            </div>
+
+            <div style={card}>
+              <div style={secTitle}><span>🚛</span> 납품수량 (차량별 최대)</div>
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
+                  <thead>
+                    <tr style={{ background: C.primary, color: '#fff' }}>
+                      <th style={{ padding: '7px 4px', textAlign: 'center' }}>유형</th>
+                      {VEHICLE_ORDER.map(v => <th key={v} style={{ padding: '7px 4px', textAlign: 'center', whiteSpace: 'nowrap' }}>{v}</th>)}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {Object.entries(DELIVERY_QTY).map(([k, caps], i) => (
+                      <tr key={k} style={{ background: i % 2 === 0 ? '#fff' : '#f8fafc' }}>
+                        <td style={{ padding: '6px 4px', fontWeight: 700, textAlign: 'center', color: C.primary }}>{k}</td>
+                        {VEHICLE_ORDER.map(v => (
+                          <td key={v} style={{ padding: '6px 4px', textAlign: 'center', fontWeight: caps[v] ? 600 : 400, color: caps[v] ? '#1e40af' : '#d1d5db' }}>
+                            {caps[v] ? fmt(caps[v]) : '—'}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <div style={{ fontSize: 10, color: C.muted, marginTop: 6 }}>
+                  ※ '~이하 최대구간' 기준 (예: 240 → 161~240매)
+                </div>
+              </div>
+            </div>
+
+            <div style={card}>
+              <div style={secTitle}><span>🚚</span> 운반비 기준</div>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <thead>
+                  <tr style={{ background: C.primary, color: '#fff' }}>
+                    {['구분','최소','최대','평균'].map(h => (
+                      <th key={h} style={{ padding: '8px', textAlign: 'center', fontWeight: 700 }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {Object.entries(TRANSPORT_FEE).map(([t, r], i) => (
+                    <tr key={t} style={{ background: i % 2 === 0 ? '#fff' : '#f8fafc' }}>
+                      <td style={{ padding: '8px', textAlign: 'center', fontWeight: 700 }}>{t}</td>
+                      <td style={{ padding: '8px', textAlign: 'right', color: C.muted }}>{fmt(r.min)}원</td>
+                      <td style={{ padding: '8px', textAlign: 'right', color: C.muted }}>{fmt(r.max)}원</td>
+                      <td style={{ padding: '8px', textAlign: 'right', fontWeight: 700, color: C.green }}>{fmt(Math.round((r.min + r.max) / 2))}원</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* ── 매입가 데이터 모달 ── */}
+      {showData && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 200, display: 'flex', alignItems: 'flex-end' }}
+          onClick={() => setShowData(false)}>
+          <div style={{ background: '#fff', borderRadius: '20px 20px 0 0', padding: '20px 16px 40px', width: '100%', maxWidth: 480, margin: '0 auto', maxHeight: '88vh', overflowY: 'auto' }}
+            onClick={e => e.stopPropagation()}>
+            <div style={{ textAlign: 'center', fontSize: 15, fontWeight: 800, color: C.primary, marginBottom: 4 }}>⚙ 매입가 데이터</div>
+            <div style={{ fontSize: 11.5, color: C.muted, textAlign: 'center', lineHeight: 1.6, marginBottom: 12 }}>
+              매입가는 앱에 포함되어 있지 않습니다.<br />불러온 데이터는 <b>이 기기에만</b> 저장되며 외부로 전송되지 않습니다.
+            </div>
+            <div style={{ background: hasCost ? C.greenBg : '#f3f4f6', border: `1px solid ${hasCost ? '#86efac' : C.border}`, borderRadius: 8, padding: '9px 12px', fontSize: 12, fontWeight: 700, color: hasCost ? '#15803d' : C.muted, marginBottom: 12, textAlign: 'center' }}>
+              {hasCost ? `✅ ${PALLET_KEYS.filter(k => cost[k]).length}개 규격 등록됨` : '⚠️ 등록된 매입가 없음'}
+            </div>
+
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#374151', marginBottom: 6 }}>1) 파일에서 불러오기</div>
+            <input ref={costFileRef} type="file" accept=".json,application/json" onChange={pickCostFile}
+              style={{ marginBottom: 12, fontSize: 12, padding: '8px' }} />
+
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#374151', marginBottom: 6 }}>2) 붙여넣기</div>
+            <textarea value={costText} onChange={e => setCostText(e.target.value)}
+              placeholder={'{"R11":{"new":00000,"used":00000}, "R12":{ ... } }'}
+              style={{ width: '100%', height: 110, fontSize: 12, padding: 10, border: `1px solid ${C.border}`, borderRadius: 8, fontFamily: 'monospace', resize: 'none', boxSizing: 'border-box' }} />
+            <button style={{ ...btnPri, marginTop: 8 }} onClick={() => applyCost(costText)}>💾 매입가 저장</button>
+            {costStat && (
+              <div style={{ marginTop: 8, fontSize: 12, fontWeight: 600, color: costStat.startsWith('❌') ? '#dc2626' : '#15803d', textAlign: 'center' }}>{costStat}</div>
+            )}
+
+            <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+              <button style={{ ...btnGhost, flex: 1, color: '#dc2626', borderColor: '#fca5a5', background: '#fef2f2' }} onClick={clearCost}>🗑️ 삭제</button>
+              <button style={{ ...btnGhost, flex: 1 }} onClick={() => setShowData(false)}>닫기</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── 요약 복사 모달 ── */}
+      {showModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 200, display: 'flex', alignItems: 'flex-end' }}
+          onClick={() => setShowModal(false)}>
+          <div style={{ background: '#222', borderRadius: '20px 20px 0 0', padding: '20px 16px 40px', width: '100%', maxWidth: 480, margin: '0 auto' }}
+            onClick={e => e.stopPropagation()}>
+            <div style={{ textAlign: 'center', fontSize: 14, fontWeight: 700, color: '#fff', marginBottom: 4 }}>📋 요약 복사</div>
+            <div style={{ fontSize: 11, color: '#9ca3af', textAlign: 'center', marginBottom: 12 }}>박스를 눌러 전체 선택 또는 복사 버튼을 누르세요.</div>
+            <textarea ref={textareaRef} readOnly
+              value={[
+                `[당사 S3 유니트 제안]`,
+                f.company ? `고객사: ${f.company}` : '',
+                `유니트: ${f.palletType} (${pInfo?.size})`,
+                `신품 단가: ${pr(newPrice7)}원/매 | 중고 단가: ${pr(usedPrice7)}원/매`,
+                qty > 0 ? `납품수량: ${fmt(qty)}매/회` : '',
+                monthUsage > 0 ? `월 사용량: ${fmt(monthUsage)}매` : '',
+                recVeh ? `권장차량: ${recVeh}` : '',
+                sellPrice > 0 ? `제안 단가: ${fmt(sellPrice)}원/매` : '',
+                currentPrice > 0 && savingPerUnit > 0 ? `절감효과: ${fmt(savingPerUnit)}원/매 (${savingPct.toFixed(1)}%)` : '',
+                f.memo ? `※ ${f.memo}` : '',
+                '유효 30일',
+              ].filter(Boolean).join('\n')}
+              onClick={e => { e.target.select(); e.target.setSelectionRange(0, 99999); }}
+              style={{ width: '100%', height: 200, fontSize: 12, padding: 10, border: `1px solid #374151`, borderRadius: 8, fontFamily: 'monospace', background: '#1a1a2e', color: '#e2e8f0', resize: 'none', boxSizing: 'border-box', lineHeight: 1.8 }}
+            />
+            <button style={{ ...btnPri, marginTop: 10 }} onClick={() => doCopy(textareaRef.current?.value || '', textareaRef, setCopied)}>
+              {copied ? '✅ 복사됨!' : '📋 클립보드 복사'}
+            </button>
+            <button style={{ ...btnGhost, marginTop: 8 }} onClick={() => setShowModal(false)}>닫기</button>
+          </div>
+        </div>
+      )}
+
+      {/* ── 저장 선택 메뉴 ── */}
+      {showSaveMenu && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 200, display: 'flex', alignItems: 'flex-end' }}
+          onClick={() => setShowSaveMenu(false)}>
+          <div style={{ background: '#fff', borderRadius: '20px 20px 0 0', padding: '20px 16px 40px', width: '100%', maxWidth: 480, margin: '0 auto' }}
+            onClick={e => e.stopPropagation()}>
+            <div style={{ textAlign: 'center', fontSize: 15, fontWeight: 800, color: '#123c7a', marginBottom: 16 }}>저장 방식 선택</div>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button style={{ flex: 1, padding: '18px 0', borderRadius: 12, border: '2px solid #123c7a', background: '#eff6ff', color: '#123c7a', fontWeight: 800, fontSize: 16, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}
+                onClick={() => { setShowSaveMenu(false); setShowModal(true); }}>
+                <span style={{ fontSize: 28 }}>📤</span>
+                공유
+                <span style={{ fontSize: 11, fontWeight: 500, color: '#6b7280' }}>카톡·문자 공유</span>
+              </button>
+              <button style={{ flex: 1, padding: '18px 0', borderRadius: 12, border: '2px solid #16a34a', background: '#f0fdf4', color: '#16a34a', fontWeight: 800, fontSize: 16, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}
+                onClick={() => { setShowSaveMenu(false); setShowLogModal(true); }}>
+                <span style={{ fontSize: 28 }}>📋</span>
+                업무일지
+                <span style={{ fontSize: 11, fontWeight: 500, color: '#6b7280' }}>업무일지 복사</span>
+              </button>
+            </div>
+            <button style={{ marginTop: 12, width: '100%', padding: '12px', borderRadius: 10, border: '1px solid #e5e7eb', background: '#f3f4f6', color: '#6b7280', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}
+              onClick={() => setShowSaveMenu(false)}>닫기</button>
+          </div>
+        </div>
+      )}
+
+      {/* ── 업무일지 모달 ── */}
+      {showLogModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 200, display: 'flex', alignItems: 'flex-end' }}
+          onClick={() => setShowLogModal(false)}>
+          <div style={{ background: '#222', borderRadius: '20px 20px 0 0', padding: '20px 16px 40px', width: '100%', maxWidth: 480, margin: '0 auto' }}
+            onClick={e => e.stopPropagation()}>
+            <div style={{ textAlign: 'center', fontSize: 14, fontWeight: 700, color: '#fff', marginBottom: 4 }}>📋 업무일지</div>
+            <div style={{ fontSize: 11, color: '#9ca3af', textAlign: 'center', marginBottom: 12 }}>견적 폼 입력값으로 자동 생성됩니다. 박스를 눌러 전체 선택 또는 복사 버튼을 누르세요.</div>
+            <textarea ref={logTextareaRef} readOnly value={logText}
+              onClick={e => { e.target.select(); e.target.setSelectionRange(0, 99999); }}
+              style={{ width: '100%', height: 180, fontSize: 12.5, padding: 12, border: `1px solid #374151`, borderRadius: 8, fontFamily: 'monospace', background: '#1a1a2e', color: '#e2e8f0', resize: 'none', boxSizing: 'border-box', lineHeight: 1.9 }}
+            />
+            <button style={{ ...btnPri, marginTop: 10 }} onClick={() => doCopy(logText, logTextareaRef, setLogCopied)}>
+              {logCopied ? '✅ 복사됨!' : '📋 복사'}
+            </button>
+            <button style={{ ...btnGhost, marginTop: 8 }} onClick={() => setShowLogModal(false)}>닫기</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+const container = document.getElementById('root');
+const root = ReactDOM.createRoot(container);
+root.render(React.createElement(S3App));
+</script>
+</body>
+</html>

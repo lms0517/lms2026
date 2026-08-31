@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#2563eb">
+<title>당사 영업 전문가 툴킷</title>
+<link rel="manifest" href='data:application/manifest+json,{"name":"당사 영업 툴킷","short_name":"당사툴킷","start_url":".","display":"standalone","background_color":"%232563eb","theme_color":"%232563eb","icons":[{"src":"data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 192 192%27%3E%3Cdefs%3E%3ClinearGradient id=%27g%27 x1=%270%27 y1=%270%27 x2=%271%27 y2=%271%27%3E%3Cstop offset=%270%27 stop-color=%27%232563eb%27/%3E%3Cstop offset=%271%27 stop-color=%27%2316a34a%27/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width=%27192%27 height=%27192%27 rx=%2740%27 fill=%27url(%23g)%27/%3E%3Ctext x=%2796%27 y=%27112%27 font-size=%2748%27 font-family=%27sans-serif%27 font-weight=%27bold%27 fill=%27white%27 text-anchor=%27middle%27%3EBM%3C/text%3E%3Ctext x=%2796%27 y=%27152%27 font-size=%2724%27 font-family=%27sans-serif%27 fill=%27%23bbf7d0%27 text-anchor=%27middle%27%3ETOOLKIT%3C/text%3E%3C/svg%3E","sizes":"192x192","type":"image/svg+xml"}]}'>
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='40' fill='%232563eb'/%3E%3Ctext x='96' y='118' font-size='48' font-family='sans-serif' font-weight='bold' fill='white' text-anchor='middle'%3EBM%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap" rel="stylesheet">
+
+<style>
+/* ═══════ Design System — "Professional Efficiency" (bm-sales-toolkit ideas.md) ═══════ */
+:root{
+  --blue:#2563eb; --blue-d:#1d4ed8; --blue-l:#eff6ff;
+  --green:#16a34a; --green-d:#15803d; --green-l:#e9f9ef;
+  --grad:linear-gradient(135deg,#2563eb 0%,#0ea5a4 55%,#16a34a 100%);
+  --bg:#f4f6fa; --card:#fff; --line:#e5eaf1; --line-d:#d3dce8;
+  --txt:#101828; --sub:#475467; --mut:#98a2b3;
+  --amber:#d97706; --amber-l:#fef3e2;
+  --r:12px; --r-sm:8px;
+  --sh:0 2px 8px rgba(16,24,40,.08); --sh-hv:0 8px 16px rgba(16,24,40,.12);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;}
+body{font-family:'Noto Sans KR',-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  background:var(--bg);color:var(--txt);font-size:15px;line-height:1.6;
+  display:flex;flex-direction:column;height:100vh;height:100dvh;overflow:hidden;}
+button{font-family:inherit;border:none;cursor:pointer;background:none;color:inherit;}
+input,select{font-family:inherit;font-size:15px;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.stagger>*{animation:fadeUp .35s ease-out both;}
+.stagger>*:nth-child(1){animation-delay:.02s}.stagger>*:nth-child(2){animation-delay:.07s}
+.stagger>*:nth-child(3){animation-delay:.12s}.stagger>*:nth-child(4){animation-delay:.17s}
+.stagger>*:nth-child(5){animation-delay:.22s}.stagger>*:nth-child(6){animation-delay:.27s}
+.stagger>*:nth-child(7){animation-delay:.32s}.stagger>*:nth-child(8){animation-delay:.37s}
+.stagger>*:nth-child(9){animation-delay:.42s}
+
+/* ═══════ 상단바 ═══════ */
+#top{flex-shrink:0;background:var(--grad);color:#fff;z-index:20;
+  padding:calc(env(safe-area-inset-top) + 11px) 16px 11px;display:flex;align-items:center;gap:10px;}
+#top .logo{width:36px;height:36px;border-radius:10px;background:#fff;color:var(--blue);
+  font-weight:800;font-size:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+#top .tt b{display:block;font-size:16px;letter-spacing:-.2px;}
+#top .tt span{font-size:11px;opacity:.85;display:block;margin-top:-2px;}
+#top .home{margin-left:auto;width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.18);
+  font-size:15px;display:flex;align-items:center;justify-content:center;}
+#top .home:active{background:rgba(255,255,255,.32);}
+
+/* ═══════ 메인 ═══════ */
+#main{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+.view{display:none;}
+.view.on{display:block;animation:fadeUp .25s ease-out;}
+.pad{padding:14px 14px 28px;}
+
+/* 히어로 */
+.hero{background:var(--grad);color:#fff;padding:26px 18px 24px;}
+.hero h1{font-size:25px;font-weight:800;letter-spacing:-.5px;line-height:1.3;margin-bottom:8px;}
+.hero p{font-size:13.5px;opacity:.93;line-height:1.6;margin-bottom:16px;}
+.hero .hbtn{display:inline-flex;align-items:center;gap:7px;background:#fff;color:var(--blue);
+  font-size:14.5px;font-weight:700;border-radius:10px;padding:12px 22px;box-shadow:var(--sh);transition:.15s;}
+.hero .hbtn:active{transform:scale(.96);}
+
+/* 통계 */
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:-18px;padding:0 14px;}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);
+  padding:14px 12px;text-align:center;}
+.stat .n{font-size:21px;font-weight:800;color:var(--blue);letter-spacing:-.4px;font-variant-numeric:tabular-nums;}
+.stat .n.g{color:var(--green);}
+.stat .l{font-size:11px;color:var(--sub);margin-top:1px;}
+.stat .s{font-size:10px;color:var(--mut);}
+
+/* 섹션 */
+.sec{margin-top:22px;}
+.sec-h{padding:0 16px;margin-bottom:10px;}
+.sec-h b{font-size:17px;font-weight:800;letter-spacing:-.3px;display:block;}
+.sec-h span{font-size:12.5px;color:var(--sub);}
+
+/* 사업 카드 */
+.bgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 14px;}
+.bcard{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);
+  padding:14px 13px;cursor:pointer;transition:.15s;display:flex;flex-direction:column;}
+.bcard:active{transform:scale(.97);box-shadow:var(--sh-hv);}
+.bcard .ic{width:40px;height:40px;border-radius:10px;background:var(--blue-l);font-size:20px;
+  display:flex;align-items:center;justify-content:center;margin-bottom:9px;}
+.bcard b{font-size:13.5px;letter-spacing:-.3px;line-height:1.35;}
+.bcard span{font-size:11px;color:var(--sub);line-height:1.45;margin-top:3px;flex:1;}
+.bcard .go{font-size:11.5px;color:var(--blue);font-weight:700;margin-top:8px;}
+
+/* CTA 밴드 */
+.cta{margin:22px 14px 0;background:var(--grad);border-radius:var(--r);padding:22px 16px;text-align:center;color:#fff;box-shadow:var(--sh);}
+.cta b{font-size:16.5px;display:block;letter-spacing:-.3px;}
+.cta span{font-size:12.5px;opacity:.92;display:block;margin:5px 0 13px;}
+.cta .cbtn{display:inline-flex;align-items:center;gap:6px;background:#fff;color:var(--blue);
+  font-weight:700;font-size:14px;border-radius:10px;padding:11px 20px;transition:.15s;}
+.cta .cbtn:active{transform:scale(.96);}
+
+/* 사업 상세 */
+.dhero{background:var(--grad);color:#fff;padding:20px 18px 22px;}
+.dhero .tag{font-size:10.5px;font-weight:700;letter-spacing:1px;opacity:.85;}
+.dhero h2{font-size:21px;font-weight:800;letter-spacing:-.4px;line-height:1.35;margin:5px 0 8px;}
+.dhero p{font-size:13.5px;opacity:.93;line-height:1.65;}
+.backrow{display:flex;align-items:center;padding:12px 14px 0;}
+.backbtn{display:inline-flex;align-items:center;gap:5px;background:#fff;border:1px solid var(--line-d);
+  border-radius:18px;padding:7px 14px 7px 11px;font-size:12.5px;font-weight:700;color:var(--sub);}
+.effs{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px;padding:0 14px;margin-top:-16px;}
+.eff{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);
+  padding:12px 6px;text-align:center;}
+.eff .n{font-size:15px;font-weight:800;color:var(--green);letter-spacing:-.3px;}
+.eff .l{font-size:10px;color:var(--sub);line-height:1.35;margin-top:2px;}
+.dcard{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);
+  margin:12px 14px 0;padding:15px;}
+.dcard h3{font-size:14.5px;font-weight:800;letter-spacing:-.2px;margin-bottom:10px;}
+.svcli{display:flex;gap:10px;align-items:flex-start;margin-bottom:10px;}
+.svcli:last-child{margin-bottom:0;}
+.svcli .dot{width:6px;height:6px;border-radius:50%;background:var(--green);margin-top:8px;flex-shrink:0;}
+.svcli b{font-size:13.5px;display:block;letter-spacing:-.2px;}
+.svcli span{font-size:12px;color:var(--sub);line-height:1.5;}
+.tgt{display:flex;flex-wrap:wrap;gap:6px;}
+.tgt span{background:var(--blue-l);color:var(--blue);font-size:11.5px;font-weight:600;border-radius:14px;padding:5px 12px;}
+.disc{font-size:11px;color:var(--mut);line-height:1.55;margin:12px 16px 0;padding:9px 12px;background:#eef1f6;border-radius:var(--r-sm);}
+.dbtn{margin:14px 14px 0;}
+
+/* 제안서 */
+.fcard{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);padding:15px;margin-bottom:11px;}
+.fl{display:block;font-size:12px;font-weight:700;color:var(--sub);margin-bottom:5px;}
+.fi{width:100%;padding:11px 12px;border:1.5px solid var(--line-d);border-radius:var(--r-sm);background:#fff;font-size:15px;}
+.fi:focus{outline:none;border-color:var(--blue);}
+.field{margin-bottom:12px;}
+.field:last-child{margin-bottom:0;}
+.seg{display:flex;gap:6px;flex-wrap:wrap;}
+.seg .sg{border:1.5px solid var(--line-d);border-radius:18px;padding:7px 13px;font-size:13px;font-weight:600;color:var(--sub);background:#fff;transition:.12s;}
+.seg .sg.on{background:var(--blue);border-color:var(--blue);color:#fff;}
+.seg .sg:active{transform:scale(.96);}
+.btn{display:block;width:100%;padding:13px;border-radius:10px;font-size:15px;font-weight:700;text-align:center;transition:.15s;}
+.btn:active{transform:scale(.97);}
+.btn.pri{background:var(--blue);color:#fff;}
+.btn.grn{background:var(--green);color:#fff;}
+.btn.gho{background:#eef1f6;color:var(--sub);}
+.prop{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--green);border-radius:var(--r);
+  box-shadow:var(--sh);padding:15px;margin-top:12px;animation:fadeUp .3s ease-out;}
+.prop .pt{font-size:15px;font-weight:800;color:var(--blue);letter-spacing:-.3px;margin-bottom:8px;}
+.prop .pb{font-size:13.5px;line-height:1.7;white-space:pre-wrap;word-break:break-word;}
+.share{display:flex;gap:7px;margin-top:12px;}
+.share button{flex:1;background:var(--blue-l);border:1px solid var(--line);color:var(--sub);border-radius:var(--r-sm);
+  padding:10px;font-size:12.5px;font-weight:700;}
+.share button:active{transform:scale(.97);}
+
+/* 시뮬레이터 */
+.frow{display:flex;gap:8px;margin-bottom:11px;}
+.frow>div{flex:1;}
+.res{background:#f7faff;border:1px solid var(--line);border-radius:var(--r-sm);padding:13px;
+  font-size:13.5px;line-height:1.7;display:none;margin-top:11px;}
+.res.on{display:block;animation:fadeUp .25s ease-out;}
+.res b{color:var(--blue);}
+.simrow{margin:8px 0;}
+.simlab{display:flex;justify-content:space-between;font-size:11.5px;font-weight:700;color:var(--sub);margin-bottom:4px;}
+.simbar{height:20px;background:#e8ecf3;border-radius:6px;overflow:hidden;}
+.simbar i{display:block;height:100%;border-radius:6px;transition:width .6s ease-out;}
+.simbar.cur i{background:#94a3b8;}
+.simbar.bm i{background:var(--grad);}
+.save{display:inline-block;background:var(--green-l);color:var(--green-d);font-size:12.5px;font-weight:800;border-radius:8px;padding:5px 12px;margin-top:6px;}
+
+/* 카카오톡 */
+.kfab{position:fixed;right:16px;bottom:calc(env(safe-area-inset-bottom) + 74px);width:54px;height:54px;
+  border-radius:50%;background:#FEE500;color:#191919;font-size:25px;display:flex;align-items:center;
+  justify-content:center;box-shadow:0 4px 14px rgba(0,0,0,.28);z-index:30;transition:.15s;}
+.kfab:active{transform:scale(.93);}
+.btn.kko{background:#FEE500;color:#191919;}
+
+/* 탭바 */
+#tabs{flex-shrink:0;background:#fff;border-top:1px solid var(--line);display:flex;z-index:20;
+  padding-bottom:env(safe-area-inset-bottom);box-shadow:0 -2px 12px rgba(16,24,40,.07);}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 0 7px;color:var(--mut);cursor:pointer;transition:.12s;}
+.tab .i{font-size:20px;line-height:1;}
+.tab .t{font-size:10.5px;font-weight:700;}
+.tab.on{color:var(--blue);}
+.tab:active{transform:scale(.95);}
+
+#toast{position:fixed;bottom:calc(env(safe-area-inset-bottom) + 74px);left:50%;transform:translateX(-50%) translateY(14px);
+  background:#1c2740;color:#fff;padding:11px 19px;border-radius:24px;font-size:13px;opacity:0;transition:.25s;
+  z-index:99;pointer-events:none;max-width:88%;text-align:center;}
+#toast.on{opacity:1;transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+
+<div id="top">
+  <div class="logo">당사</div>
+  <div class="tt"><b>당사 영업 전문가 툴킷</b><span>GROUP · 당사</span></div>
+  <button class="home" onclick="go('home')">⌂</button>
+</div>
+
+<div id="main">
+
+  <!-- ═══════ 홈 ═══════ -->
+  <div class="view on" id="v-home">
+    <div class="hero">
+      <h1>고객사 방문 전,<br>5분 안에 완벽한 제안 준비</h1>
+      <p>운영비 절감이 필요한 모든 고객에게 —<br>당사의 9개 사업 부문으로 답을 제시하세요.</p>
+      <button class="hbtn" onclick="go('prop')">제안서 생성하기 →</button>
+    </div>
+    <div class="stats stagger">
+      <div class="stat"><div class="n" data-cnt="40" data-suf="년">40년</div><div class="l">운영 공유 노하우</div><div class="s">1985년 창립</div></div>
+      <div class="stat"><div class="n" data-cnt="35" data-suf="만+">35만+</div><div class="l">국내외 고객 네트워크</div><div class="s">식품·유통·제조·화학</div></div>
+      <div class="stat"><div class="n g" data-cnt="90" data-suf="+">90+</div><div class="l">전국 수배송망</div><div class="s">공동운영센터 17개</div></div>
+      <div class="stat"><div class="n g" data-cnt="49" data-suf="만톤">49만톤</div><div class="l">연간 CO₂ 저감</div><div class="s">유니트 공동이용 효과</div></div>
+    </div>
+    <div class="sec">
+      <div class="sec-h"><b>당사 사업 부문</b><span>부문을 선택해 고객사에게 바로 보여주세요.</span></div>
+      <div class="bgrid stagger" id="bizGrid"></div>
+    </div>
+    <div class="cta">
+      <b>지금 바로 시작하세요</b>
+      <span>고객사명·업종만 넣으면 맞춤 제안 요약본이 완성됩니다.</span>
+      <button class="cbtn" onclick="go('prop')">✨ 맞춤형 제안 생성하기</button>
+      <div style="margin-top:11px;"><a href="http://pf.kakao.com/_xdxjknX" target="_blank" rel="noopener" style="color:#fff;font-size:12.5px;text-decoration:underline;opacity:.92;">💬 카톡 채널 추가하고 상담·소식 받기</a></div>
+    </div>
+    <div class="disc">본 자료의 수치는 그룹사·당사 공식 홈페이지((사내 자료)) 공개 자료 기준이며, 세부 조건은 정식 견적으로 확인해 드립니다.</div>
+  </div>
+
+  <!-- ═══════ 사업 상세 ═══════ -->
+  <div class="view" id="v-biz">
+    <div class="backrow"><button class="backbtn" onclick="go('home')">‹ 사업 부문</button></div>
+    <div id="bizDetail" style="margin-top:12px;"></div>
+  </div>
+
+  <!-- ═══════ 제안서 ═══════ -->
+  <div class="view" id="v-prop">
+    <div class="dhero">
+      <div class="tag">PROPOSAL BUILDER</div>
+      <h2>맞춤형 제안 요약본</h2>
+      <p>고객사 이름과 업종을 입력하면 바로 보여줄 수 있는 제안 요약본을 만들어 카카오톡·이메일로 공유합니다.</p>
+    </div>
+    <div class="pad">
+      <div class="fcard">
+        <div class="field"><label class="fl">고객사명 *</label><input class="fi" id="pComp" placeholder="예) 대한식품"></div>
+        <div class="field"><label class="fl">업종</label>
+          <div class="seg" id="pInd">
+            <button class="sg on" data-v="식품">식품</button><button class="sg" data-v="유통">유통</button>
+            <button class="sg" data-v="제조">제조</button><button class="sg" data-v="화학">화학</button>
+            <button class="sg" data-v="이커머스">이커머스</button><button class="sg" data-v="기타">기타</button>
+          </div></div>
+        <div class="field"><label class="fl">제안할 사업 부문 (복수 선택)</label>
+          <div class="seg" id="pBiz"></div></div>
+      </div>
+      <button class="btn pri" id="pGen">📝 제안 요약본 생성</button>
+      <div id="pOut"></div>
+    </div>
+  </div>
+
+  <!-- ═══════ 도구(시뮬레이터) ═══════ -->
+  <div class="view" id="v-tool">
+    <div class="dhero">
+      <div class="tag">COST SIMULATOR</div>
+      <h2>운영비 절감 시뮬레이션</h2>
+      <p>고객사의 현재 운영 비용을 입력하면 당사 도입 시 예상 절감액을 그 자리에서 보여줍니다.</p>
+    </div>
+    <div class="pad">
+      <div class="fcard">
+        <div class="frow">
+          <div><label class="fl">현재 월 운영비용(만원) *</label><input class="fi" id="sCost" inputmode="numeric" placeholder="500"></div>
+          <div><label class="fl">월 유니트 사용량(매)</label><input class="fi" id="sQty" inputmode="numeric" placeholder="1000"></div>
+        </div>
+        <div class="field"><label class="fl">적용 사업 부문</label>
+          <div class="seg" id="sBiz">
+            <button class="sg on" data-v="pool">유니트 공유</button><button class="sg" data-v="sc">계약운영</button>
+            <button class="sg" data-v="s5">운영장비 렌탈</button><button class="sg" data-v="s4">운영 자동화</button>
+          </div></div>
+        <button class="btn grn" id="sCalc">📊 절감액 계산하기</button>
+        <div class="res" id="sRes"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════ 카톡 문의(견적요청) ═══════ -->
+  <div class="view" id="v-ask">
+    <div class="dhero">
+      <div class="tag">KAKAO CHANNEL</div>
+      <h2>카톡으로 견적요청</h2>
+      <p>아래 내용을 적고 버튼을 누르면 카카오톡 채팅으로 이어집니다.<br>영업일 기준 빠르게 답변드립니다.</p>
+    </div>
+    <div class="pad">
+      <div class="fcard">
+        <div class="field"><label class="fl">업체명 *</label><input class="fi" id="aComp" placeholder="예) 대한식품"></div>
+        <div class="frow">
+          <div><label class="fl">담당자명</label><input class="fi" id="aName" placeholder="예) 홍길동 과장"></div>
+          <div><label class="fl">연락처</label><input class="fi" id="aTel" inputmode="tel" placeholder="예) 010-1234-5678"></div>
+        </div>
+        <div class="field"><label class="fl">관심 사업 부문 (복수 선택)</label>
+          <div class="seg" id="aBiz"></div></div>
+        <div class="field"><label class="fl">문의 내용 *</label>
+          <textarea class="fi" id="aMsg" style="resize:vertical;min-height:96px;line-height:1.5;" placeholder="예) 플라스틱 유니트 월 1,000매 임대 견적 부탁드립니다"></textarea></div>
+        <div class="field"><label class="fl">지역</label><input class="fi" id="aRegion" placeholder="예) 양산"></div>
+      </div>
+      <button class="btn kko" id="aSend">💬 카톡으로 견적요청 보내기</button>
+      <div class="share">
+        <button id="aCopy">📋 내용만 복사</button>
+        <button id="aMail">✉️ 이메일로 보내기</button>
+      </div>
+      <div class="disc" style="margin:12px 0 0;">버튼을 누르면 문의 내용이 자동 복사되고 카카오톡 채팅창이 열립니다. 채팅창에 붙여넣기만 하면 접수 완료됩니다.</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- 카톡 플로팅 버튼 -->
+<button class="kfab" onclick="kakaoChat()" aria-label="카카오톡 문의">💬</button>
+
+<!-- ═══════ 탭바 ═══════ -->
+<div id="tabs">
+  <div class="tab on" data-t="home"><span class="i">🏠</span><span class="t">홈</span></div>
+  <div class="tab" data-t="prop"><span class="i">📝</span><span class="t">제안서</span></div>
+  <div class="tab" data-t="tool"><span class="i">📊</span><span class="t">시뮬레이션</span></div>
+  <div class="tab" data-t="ask"><span class="i">💬</span><span class="t">문의</span></div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* ═══════════════════════════════════════════════════════
+   당사 영업 전문가 툴킷 — 고객 대면용 디지털 영업 앱
+   사업 정보 출처: (사내 자료) · (사내 자료) (2026-08 조회)
+   ═══════════════════════════════════════════════════════ */
+
+/* ─────── 9개 사업 부문 (공식 사업분야 기준) ─────── */
+const BIZ=[
+{key:'pool',ic:'🟦',name:'공유시스템사업',short:'유니트·컨테이너 공유',
+sub:'표준 유니트·컨테이너 공동이용(렌탈)',
+tag:'POOLING SYSTEM',
+pitch:'유니트를 사지 말고, 쓴 만큼만 이용하세요',
+intro:'규격·치수를 표준화한 유니트와 컨테이너를 여러 기업이 공동으로 이용하는 국내 최초의 공유시스템입니다. 현장 투입부터 회수·세척·관리까지 당사가 책임집니다.',
+svc:[['자산풀(S1)','표준 유니트 렌탈 — 납품·회수·유지관리 일괄 제공'],
+['글로벌 자산풀','수출입 전용 친환경 재생 플라스틱 유니트'],
+['접이식 컨테이너·IBC','FOLDCON·FOLDPAC — 공차 회송비 절감'],
+['패드풀·시트풀','섬유·제관·음료 업계 전용 운영기기 풀']],
+eff:[['구매비 0원','초기 투자 없이 이용'],['90+','전국 수배송망 회수'],['49만톤','연간 CO₂ 저감 기여']],
+tgt:['식품','유통','생활용품','석유화학','섬유','제관·음료','철강·제지','수출입 기업']},
+
+{key:'sc',ic:'🚚',name:'계약운영사업',short:'위탁운영·풀필먼트',
+sub:'운송·보관·풀필먼트·4PL 종합운영',
+tag:'CONTRACT LOGISTICS',
+pitch:'운영은 당사에 맡기고, 본업에 집중하세요',
+intro:'원부자재 조달부터 판매·회수까지 운영 전 범위를 위탁 운영합니다. 전국 17개 공동운영센터와 상온·저온 인프라, IT 기반 스마트 운영 시스템으로 운영합니다.',
+svc:[['SC솔루션·위탁운영','조달~판매~회수 전 구간 위탁 운영'],
+['이커머스 풀필먼트','입고·보관·포장·출고 원스톱 대행'],
+['프랜차이즈·유통운영','매장 단위 정시 배송 체계'],
+['공동운영·4PL','전국 17개 거점 공동 배송망']],
+eff:[['17개','전국 공동운영센터'],['상온·저온','전 온도대 보관'],['35만+','고객 네트워크 시너지']],
+tgt:['유통','식품','농산','프랜차이즈','이커머스','산업재']},
+
+{key:'s4',ic:'🏗️',name:'S4사업',short:'컨설팅·자동화·IT',
+sub:'운영 컨설팅 · 자동화 설비 · 디지털 솔루션',
+tag:'CONSULTING · ENGINEERING · SYSTEMS',
+pitch:'사람이 하던 운영을, 시스템이 하게',
+intro:'운영 컨설팅(C)과 자동화 엔지니어링(E), IT 시스템(S)을 융합해 운영센터 설계부터 설비 도입·운영까지 원스톱으로 제공하는 운영 혁신 사업입니다.',
+svc:[['운영 컨설팅','현장 분석 기반 S2 최적화 설계'],
+['자동화 엔지니어링','센터 설계·자동화 설비 구축 (로봇·컨베이어)'],
+['디지털 시스템즈','MS1 등 디지털 운영 종합솔루션'],
+['로봇 솔루션','운영·제조 로봇 통합 구축']],
+eff:[['원스톱','설계→구축→운영'],['40년','현장 노하우 기반 설계'],['융복합','설비+IT 통합']],
+tgt:['운영센터 신축·증축 기업','자동화 검토 제조사','S2 개선 필요 기업']},
+
+{key:'s5',ic:'🚜',name:'운영장비사업',short:'장비 렌탈·정비',
+sub:'장비 등 운영장비 임대·유지보수',
+tag:'MATERIAL HANDLING EQUIPMENT',
+pitch:'장비도 구매 대신 렌탈로, A/S까지 한 번에',
+intro:'2005년부터 시작한 국내 최대 규모의 장비 임대 사업입니다. 전 기종·전 브랜드를 취급하며, 전국 직영 A/S 네트워크의 정규직 엔지니어가 유지보수를 책임집니다.',
+svc:[['장비 렌탈','전 기종·국내외 전 브랜드 임대'],
+['직영 A/S','전국 네트워크 · 전문 엔지니어 정비'],
+['세척 솔루션','친환경 세정·자동화 세척설비'],
+['S5 데이터 솔루션','장비 운영 데이터 수집·분석·예측']],
+eff:[['국내 최대','장비 렌탈 규모'],['직영','전국 A/S 네트워크'],['자산 경량화','구매→렌탈 전환']],
+tgt:['제조 공장','운영센터','건설·유통 현장']},
+
+{key:'supply',ic:'📦',name:'산업자재유통사업',short:'포장·부자재 공급',
+sub:'친환경 부자재 · 재생원료 온라인 공급',
+tag:'INDUSTRIAL SUPPLY',
+pitch:'포장자재, 한 곳에서 더 싸고 편하게',
+intro:'국내외 네트워크를 활용한 부자재 공급 서비스입니다. 글로벌 소싱 경쟁력으로 높은 가격 경쟁력을 갖추고, 3R(재활용·감량·재사용) 기반 친환경 자원순환 체계를 함께 제공합니다.',
+svc:[['포장·운영 부자재','스트레치필름·박스·테이프 등 소모성 자재 일괄 공급'],
+['친환경 소재','PCR(재생원료) 기반 친환경 부자재'],
+['글로벌 소싱','해외 네트워크 기반 가격 경쟁력'],
+['공유 연계 배송','전국 공유 인프라로 안정 납품']],
+eff:[['일원화','구매처 통합 관리'],['글로벌','소싱 가격 경쟁력'],['3R','친환경 자원순환']],
+tgt:['제조','유통','이커머스','친환경 전환 기업']},
+
+{key:'global',ic:'🌏',name:'글로벌사업',short:'수출입 공유·국제업무',
+sub:'글로벌 공유 · 국제운영 국제업무',
+tag:'GLOBAL LOGISTICS',
+pitch:'수출입 운영기기와 국제업무을 한 번에',
+intro:'수출입 화물 전용 운영기기를 전 세계 네트워크에서 공유으로 이용하고, 수출입 업무 전 분야에 전문 국제운영(국제업무) 서비스를 함께 제공합니다.',
+svc:[['글로벌 공유','수출입 전용 유니트·컨테이너 해외 현지 회수'],
+['글로벌 국제업무','합리적 운임의 국제 운송 대행'],
+['일관 유니트화','국내→해외 환적 없는 일관수송'],
+['친환경 기기','재생 플라스틱 수출 유니트']],
+eff:[['글로벌','해외 네트워크 회수'],['일관수송','환적 비용 제거'],['합리적 운임','국제업무 경쟁력']],
+tgt:['수출 제조기업','무역상사','해외 진출 기업']},
+
+{key:'b2b2c',ic:'🏠',name:'생활운영사업',short:'설치운영·보관',
+sub:'설치운영(홈케어) · 개인/기업 물건보관(PRD-H)',
+tag:'LIFE LOGISTICS',
+pitch:'배송을 넘어 설치·보관까지, 생활 속 운영',
+intro:'이커머스 제품의 전문 설치 서비스 \'그룹사홈케어\'와 박스 단위 보관 서비스 \'PRD-H\'로, 판매 기업이 판매와 마케팅에만 집중할 수 있게 합니다.',
+svc:[['설치운영(홈케어)','가구·운동기구 등 배송+전문 설치 일괄'],
+['물건보관(PRD-H)','박스 단위 전용 운영센터 보관'],
+['조달~사후관리','제품 조달부터 A/S까지 토탈 솔루션']],
+eff:[['토탈','배송+설치+사후관리'],['공간 효율','보관 아웃소싱'],['브랜드 만족','전문 설치 품질']],
+tgt:['이커머스 판매사','가구·헬스기기 브랜드','보관 필요 기업·개인']},
+
+{key:'rental',ic:'💼',name:'렌탈사업',short:'사무·산업 장비 렌탈',
+sub:'IT기기·사무환경·산업장비 맞춤 렌탈',
+tag:'RENTAL SOLUTION',
+pitch:'사무실부터 현장까지, 필요한 모든 것을 렌탈로',
+intro:'사무기구·IT기기·생활가전·보안솔루션부터 고가 산업설비·운영 운송장비까지, 렌탈·구독·구매 중 고객에게 맞는 방식으로 공급하는 맞춤형 렌탈 사업입니다.',
+svc:[['사무환경 렌탈','사무기구·IT기기·가전·보안'],
+['산업환경 렌탈','고가 설비·운영 운송장비·관제시스템'],
+['구독·구매 옵션','렌탈/구독/구매 중 선택']],
+eff:[['자산 경량화','초기 투자 최소화'],['맞춤형','필요 기간만 이용'],['통합 공급','사무+산업 일괄']],
+tgt:['스타트업·사무실','제조·운영 현장','장비 도입 검토 기업']},
+
+{key:'logion',ic:'🤖',name:'무인화솔루션사업',short:'무인 수불 자동화',
+sub:'LOGION — 키오스크 기반 무인 수불 시스템',
+tag:'UNMANNED SOLUTION',
+pitch:'입출고 수불 업무, 24시간 무인으로',
+intro:'운영 현장의 입출고(수불) 업무를 키오스크 기반으로 무인 자동화하는 LOGION 솔루션입니다. 전표 자동화·출입 인증·작업 지시 연동을 렌탈/구독으로 도입합니다.',
+svc:[['무인 수불 키오스크','전표 자동화·기사 셀프 접수'],
+['출입·인증 연동','차량 출입, 작업 지시 자동 연동'],
+['통합 데이터 관리','입출고·차량·자산 정보 일원화'],
+['렌탈/구독 도입','초기 구축 부담 최소화']],
+eff:[['24시간','무중단 무인 운영'],['인건비↓','응대·수기 업무 제거'],['오류 방지','실시간 정물 일치']],
+tgt:['운영센터','공장 출하장','반복 입출고 현장']},
+];
+
+/* ─────── 업종별 제안 포인트 ─────── */
+const IND={
+식품:'위생 관리가 가능한 표준 유니트 공유과 상온·저온 운영센터로 식품 운영 기준을 충족합니다.',
+유통:'표준 유니트 기반 일관수송으로 입출고 회전율을 높이고, 전국 공동운영망으로 배송을 효율화합니다.',
+제조:'유니트·장비·부자재를 렌탈로 전환해 자산을 경량화하고, 자동화 설비로 공정 운영을 개선합니다.',
+화학:'석유화학 업계 다수가 이용하는 표준 공유 체계로 안전하고 표준화된 출하 운영을 지원합니다.',
+이커머스:'풀필먼트·설치운영·포장자재 일괄 공급으로 출고 속도와 고객 경험을 동시에 잡습니다.',
+기타:'운영 현황 진단부터 시작해 9개 사업 부문 중 가장 효과적인 조합을 설계해 드립니다.'};
+
+/* ─────── 시뮬레이터 가정 절감률 ─────── */
+const SIM={pool:{n:'유니트 공유',r:[30,50]},sc:{n:'계약운영(위탁운영)',r:[15,30]},s5:{n:'운영장비 렌탈',r:[15,35]},s4:{n:'운영 자동화',r:[20,40]}};
+
+/* ─────── 공통 ─────── */
+const $=id=>document.getElementById(id);
+const esc=s=>(s||'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+function toast(t){const e=$('toast');e.textContent=t;e.classList.add('on');setTimeout(()=>e.classList.remove('on'),2300);}
+function copyText(t){try{navigator.clipboard.writeText(t);}catch(e){const ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();}}
+
+/* ─────── 라우팅 ─────── */
+let curBiz=null;
+function go(v){
+  document.querySelectorAll('.view').forEach(x=>x.classList.remove('on'));
+  $('v-'+v).classList.add('on');
+  document.querySelectorAll('#tabs .tab').forEach(t=>t.classList.toggle('on',t.dataset.t===v||(v==='biz'&&t.dataset.t==='home')));
+  $('main').scrollTop=0;
+  if(v==='home')animStats();
+}
+document.querySelectorAll('#tabs .tab').forEach(t=>t.onclick=()=>go(t.dataset.t));
+
+/* ─────── 홈: 통계 카운트업 + 사업 그리드 ─────── */
+let statsDone=false;
+function animStats(){
+  if(statsDone)return;statsDone=true;
+  document.querySelectorAll('.stat .n[data-cnt]').forEach(el=>{
+    const tg=parseInt(el.dataset.cnt),suf=el.dataset.suf||'',t0=performance.now();
+    function f(t){const p=Math.min(1,(t-t0)/900),v=Math.round(tg*(1-Math.pow(1-p,3)));
+      el.textContent=v.toLocaleString()+suf;if(p<1)requestAnimationFrame(f);}
+    requestAnimationFrame(f);
+  });
+}
+$('bizGrid').innerHTML=BIZ.map(b=>`<div class="bcard" onclick="openBiz('${b.key}')">
+  <div class="ic">${b.ic}</div><b>${esc(b.name)}</b><span>${esc(b.sub)}</span>
+  <div class="go">상세 정보 보기 →</div></div>`).join('');
+
+/* ─────── 사업 상세 ─────── */
+function openBiz(key){
+  const b=BIZ.find(x=>x.key===key);if(!b)return;
+  curBiz=key;
+  $('bizDetail').innerHTML=
+    `<div class="dhero"><div class="tag">${esc(b.tag)}</div><h2>${esc(b.pitch)}</h2><p>${esc(b.intro)}</p></div>`+
+    `<div class="effs stagger">${b.eff.map(e=>`<div class="eff"><div class="n">${esc(e[0])}</div><div class="l">${esc(e[1])}</div></div>`).join('')}</div>`+
+    `<div class="dcard"><h3>핵심 서비스</h3>${b.svc.map(s=>`<div class="svcli"><span class="dot"></span><div><b>${esc(s[0])}</b><span>${esc(s[1])}</span></div></div>`).join('')}</div>`+
+    `<div class="dcard"><h3>이런 고객에게 추천합니다</h3><div class="tgt">${b.tgt.map(t=>`<span>${esc(t)}</span>`).join('')}</div></div>`+
+    `<div class="dbtn"><button class="btn grn" onclick="goPropWith('${b.key}')">✨ ${esc(b.short)} 맞춤 제안 만들기</button>
+     <button class="btn kko" style="margin-top:8px;" onclick="goAsk('${b.key}')">💬 카톡으로 이 사업 문의하기</button></div>`+
+    `<div class="disc">사업 정보는 그룹사·당사 공식 홈페이지 공개 자료 기준입니다. 세부 조건·단가는 정식 견적으로 확인해 드립니다.</div>`;
+  go('biz');
+}
+
+/* ─────── 제안서 ─────── */
+let pSel={};
+function renderPBiz(){
+  $('pBiz').innerHTML=BIZ.map(b=>`<button class="sg ${pSel[b.key]?'on':''}" data-v="${b.key}">${b.ic} ${esc(b.short)}</button>`).join('');
+  $('pBiz').querySelectorAll('.sg').forEach(x=>x.onclick=()=>{
+    const k=x.dataset.v;if(pSel[k])delete pSel[k];else pSel[k]=1;x.classList.toggle('on');});
+}
+renderPBiz();
+function goPropWith(key){pSel={};pSel[key]=1;renderPBiz();go('prop');}
+function segVal(id){const on=$(id).querySelector('.sg.on');return on?on.dataset.v:'';}
+['pInd','sBiz'].forEach(id=>{
+  $(id).querySelectorAll('.sg').forEach(b=>b.onclick=()=>{
+    $(id).querySelectorAll('.sg').forEach(x=>x.classList.remove('on'));b.classList.add('on');});
+});
+let simNote='';
+$('pGen').onclick=()=>{
+  const comp=$('pComp').value.trim();
+  if(!comp){toast('고객사명을 입력해 주세요');return;}
+  const ind=segVal('pInd')||'기타';
+  const keys=Object.keys(pSel).length?Object.keys(pSel):['pool'];
+  const L=[];
+  L.push(`[${comp}] 운영 효율화 제안 — 당사`);
+  L.push('');
+  L.push(`안녕하세요, ${comp} 담당자님.`);
+  L.push(`40년 운영 공유 노하우의 그룹사 당사이 ${ind} 업종에 맞춰 제안드립니다.`);
+  L.push('');
+  L.push(`■ ${ind} 업종 포인트`);
+  L.push(IND[ind]||IND.기타);
+  keys.forEach(k=>{
+    const b=BIZ.find(x=>x.key===k);if(!b)return;
+    L.push('');L.push(`■ ${b.name} — ${b.pitch}`);
+    L.push(b.intro);
+    L.push('핵심 효과: '+b.eff.map(e=>`${e[1]}(${e[0]})`).join(' · '));
+  });
+  if(simNote){L.push('');L.push('■ 비용 절감 시뮬레이션(참고용)');L.push(simNote);}
+  L.push('');
+  L.push('※ 수치·내용은 공식 공개 자료 및 참고용 추정 기준이며, 세부 조건은 정식 견적으로 확인해 드립니다.');
+  L.push('');
+  L.push('당사 · GROUP');
+  const text=L.join('\n');
+  $('pOut').innerHTML=`<div class="prop"><div class="pt">📄 ${esc(comp)} 제안 요약본</div><div class="pb">${esc(text)}</div>
+    <div class="share">
+      <button id="shShare">📤 카톡 공유</button>
+      <button id="shCopy">📋 복사</button>
+      <button id="shMail">✉️ 이메일</button>
+    </div></div>`;
+  $('shShare').onclick=()=>{
+    if(navigator.share){navigator.share({title:`[${comp}] 운영 효율화 제안 — 당사`,text}).catch(()=>{});}
+    else{copyText(text);toast('공유 시트 미지원 기기 — 내용을 복사했습니다. 카카오톡에 붙여넣어 주세요');}
+  };
+  $('shCopy').onclick=()=>{copyText(text);toast('제안 요약본 복사 완료');};
+  $('shMail').onclick=()=>{location.href='mailto:?subject='+encodeURIComponent(`[${comp}] 운영 효율화 제안 — 당사`)+'&body='+encodeURIComponent(text);};
+};
+
+/* ─────── 시뮬레이터 ─────── */
+$('sCalc').onclick=()=>{
+  const c=parseFloat($('sCost').value);
+  if(!c){toast('현재 월 운영비용을 입력하세요');return;}
+  const key=segVal('sBiz')||'pool',s=SIM[key],lo=s.r[0],hi=s.r[1],mid=(lo+hi)/2;
+  const bm=c*(1-mid/100),qty=parseFloat($('sQty').value);
+  const fmt=n=>Math.round(n).toLocaleString();
+  $('sRes').innerHTML=`<b>${s.n}</b> 적용 시 — 절감률 ${lo}~${hi}% 가정<br>
+    <div class="simrow"><div class="simlab"><span>현재 비용</span><span>월 ${fmt(c)}만원</span></div><div class="simbar cur"><i style="width:0"></i></div></div>
+    <div class="simrow"><div class="simlab"><span>당사 도입 시 (중간값)</span><span>월 ${fmt(bm)}만원</span></div><div class="simbar bm"><i style="width:0"></i></div></div>
+    <span class="save">월 ${fmt(c*lo/100)}~${fmt(c*hi/100)}만원 절감 · 연간 최대 ${fmt(c*hi/100*12)}만원</span>
+    ${qty?`<div style="font-size:12px;color:var(--sub);margin-top:6px;">유니트 ${fmt(qty)}매/월 기준 매당 약 ${fmt(c*lo/100/qty*10000)}~${fmt(c*hi/100/qty*10000)}원 절감 효과</div>`:''}
+    <div style="font-size:11px;color:var(--mut);margin-top:8px;line-height:1.5;">참고용 추정치입니다 — 실제 절감액은 물량·규격·지역 등 조건에 따라 달라지며, 정식 견적으로 확인해 드립니다.</div>
+    <button class="btn gho" style="margin-top:10px;" id="sProp">✨ 이 결과를 제안서에 담기</button>`;
+  $('sRes').classList.add('on');
+  setTimeout(()=>{
+    const a=$('sRes').querySelector('.simbar.cur i'),b=$('sRes').querySelector('.simbar.bm i');
+    if(a)a.style.width='100%';if(b)b.style.width=(100-mid)+'%';
+  },50);
+  simNote=`현재 월 운영비용 ${fmt(c)}만원 → ${s.n} 도입 시 월 ${fmt(c*lo/100)}~${fmt(c*hi/100)}만원 절감 예상 (연간 최대 ${fmt(c*hi/100*12)}만원, 절감률 ${lo}~${hi}% 가정)`;
+  $('sProp').onclick=()=>{goPropWith(key==='s4'?'s4':key);toast('시뮬레이션 결과가 제안서에 포함됩니다');};
+};
+
+/* ─────── 카카오톡 채널 연결 ─────── */
+const KAKAO_CH='http://pf.kakao.com/_xdxjknX';
+function kakaoChat(){window.open(KAKAO_CH+'/chat','_blank');}
+let aSel={};
+function renderABiz(){
+  $('aBiz').innerHTML=BIZ.map(b=>`<button class="sg ${aSel[b.key]?'on':''}" data-v="${b.key}">${b.ic} ${esc(b.short)}</button>`).join('');
+  $('aBiz').querySelectorAll('.sg').forEach(x=>x.onclick=()=>{
+    const k=x.dataset.v;if(aSel[k])delete aSel[k];else aSel[k]=1;x.classList.toggle('on');});
+}
+renderABiz();
+function goAsk(key){aSel={};if(key)aSel[key]=1;renderABiz();go('ask');}
+function buildAsk(){
+  const comp=$('aComp').value.trim(),msg=$('aMsg').value.trim();
+  if(!comp){toast('업체명을 입력해 주세요');return null;}
+  if(!msg){toast('문의 내용을 입력해 주세요');return null;}
+  const nm=$('aName').value.trim(),tel=$('aTel').value.trim(),rg=$('aRegion').value.trim();
+  const L=[];
+  L.push(`[견적요청] ${comp}`);
+  if(nm||tel)L.push('담당: '+[nm,tel].filter(Boolean).join(' · '));
+  if(rg)L.push('지역: '+rg);
+  const keys=Object.keys(aSel);
+  if(keys.length)L.push('관심 사업: '+keys.map(k=>{const b=BIZ.find(x=>x.key===k);return b?b.short:k;}).join(', '));
+  L.push('');L.push('문의 내용:');L.push(msg);
+  L.push('');L.push('— 당사 영업 툴킷에서 작성');
+  return L.join('\n');
+}
+$('aSend').onclick=()=>{
+  const t=buildAsk();if(!t)return;
+  copyText(t);kakaoChat();
+  toast('문의 내용이 복사되었습니다 — 카톡 채팅창에 붙여넣어 주세요');
+};
+$('aCopy').onclick=()=>{const t=buildAsk();if(!t)return;copyText(t);toast('문의 내용 복사 완료');};
+$('aMail').onclick=()=>{
+  const t=buildAsk();if(!t)return;
+  location.href='mailto:?subject='+encodeURIComponent(`[견적요청] ${$('aComp').value.trim()} — 당사`)+'&body='+encodeURIComponent(t);
+};
+
+/* ─────── 딥링크: ?biz=키 로 들어오면 해당 사업 소개를 바로 연다 (QR 소개서용) ─────── */
+(function(){
+  const k=new URLSearchParams(location.search).get('biz');
+  if(k&&BIZ.some(b=>b.key===k)){openBiz(k);return;}
+  animStats();
+})();
+</script>
+</body>
+</html>
