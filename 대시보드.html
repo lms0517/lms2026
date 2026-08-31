@@ -536,7 +536,12 @@ a.btn{text-decoration:none;box-sizing:border-box;}
 #ppsCalc .s1{background:#123c7a}#ppsCalc .s2{background:#17509b}#ppsCalc .s3{background:#d97706}#ppsCalc .s4{background:#9aa4b2}
 
 /* ─────────── 주변 업체(kpp-nearby NB 모듈) — 원본 CSS 그대로, #nb-root 로 스코프됨 ─────────── */
-#nb-root{--navy:var(--blue); --c-cust:#1d4ed8; --c-debt:#dc2626; --c-rival:#d97706;}
+#nb-root{--navy:var(--blue); --c-cust:#1d4ed8; --c-debt:#dc2626; --c-rival:#d97706; --c-recov:#059669;}
+#nb-root .k-recov{ background:var(--c-recov); }
+/* 입고미회수 잠금 카드 — nb-root 와 같은 여백을 쓴다 */
+#nearUnlock:not(:empty){ padding:12px 14px 0; }
+#nearUnlock .nrok{ background:var(--blue-ll); border:1px solid var(--line); border-radius:var(--r-md);
+  padding:9px 12px; font-size:12.5px; font-weight:700; color:var(--blue); line-height:1.5; }
 /* 주변업체 모듈 — 전 선택자를 #nb-root 하위로 스코프(대시보드 이식 시 전역 오염 없음) */
 #nb-root{ padding:12px 14px 20px; }
 #nb-root *{ box-sizing:border-box; }
@@ -701,7 +706,7 @@ a.btn{text-decoration:none;box-sizing:border-box;}
     </div>
 
     <!-- 주변 업체 — kpp-nearby NB 모듈이 이 안을 그린다 -->
-    <div id="compNear" style="display:none;"><div id="nb-root"></div></div>
+    <div id="compNear" style="display:none;"><div id="nearUnlock"></div><div id="nb-root"></div></div>
   </div>
 
   <!-- 업체 상세 -->
@@ -2233,7 +2238,7 @@ $('bCalc').onclick=()=>{
    넘길 기록이 없으면 records 를 비워 NB 의 예시 데이터로 폴백시킨다.        */
 const NB_KIND={'거래처':'cust','미수금':'debt','경쟁사':'rival'};
 const NB_TAG={'계약':'계약','방문':'방문','견적':'견적','미수금':'주의','회수':'방문'};
-function nbRecords(){
+function nbLogRecords(){
   return compSummary().map(c=>{
     const p=companyPos(c), last=c.기록[0]||{}, cat=companyCat(c);
     const addr=(c.기록.find(r=>r.주소)||{}).주소||'';
@@ -2248,13 +2253,101 @@ function nbRecords(){
     };
   });
 }
+/* 업무일지에서 나온 업체 + 입고미회수 업체. 같은 이름이면 업무일지 쪽을 남긴다. */
+function nbRecords(){
+  const logs=nbLogRecords();
+  const seen=new Set(logs.map(r=>r.name));
+  const recov=NEARR.map(nearFromIpgomi).filter(r=>r.name&&!seen.has(r.name));
+  return logs.concat(recov);
+}
+
+/* ── 입고미회수 업체 — 현장업무 지원앱의 암호문을 그대로 실어 왔다 ──
+   nearby-data.js 가 window.NEARBY_ENC 에 base64(salt16 + iv12 + 암호문)를 넣는다.
+   형식은 업무일지와 같고 반복 횟수만 10만회다 — 앱과 같은 비밀번호로 풀린다.
+   비밀번호는 이 기기에만 남고 어디로도 나가지 않는다.                   */
+const ENC_NEAR_ITER = 100000;
+const NEAR_PW_KEY = 'bmm_near_pw';
+let NEARR = [];
+function hasEncNear(){ return typeof window.NEARBY_ENC==='string' && window.NEARBY_ENC.length>100; }
+async function decryptNear(password){
+  const raw = Uint8Array.from(atob(window.NEARBY_ENC), c => c.charCodeAt(0));
+  const salt = raw.slice(0,16), iv = raw.slice(16,28), ct = raw.slice(28);
+  const bk = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveKey']);
+  const k = await crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:ENC_NEAR_ITER,hash:'SHA-256'}, bk,
+              {name:'AES-GCM',length:256}, false, ['decrypt']);
+  const buf = await crypto.subtle.decrypt({name:'AES-GCM',iv}, k, ct);
+  return JSON.parse(new TextDecoder().decode(buf));
+}
+/* 입고미회수 기록 → NB 스키마. 좌표가 없으면 주소의 시·군으로 근사한다. */
+function nearFromIpgomi(r){
+  let p=null;
+  if(r.lat&&r.lng) p={lat:+r.lat,lng:+r.lng,est:false,nm:(findRegion(r.addr||'')||[''])[0]};
+  else{ const h=findRegion(r.addr||''); if(h)p={lat:h[1],lng:h[2],est:true,nm:h[0]}; }
+  const qty=r.inboundDisplay||r.inbound||'';
+  const last=r.lastInDisplay||(r.lastIn?String(r.lastIn).slice(5).replace('-','.'):'');
+  return {
+    id:'ipg|'+r.id, kind:'recov', name:r.name||'', code:r.code||'',
+    addr:r.addr||'', region:p?p.nm:'', sido:'',
+    lat:p?p.lat:null, lng:p?p.lng:null,
+    geoLevel:p?(p.est?'approx':'exact'):'none', geoSrc:p?(p.est?'text':'addr'):'',
+    tel:r.tel||'', person:r.person||'', branch:'',
+    tags:['방문'],
+    note:[qty?'미회수 '+qty+'매':'', last?'최종입고 '+last:'', r.category||''].filter(Boolean).join(' · '),
+    updated:r.lastIn||''
+  };
+}
+/* 저장된 비밀번호가 있으면 조용히 푼다 — 틀렸으면 지우고 다시 묻는다 */
+async function tryNearAuto(){
+  const pw=localStorage.getItem(NEAR_PW_KEY);
+  if(!pw||!hasEncNear()||NEARR.length)return false;
+  try{ NEARR=await decryptNear(pw); return true; }
+  catch(e){ localStorage.removeItem(NEAR_PW_KEY); return false; }
+}
+function renderNearUnlock(){
+  const box=$('nearUnlock'); if(!box)return;
+  if(!hasEncNear()){ box.innerHTML=''; return; }
+  if(NEARR.length){
+    box.innerHTML=`<div class="nrok">🔓 입고미회수 업체 ${NEARR.length.toLocaleString()}곳이 함께 표시됩니다</div>`;
+    return;
+  }
+  box.innerHTML=`<div class="card" style="background:linear-gradient(135deg,#17233b 0%,#2d3748 100%);border:none;">
+    <b style="color:#fff;font-size:14.5px;">🔒 입고미회수 업체 불러오기</b>
+    <div style="font-size:12.5px;color:rgba(255,255,255,.72);line-height:1.6;margin:5px 0 11px;">
+      현장업무 지원앱과 같은 <b>데이터 비밀번호</b>입니다. 한 번만 넣으면 이 기기에 저장되어 다음부터 바로 열립니다.</div>
+    <input class="fi" type="password" id="nearPw" placeholder="데이터 비밀번호" style="margin-bottom:9px;">
+    <div id="nearErr" style="font-size:12px;color:#fca5a5;font-weight:700;margin-bottom:8px;display:none;"></div>
+    <button class="btn pri" id="nearGo">🔓 불러오기</button>
+  </div>`;
+  const err=$('nearErr');
+  const run=async()=>{
+    const pw=$('nearPw').value.trim();
+    if(!pw){err.textContent='비밀번호를 입력하세요';err.style.display='block';return;}
+    $('nearGo').textContent='푸는 중…';err.style.display='none';
+    try{
+      NEARR=await decryptNear(pw);
+      localStorage.setItem(NEAR_PW_KEY,pw);
+      renderNearUnlock();
+      NB.setRecords(nbRecords());
+      toast('입고미회수 업체 '+NEARR.length.toLocaleString()+'곳을 불러왔습니다');
+    }catch(e){
+      err.textContent='비밀번호가 맞지 않습니다';err.style.display='block';
+      $('nearGo').textContent='🔓 불러오기';
+    }
+  };
+  $('nearGo').onclick=run;
+  $('nearPw').onkeydown=e=>{if(e.key==='Enter')run();};
+}
 let nbReady=false;
 function mountNearby(){
   const root=$('nb-root'); if(!root||typeof NB==='undefined')return;
+  renderNearUnlock();
   const recs=nbRecords();
   if(!nbReady){ NB.init({root, records:recs.length?recs:null}); nbReady=true; }
   else if(recs.length) NB.setRecords(recs);
   else NB.mount();
+  if(!NEARR.length) tryNearAuto().then(ok=>{
+    if(ok){ renderNearUnlock(); NB.setRecords(nbRecords()); }
+  });
 }
 
 /* ─────────── 음성 입력 ─────────── */
@@ -2600,6 +2693,9 @@ updCondSum();
 })();
 </script>
 
+<!-- 입고미회수 업체 암호문 — 파일이 없는 환경(미리보기 등)에서는 그냥 건너뛴다 -->
+<script src="nearby-data.js"></script>
+
 <!-- 주변 업체 모듈 — kpp-nearby 원본 그대로 (window.NB / window.NB_SAMPLE 만 노출) -->
 <script>
 /* 예시 데이터 — 최종 스키마 그대로 작성(실데이터 전환 시 코드 변경 0줄)
@@ -2716,9 +2812,10 @@ window.NB = (function () {
   var KIND = {
     cust:  { label: "거래처", color: "#2563eb", cls: "k-cust" },
     debt:  { label: "미수금", color: "#dc2626", cls: "k-debt" },
-    rival: { label: "경쟁사", color: "#d97706", cls: "k-rival" }
+    rival: { label: "경쟁사", color: "#d97706", cls: "k-rival" },
+    recov: { label: "회수", color: "#059669", cls: "k-recov" }
   };
-  var KIND_ORDER = ["cust", "debt", "rival"];
+  var KIND_ORDER = ["cust", "debt", "rival", "recov"];
   var TAG_CLS = { "계약": "t-contract", "방문": "t-visit", "견적": "t-quote", "주의": "t-warn" };
   var LS = {
     radius: "kppnear_radius", kind: "kppnear_kinds", view: "kppnear_view",
@@ -2795,7 +2892,7 @@ window.NB = (function () {
   }
   function compute() {
     var pool = withDist().filter(inRadius);
-    var counts = { all: pool.length, cust: 0, debt: 0, rival: 0 };
+    var counts = { all: pool.length, cust: 0, debt: 0, rival: 0, recov: 0 };
     pool.forEach(function (r) { counts[r.kind]++; });
     var list = state.kind ? pool.filter(function (r) { return r.kind === state.kind; }) : pool.slice();
     var rank = { exact: 0, approx: 1, none: 2 };
@@ -3175,7 +3272,12 @@ window.NB = (function () {
   }
 
   /* ── 공개 API ────────────────────────────────────── */
-  function setRecords(arr) { state.records = arr || []; state.info = null; render(); }
+  /* 실데이터가 들어오면 예시 표시를 내린다 (원본에서 보완) */
+  function setRecords(arr) {
+    state.records = arr || []; state.info = null;
+    if (arr && arr.length) { state.source = "enc"; state.isSample = false; }
+    render();
+  }
 
   function init(opts) {
     opts = opts || {};
