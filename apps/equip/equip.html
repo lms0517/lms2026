@@ -162,22 +162,6 @@ h1.big{font-size:23px;font-weight:800;letter-spacing:-.03em}
 .hintNote.ok{color:var(--green-d);background:var(--green-l);border-color:#bfe0cd}
 .hintNote b{font-weight:800}
 
-/* Best 통계 */
-#bestCard{background:var(--panel);border-radius:11px;padding:16px 16px 20px;margin-bottom:24px}
-#bestCard .bhd{display:flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600}
-#bestCard .btag{background:var(--best);color:#fff;font-size:10.5px;font-weight:800;border-radius:3px;padding:2px 6px}
-#bestTabs{display:flex;border-bottom:1px solid var(--line-d);margin:12px 0 14px;overflow-x:auto;scrollbar-width:none}
-#bestTabs::-webkit-scrollbar{display:none}
-#bestTabs button{flex:1;min-width:74px;padding:8px 4px;font-size:12.5px;font-weight:600;color:var(--mut);
-  border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap}
-#bestTabs button.on{color:var(--blue);border-color:var(--blue);font-weight:800}
-#bestMsg{font-size:13.5px;line-height:1.6}#bestMsg b{color:var(--blue)}
-#donuts{display:flex;gap:14px;justify-content:center;align-items:flex-end;margin-top:16px}
-.donut{display:flex;flex-direction:column;align-items:center;gap:7px;width:96px;text-align:center}
-.donut .cir{border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:inset 0 0 0 1px rgba(0,0,0,.06)}
-.donut .pctT{font-weight:800;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.35)}
-.donut .lb{font-size:11.5px;line-height:1.3;color:#333;font-weight:700}
-
 /* 옵션 타일 */
 .tiles{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .tiles.c3{grid-template-columns:repeat(3,1fr)}
@@ -192,13 +176,6 @@ h1.big{font-size:23px;font-weight:800;letter-spacing:-.03em}
 .tile .p.zero{color:var(--mut);font-weight:600}
 .tile .rec{position:absolute;top:9px;right:10px;font-size:9.5px;font-weight:800;color:var(--best)}
 .tile.dis{opacity:.4;pointer-events:none}
-
-/* 색상 */
-#swGrid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
-.sw{aspect-ratio:1.3;border-radius:5px;position:relative;border:1px solid rgba(0,0,0,.12);
-  background:linear-gradient(135deg,var(--c1),var(--c2))}
-.sw.on:after{content:'✓';position:absolute;top:-7px;right:-5px;width:21px;height:21px;border-radius:50%;
-  background:var(--blue);color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center}
 
 /* 폼 */
 .fldRow{display:flex;gap:9px;flex-wrap:wrap}
@@ -377,10 +354,9 @@ h1.big{font-size:23px;font-weight:800;letter-spacing:-.03em}
     <div class="stepTab on" data-st="2"><span class="no">02</span><span class="nm">내 장비 만들기</span></div>
   </div>
   <div id="crumbs">
-    <span class="cr" data-t="0">동력 · 외장</span><span class="gt">›</span>
-    <span class="cr" data-t="1">마스트 · 타이어</span><span class="gt">›</span>
-    <span class="cr" data-t="2">옵션 · 안전</span><span class="gt">›</span>
-    <span class="cr" data-t="3">운영 조건</span>
+    <span class="cr" data-t="0">마스트 · 타이어</span><span class="gt">›</span>
+    <span class="cr" data-t="1">옵션 · 안전</span><span class="gt">›</span>
+    <span class="cr" data-t="2">운영 조건</span>
   </div>
 </header>
 
@@ -427,7 +403,7 @@ h1.big{font-size:23px;font-weight:800;letter-spacing:-.03em}
         <div id="stageNote">* 상기 이미지는 사양 선택을 돕기 위한 참고용 일러스트입니다. (실제 장비 외관은 제조사·연식에 따라 다를 수 있습니다)</div>
       </div>
       <div id="panel">
-        <div id="panelTitle">동력 · 외장</div>
+        <div id="panelTitle">마스트 · 타이어</div>
         <div id="panelBody"></div>
       </div>
     </div>
@@ -507,12 +483,6 @@ const COLORS=[
  {id:'white', nm:'퓨어 화이트', c1:'#ffffff', c2:'#d8dadc', body:'#EDEFF0'},
  {id:'navy',  nm:'미드나잇 네이비', c1:'#2c5a86', c2:'#12293f', body:'#16324F'},
 ];
-const BEST={
- '전체':      {p:'44%', tail:'가 <b>리튬(LFP) 전동</b>을 선택하셨습니다.', d:[['리튬(LFP)',44,'#1f7a4d'],['디젤',31,'#555'],['납산 전동',25,'#8aa0b4']]},
- '운영센터':  {p:'61%', tail:'가 <b>리튬(LFP) 전동</b>을 선택하셨습니다.', d:[['리튬(LFP)',61,'#1f7a4d'],['납산 전동',24,'#8aa0b4'],['디젤',15,'#555']]},
- '제조':      {p:'46%', tail:'가 <b>디젤</b>을 선택하셨습니다.', d:[['디젤',46,'#555'],['리튬(LFP)',34,'#1f7a4d'],['LPG',20,'#c98a2d']]},
- '식품·저온': {p:'72%', tail:'가 <b>리튬(LFP) 전동</b>을 선택하셨습니다.', d:[['리튬(LFP)',72,'#1f7a4d'],['납산 전동',20,'#8aa0b4'],['기타',8,'#999']]},
-};
 const OPT_ATT=[
  {id:'ss',nm:'사이드시프트',d:'포크 좌우 이동 — 정밀 적재',p:40000},
  {id:'hf',nm:'힌지드 포크',d:'포크 틸팅 — 덤핑 작업',p:60000},
@@ -545,7 +515,7 @@ const DEF={
  driver:'', panelCap:'', liCompat:'', checks:{},
 };
 let S=Object.assign({},DEF,{att:[],safe:['rcam'],env:[],checks:{}});
-const U={view:'home', tab:0, viewMode:'ex', cat:'전체', bestTab:'전체', touched:false, editId:null};
+const U={view:'home', tab:0, viewMode:'ex', cat:'전체', touched:false, editId:null};
 
 const KEY={draft:'lf.draft', quotes:'lf.quotes', inst:'lf.instHidden'};
 const $=id=>document.getElementById(id);
@@ -812,16 +782,13 @@ function mountSpin(frames,stem){
 }
 /* 이미지 종류에 따라 안내 문구와 360° 표시를 맞춘다 */
 function setStageMode(mode){
-  const note=$('stageNote'), deg=$('deg'), cnote=$('colorNote');
+  const note=$('stageNote'), deg=$('deg');
   deg&&deg.classList.toggle('off',mode!=='spin');
   if(note)note.textContent=mode==='illust'
     ? '* 상기 이미지는 사양 선택을 돕기 위한 참고용 일러스트입니다. (실제 장비 외관은 제조사·연식에 따라 다를 수 있습니다)'
     : mode==='spin'
     ? '* 상기 사진은 해당 기종의 대표 장비를 360°로 촬영한 것입니다. 좌우로 드래그하면 돌려볼 수 있습니다. 실제 배정 장비는 제조사·연식·보유 재고에 따라 외관과 색상이 다를 수 있습니다.'
     : '* 상기 사진은 해당 기종의 대표 장비 사진입니다. 실제 배정 장비는 제조사·연식·보유 재고에 따라 외관과 색상이 다를 수 있습니다.';
-  if(cnote)cnote.textContent=mode==='illust'
-    ? '색상은 도장 사양 예시입니다. 임대 장비는 보유 재고 색상 기준으로 배정됩니다.'
-    : '색상은 도장 사양 예시입니다. 위 사진은 대표 장비라 선택한 색상과 다르게 보입니다. 임대 장비는 보유 재고 색상 기준으로 배정됩니다.';
 }
 
 /* ═════════ 계산 · 판정 ═════════ */
@@ -950,7 +917,7 @@ function back(){go('home')}
 function movTab(d){
   const t=U.tab+d;
   if(t<0){go('home');return}
-  if(t>3){openSum();return}
+  if(t>2){openSum();return}
   U.tab=t;renderBuild();scrollPanel();
 }
 /* 모바일에서는 탭을 옮기면 스테이지를 지나 옵션 영역으로 바로 올려준다 */
@@ -1002,7 +969,7 @@ function pickModel(id){
 }
 
 /* ═════════ 견적 만들기 ═════════ */
-const TABS=['동력 · 외장','마스트 · 타이어','옵션 · 안전','운영 조건'];
+const TABS=['마스트 · 타이어','옵션 · 안전','운영 조건'];
 function renderBuild(){
   const m=model(), p=calc();
   $('hTitle').innerHTML=`${esc(m.name)} ${S.ton}t<small>${TERMS.find(t=>t.id===S.term).nm} · ${S.units}대</small>`;
@@ -1014,44 +981,14 @@ function renderBuild(){
   renderViz(); if(U.viewMode==='sp')renderSpec();
   document.querySelectorAll('#crumbs .cr').forEach(c=>c.classList.toggle('on',+c.dataset.t===U.tab));
   $('panelTitle').textContent=TABS[U.tab];
-  $('abNx').textContent=U.tab===3?'요약':'다음';
-  $('panelBody').innerHTML=[tabPower,tabMast,tabOpt,tabOps][U.tab]();
+  $('abNx').textContent=U.tab===2?'요약':'다음';
+  $('panelBody').innerHTML=[tabMast,tabOpt,tabOps][U.tab]();
   saveDraft();
 }
 document.querySelectorAll('#crumbs .cr').forEach(c=>c.onclick=()=>{U.tab=+c.dataset.t;renderBuild();scrollPanel();});
 const tile=(on,click,inner,dis)=>`<button class="tile ${on?'on':''} ${dis?'dis':''}" onclick="${click}">${inner}</button>`;
 const priceTag=p=>p?`<div class="p">+ 월 ${p.toLocaleString()}원</div>`:`<div class="p zero">기본 포함</div>`;
 
-function tabPower(){
-  const m=model(), b=BEST[U.bestTab];
-  const donuts=b.d.map(([nm,pct,col],i)=>{const sz=104-i*16;
-    return `<div class="donut"><div class="cir" style="width:${sz}px;height:${sz}px;background:radial-gradient(circle at 35% 30%, ${col} 0%, ${col} 60%, rgba(0,0,0,.25))">
-      <span class="pctT" style="font-size:${24-i*4}px">${pct}<small style="font-size:.6em">%</small></span></div>
-      <div class="lb">${nm}</div></div>`;}).join('');
-  const bestTabs=Object.keys(BEST).map(k=>`<button class="${U.bestTab===k?'on':''}" onclick="U.bestTab='${k}';renderBuild()">${k}</button>`).join('');
-  let pw;
-  if(m.power==='battery'){
-    pw=`<div class="tiles">
-      ${tile(S.battery==='li',"set('battery','li')",`<span class="rec">BEST</span><b>리튬 (LFP)</b><div class="d">기회충전 — 식사·휴게 중 충전, 배터리 교체 불필요</div><div class="p">+ 기준가의 15%</div>`)}
-      ${tile(S.battery==='pb',"set('battery','pb')",`<b>납산 배터리</b><div class="d">초기 비용 절감 — 교대 시 예비 배터리 검토</div>${priceTag(0)}`)}</div>
-      ${S.shift>=2&&S.battery==='pb'?'<div class="hintNote warn">2~3교대 + 납산은 배터리 교체 인력·충전실 공간이 추가로 듭니다. 리튬(기회충전) 비교를 권장합니다.</div>':''}`;
-  }else{
-    pw=`<div class="tiles">
-      ${tile(true,"",`<b>${m.power==='diesel'?'디젤 엔진':'LPG 엔진'}</b><div class="d">${m.power==='diesel'?'실외·중량물 표준 동력':'매연 저감형 엔진식'}</div>${priceTag(0)}`)}
-      ${tile(false,"go('home')",`<b>전동(리튬) 전환</b><div class="d">실내작업·매연/소음 민원 시</div><div class="p zero">기종변경 ›</div>`)}</div>
-      <div class="hintNote">실내 작업 비중이 높거나 매연·소음 민원이 있다면 <b>전동(리튬) 전환</b>을 검토하세요 — 연료·정비까지 총소유비용(TCO) 기준으로 비교합니다.</div>`;
-  }
-  const cc=COLORS.find(c=>c.id===S.color);
-  return `<div id="bestCard">
-    <div class="bhd"><span class="btag">Best</span> 다른 고객들이 가장 많이 선택한 사양입니다!</div>
-    <div id="bestTabs">${bestTabs}</div>
-    <div id="bestMsg">${m.name} 고객 중 <b>${b.p}</b>${b.tail}</div>
-    <div id="donuts">${donuts}</div></div>
-  <div class="psec"><div class="ph"><b>동력 · 배터리</b></div>${pw}</div>
-  <div class="psec"><div class="ph"><b>외장 색상</b><span class="cur">${cc.nm}</span></div>
-    <div id="swGrid">${COLORS.map(c=>`<button class="sw ${S.color===c.id?'on':''}" style="--c1:${c.c1};--c2:${c.c2}" title="${c.nm}" onclick="set('color','${c.id}')"></button>`).join('')}</div>
-    <div class="hintNote" id="colorNote">색상은 도장 사양 예시입니다. 임대 장비는 보유 재고 색상 기준으로 배정됩니다.</div></div>`;
-}
 function tabMast(){
   if(!hasMast())return tonSec()+`<div class="psec"><div class="hintNote ok">전동 유니트트럭은 저상 리프트(약 0.2m) 전용으로 마스트 선택이 없습니다.</div></div>`;
   const m=model();
@@ -1078,11 +1015,20 @@ function tonSec(){
     `<b>${t.toFixed(1)} t</b><div class="p zero">월 ${model().base[String(t)].toLocaleString()}원~</div>`)).join('')}</div>
   <div class="hintNote">인상 높이가 올라가면 허용 하중이 줄어듭니다(하중곡선). 최대 높이에서 드는 실제 무게 기준으로 여유 있게 선택하세요.</div></div>`;
 }
+/* 전동식은 배터리 종류가 기준가의 15% 를 좌우한다 — 여기서 고른다 */
+function battSec(){
+  if(!isBattery())return '';
+  return `<div class="psec"><div class="ph"><b>배터리</b><span class="cur">${S.battery==='li'?'리튬(LFP)':'납산'}</span></div>
+    <div class="tiles">
+      ${tile(S.battery==='li',"set('battery','li')",`<span class="rec">권장</span><b>리튬 (LFP)</b><div class="d">기회충전 — 식사·휴게 중 충전, 배터리 교체 불필요</div><div class="p">+ 기준가의 15%</div>`)}
+      ${tile(S.battery==='pb',"set('battery','pb')",`<b>납산 배터리</b><div class="d">초기 비용 절감 — 교대 시 예비 배터리 검토</div>${priceTag(0)}`)}</div>
+    ${S.shift>=2&&S.battery==='pb'?'<div class="hintNote warn">2~3교대 + 납산은 배터리 교체 인력·충전실 공간이 추가로 듭니다. 리튬(기회충전) 비교를 권장합니다.</div>':''}</div>`;
+}
 function tabOpt(){
   const grp=(title,list,sel,key)=>`<div class="psec"><div class="ph"><b>${title}</b><span class="cur">${sel.length}개 선택</span></div>
     <div class="tiles">${list.map(o=>tile(sel.includes(o.id),`togOpt('${key}','${o.id}')`,
       `<b>${o.nm}</b><div class="d">${o.d}</div>${priceTag(o.p)}`)).join('')}</div></div>`;
-  return grp('어태치먼트',OPT_ATT,S.att,'att')+grp('안전 사양',OPT_SAFE,S.safe,'safe')+grp('특수환경 사양',OPT_ENV,S.env,'env')
+  return battSec()+grp('어태치먼트',OPT_ATT,S.att,'att')+grp('안전 사양',OPT_SAFE,S.safe,'safe')+grp('특수환경 사양',OPT_ENV,S.env,'env')
    +`<div class="hintNote">어태치먼트로 밀기·바닥 긁기 작업을 하면 충격이 누적돼 반납 시 분쟁이 될 수 있습니다 — 실제 작업 방식을 계약 전에 알려주세요.</div>`;
 }
 function tabOps(){
