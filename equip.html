@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>장비 견적앱</title>
+<!-- 앱이 apps/equip/ 로 옮겨졌다. 예전 주소(홈화면·QR·북마크)를 살려 두는 자리다.
+     예전에는 이 폴더가 앱의 뿌리였고 서비스워커도 여기에 등록됐다.
+     그 서비스워커가 남아 있으면 옛 앱을 계속 꺼내 주므로 먼저 지운다. -->
+<style>
+  body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;
+    background:#eef0f4;color:#14213d;text-align:center;padding:24px;
+    font-family:-apple-system,BlinkMacSystemFont,"Malgun Gothic","맑은 고딕",sans-serif;}
+  a{color:#123c7a;font-weight:700;}
+</style>
+</head>
+<body>
+<p>장비 견적앱으로 이동 중입니다<br><a href="apps/equip/equip.html">열리지 않으면 누르세요</a></p>
+<script>
+(function () {
+  var TO = 'apps/equip/equip.html';
+  function go() { location.replace(TO); }
+
+  /* 이 폴더에 등록돼 있던 옛 서비스워커와 캐시만 정리한다.
+     apps/equip/ 에 새로 등록된 것과 다른 앱의 것은 건드리지 않는다. */
+  if (!navigator.serviceWorker || !navigator.serviceWorker.getRegistrations) { go(); return; }
+  var here = new URL('./', location.href).href;
+  var done = false, t = setTimeout(function () { if (!done) { done = true; go(); } }, 2500);
+
+  navigator.serviceWorker.getRegistrations()
+    .then(function (rs) {
+      return Promise.all(rs.filter(function (r) { return r.scope === here; })
+                          .map(function (r) { return r.unregister(); }));
+    })
+    .then(function () { return caches && caches.keys ? caches.keys() : []; })
+    .then(function (ks) {
+      return Promise.all(ks.filter(function (k) { return k.indexOf('lf-') === 0; })
+                          .map(function (k) { return caches.delete(k); }));
+    })
+    .catch(function () {})
+    .then(function () { if (!done) { done = true; clearTimeout(t); go(); } });
+})();
+</script>
+</body>
+</html>
