@@ -628,11 +628,21 @@ function mapFail(why) {
   const r = $("mapRetry");
   if (r) r.onclick = () => { m.style.display = "none"; kmap = null; openMap(); };
 }
-/* 분류마다 색이 다른 동그란 마커 */
-function dotImage(kind) {
-  const k = KIND[kind] || KIND.deal, w = 22;
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${w}"><circle cx="${w / 2}" cy="${w / 2}" r="${w / 2 - 2.5}" fill="${k.color}" stroke="${k.edge}" stroke-width="2.5"/></svg>`;
-  return new kakao.maps.MarkerImage("data:image/svg+xml;base64," + btoa(svg), new kakao.maps.Size(w, w), { offset: new kakao.maps.Point(w / 2, w / 2) });
+/* 경쟁사 연매출은 시트에 천원 단위로 들어온다 — 마커에는 억으로 줄여 적는다 */
+function salesEok(v) {
+  const n = parseFloat(String(v || "").replace(/,/g, ""));
+  return isFinite(n) ? (n / 100000).toFixed(1) : "";
+}
+/* 분류마다 색이 다른 동그란 마커. 경쟁사는 안에 연매출(억)을 적는다. */
+function dotImage(kind, txt) {
+  const k = KIND[kind] || KIND.deal;
+  const w = !txt ? 22 : (txt.length <= 3 ? 30 : 36);
+  const r = w / 2 - 2.5;
+  const label = txt
+    ? `<text x="${w / 2}" y="${w / 2}" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" font-size="${txt.length <= 3 ? 11.5 : 10.5}" font-weight="bold" fill="${k.ink}">${txt}</text>`
+    : "";
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${w}"><circle cx="${w / 2}" cy="${w / 2}" r="${r}" fill="${k.color}" stroke="${k.edge}" stroke-width="2.5"/>${label}</svg>`;
+  return new kakao.maps.MarkerImage("data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svg))), new kakao.maps.Size(w, w), { offset: new kakao.maps.Point(w / 2, w / 2) });
 }
 function flagImage() {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="44" viewBox="0 0 36 44"><line x1="8" y1="3" x2="8" y2="42" stroke="#1565c0" stroke-width="4" stroke-linecap="round"/><path d="M8 4 L32 11 L8 19 Z" fill="#1976d2" stroke="#e53935" stroke-width="1.5"/><circle cx="8" cy="42" r="3" fill="#1565c0"/></svg>`;
@@ -646,6 +656,7 @@ function renderLegend() {
   const n = {}; mapItems().forEach(r => n[r.kind] = (n[r.kind] || 0) + 1);
   $("mapLegend").innerHTML = KIND_ORDER.map(k =>
     `<span style="display:inline-flex;align-items:center;gap:4px;"><span style="width:12px;height:12px;border-radius:50%;background:${KIND[k].color};border:1.5px solid ${KIND[k].edge === "#fff" ? "#bbb" : "#333"};"></span>${KIND[k].label} ${n[k] || 0}</span>`).join("") +
+    '<span style="color:#555;">경쟁사 숫자 = 연매출(억)</span>' +
     '<span style="color:#1976d2;">⚑ 기준 위치</span>';
 }
 function clearMarkers() {
@@ -669,7 +680,7 @@ function drawMarkers(fit) {
   const bounds = new kakao.maps.LatLngBounds();
   items.forEach(r => {
     const pos = new kakao.maps.LatLng(r.lat, r.lng);
-    const m = new kakao.maps.Marker({ position: pos, image: dotImage(r.kind) });
+    const m = new kakao.maps.Marker({ position: pos, image: dotImage(r.kind, r.kind === "rival" ? salesEok(r.sales) : "") });
     kakao.maps.event.addListener(m, "click", () => openInfo(r));
     markers.push(m); bounds.extend(pos);
   });
