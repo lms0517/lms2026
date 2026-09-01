@@ -127,6 +127,24 @@ h1.big{font-size:23px;font-weight:800;letter-spacing:-.03em}
 #viz img.photo{width:100%;height:auto;display:block;border-radius:12px;
   background:#f4f5f6;object-fit:contain;aspect-ratio:560/400;-webkit-user-drag:none;user-select:none}
 #viz svg{width:100%;height:auto;display:block}
+
+/* 옵션 위치 표시 — 사진 위에 얹는다 */
+#pins{position:absolute;inset:0;pointer-events:none;z-index:3}
+#pins .pin{position:absolute;transform:translate(-50%,-50%);width:21px;height:21px;border-radius:50%;
+  background:#0a66c2;border:2.5px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,.4);
+  display:flex;align-items:center;justify-content:center;
+  color:#fff;font-size:11.5px;font-weight:800;line-height:1}
+/* 번호와 이름은 사진 아래에서 맞춘다 — 좁은 화면에서 말풍선이 서로 겹치지 않게 */
+#optNote{margin:11px 0 0;width:100%;max-width:560px}
+#optLeg{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+#optLeg .lg{display:inline-flex;align-items:center;gap:5px;background:var(--beige);
+  border:1px solid var(--line-d);border-radius:999px;padding:4px 10px 4px 5px;
+  font-size:11.5px;font-weight:700;color:var(--ink)}
+#optLeg .lg i{width:17px;height:17px;border-radius:50%;background:#0a66c2;color:#fff;
+  font-style:normal;font-size:10.5px;font-weight:800;display:flex;align-items:center;justify-content:center;flex:none}
+#optNote .cap{font-size:11px;color:var(--mut);text-align:center;margin-bottom:7px}
+#optNote .cap b{color:#0a66c2;font-weight:800}
+#optNote .rest{display:block;font-size:11px;color:var(--mut);text-align:center;margin-top:7px;line-height:1.6}
 #viz.spin{cursor:grab}
 #viz.spin:active{cursor:grabbing}
 #viz:focus-visible{outline:2px solid var(--blue);outline-offset:3px;border-radius:12px}
@@ -400,6 +418,7 @@ h1.big{font-size:23px;font-weight:800;letter-spacing:-.03em}
           <button class="on" data-v="ex" onclick="setView('ex')">Exterior</button>
           <button data-v="sp" onclick="setView('sp')">제원 보기</button>
         </div>
+        <div id="optNote"></div>
         <div id="stageNote">* 상기 이미지는 사양 선택을 돕기 위한 참고용 일러스트입니다. (실제 장비 외관은 제조사·연식에 따라 다를 수 있습니다)</div>
       </div>
       <div id="panel">
@@ -700,6 +719,7 @@ function mountPhoto(src,stem){
   el.appendChild(img);
   mounted=stem+'|photo';
   setStageMode('photo');
+  img.decode?.().then(drawPins).catch(drawPins);      /* 사진이 자리를 잡은 뒤에 찍는다 */
 }
 /* 드래그·스와이프·화살표로 프레임을 넘겨 한 바퀴 돌린다 */
 function mountSpin(frames,stem){
@@ -764,6 +784,73 @@ function setStageMode(mode){
     ? '* 상기 사진은 해당 기종의 대표 장비를 360°로 촬영한 것입니다. 좌우로 드래그하면 돌려볼 수 있습니다. 실제 배정 장비는 제조사·연식·보유 재고에 따라 외관과 색상이 다를 수 있습니다.'
     : '* 상기 사진은 해당 기종의 대표 장비 사진입니다. 실제 배정 장비는 제조사·연식·보유 재고에 따라 외관과 색상이 다를 수 있습니다.';
 }
+
+/* ═════════ 옵션 장착 위치 표시 ═════════
+   기종 사진마다 부위 좌표를 %로 잡아 둔다 (사진이 실제로 그려진 영역 기준).
+   사진을 바꾸면 이 표도 같이 고쳐야 한다.                              */
+const PIN_POS={
+  diesel:{carriage:[34,68], fork:[18,87], mastTop:[43,11], guard:[72,11], wheel:[56,76], body:[80,60]},
+  lpg:   {carriage:[36,63], fork:[16,88], mastTop:[45, 8], guard:[72, 9], wheel:[58,74], body:[85,55]},
+  elec:  {carriage:[60,62], fork:[78,88], mastTop:[52,12], guard:[22, 9], wheel:[39,79], body:[14,62]},
+  reach: {carriage:[42,72], fork:[16,90], mastTop:[45, 8], guard:[72, 6], wheel:[58,88], body:[82,55]},
+  ppt:   {carriage:[48,72], fork:[18,76], mastTop:[48,45], guard:[78,20], wheel:[46,92], body:[68,55]},
+};
+/* 자리를 짚을 수 있는 것만 사진에 찍는다.
+   지문인식·속도제한·환경 사양은 한 점으로 가리킬 수 없어 아래 줄에 적는다. */
+function activePins(){
+  const out=[];
+  const add=(k,t)=>out.push([k,t]);
+  if(S.att.includes('ss'))add('carriage','사이드시프트');
+  if(S.att.includes('cl'))add('carriage','클램프');
+  if(S.att.includes('hf'))add('fork','힌지드 포크');
+  if(S.safe.includes('rcam'))add('guard','후방 카메라');
+  if(S.safe.includes('ai'))add('guard','AI 인체인식');
+  if(S.safe.includes('fcam'))add('mastTop','포크 카메라');
+  if(hasMast()&&S.mast==='3f')add('mastTop','3단 마스트');
+  if(hasMast()&&S.mast==='2fl')add('mastTop','2단 프리리프트');
+  if(S.tire==='nonmark')add('wheel','논마킹 타이어');
+  if(S.tire==='pneu')add('wheel','공기압 타이어');
+  return out;
+}
+/* 사진에 못 찍는 것들 */
+function restLabels(){
+  const nm=id=>[...OPT_SAFE,...OPT_ENV].find(o=>o.id===id)?.nm;
+  return [...S.safe,...S.env].filter(id=>!['rcam','ai','fcam'].includes(id)).map(nm).filter(Boolean);
+}
+/* object-fit:contain 이라 상자와 사진이 다르다 — 실제로 그려진 영역을 구한다 */
+function photoRect(img){
+  const bw=img.clientWidth, bh=img.clientHeight;
+  if(!bw||!bh||!img.naturalWidth)return null;
+  const r=img.naturalWidth/img.naturalHeight, br=bw/bh;
+  const w=r>br?bw:bh*r, h=r>br?bw/r:bh;
+  return {x:(bw-w)/2, y:(bh-h)/2, w, h};
+}
+function drawPins(){
+  const el=$('viz'); if(!el)return;
+  el.querySelector('#pins')?.remove();
+  const note=$('optNote'); if(note)note.innerHTML='';
+  const img=el.querySelector('img.photo');
+  const pos=PIN_POS[model().id];
+  const pins=activePins(), rest=restLabels();
+  const canPin=img&&pos&&pins.length;
+  if(note&&(canPin||rest.length)){
+    note.innerHTML=(canPin?`<div class="cap">번호는 고른 옵션이 <b>장착되는 자리</b>입니다</div>
+      <div id="optLeg">${pins.map(([,t],i)=>`<span class="lg"><i>${i+1}</i>${esc(t)}</span>`).join('')}</div>`:'')+
+      (rest.length?`<span class="rest">차체 전반 적용 — ${rest.map(esc).join(' · ')}</span>`:'');
+  }
+  if(!canPin)return;
+  const R=photoRect(img); if(!R)return;
+  const seen={}, box=document.createElement('div');
+  box.id='pins';
+  box.innerHTML=pins.map(([k,t],i)=>{
+    const p=pos[k]||pos.body;
+    const n=seen[k]=(seen[k]||0)+1;                    /* 같은 자리는 아래로 비켜 놓는다 */
+    const x=R.x+R.w*p[0]/100, y=R.y+R.h*(p[1]+(n-1)*7)/100;
+    return `<div class="pin" style="left:${x}px;top:${y}px">${i+1}</div>`;
+  }).join('');
+  el.appendChild(box);
+}
+addEventListener('resize',()=>{ if(U.view==='build')drawPins(); });
 
 /* ═════════ 계산 · 판정 ═════════ */
 const hasMast=()=>model().kind!=='ppt';
@@ -906,7 +993,9 @@ function setView(v){
   $('viz').style.display=v==='ex'?'block':'none';
   $('deg').style.display=v==='ex'?'block':'none';
   $('specView').style.display=v==='sp'?'block':'none';
+  $('optNote').style.display=v==='ex'?'block':'none';
   if(v==='sp')renderSpec();
+  if(v==='ex')drawPins();
 }
 
 /* ═════════ 홈 ═════════ */
@@ -952,7 +1041,7 @@ function renderBuild(){
     <span class="lk" onclick="go('home')">기종변경 ›</span>`;
   $('pBase').textContent=W(p.base);$('pFinal').textContent=W(p.final);
   $('abV').innerHTML=`${W(p.final)}${S.units>1?`<small>× ${S.units}대</small>`:''}`;
-  renderViz(); if(U.viewMode==='sp')renderSpec();
+  renderViz(); drawPins(); if(U.viewMode==='sp')renderSpec();
   document.querySelectorAll('#crumbs .cr').forEach(c=>c.classList.toggle('on',+c.dataset.t===U.tab));
   $('panelTitle').textContent=TABS[U.tab];
   $('abNx').textContent=U.tab===2?'요약':'다음';
