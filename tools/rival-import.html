@@ -43,7 +43,8 @@ th{color:#6b7280;font-weight:700;}
 <div class="w">
 
 <h1>경쟁사 · 미수금 명단 만들기</h1>
-<div class="sub">주소를 좌표로 바꾸고(카카오), 비밀번호로 잠근 <code>nearby-extra.js</code> 를 만듭니다.</div>
+<div class="sub">주소를 좌표로 바꾸고(카카오), 비밀번호로 잠근 <code>nearby-extra.js</code> 를 만듭니다.<br>
+받으신 <code>KPP_주변업체_명단_3종.xlsx</code> 의 각 탭을 통째로 긁어 아래 칸에 붙여 넣으시면 됩니다.</div>
 
 <div class="note">
   <b>이 화면은 반드시 <code>lms0517.github.io</code> 주소로 열어야 합니다.</b><br>
@@ -75,7 +76,17 @@ th{color:#6b7280;font-weight:700;}
 </div>
 
 <div class="card">
-  <h2>③ 좌표 찾기</h2>
+  <h2>③ 계약처 보강 (선택)</h2>
+  <div class="hint">입고미회수 목록에 이미 있는 계약처에 <b>연락처·이메일·업체담당자·사용 유형</b>만 얹습니다.
+코드나 업체명이 같으면 그 업체에 붙고, 없으면 새 계약처로 들어갑니다.
+
+  code · name · tel · email · contact · types · addr</div>
+  <textarea id="deal" placeholder="code&#9;name&#9;tel&#9;…"></textarea>
+  <div class="st" id="dealSt"></div>
+</div>
+
+<div class="card">
+  <h2>④ 좌표 찾기</h2>
   <div class="hint">주소를 카카오로 조회합니다. 775곳이면 2분 안팎 걸립니다.
 주소로 못 찾으면 업체명으로 한 번 더 찾고, 그래도 없으면 좌표 없이 남깁니다(지도에는 안 뜨고 목록에는 나옵니다).</div>
   <button id="geo">📍 좌표 찾기 시작</button>
@@ -85,7 +96,7 @@ th{color:#6b7280;font-weight:700;}
 </div>
 
 <div class="card">
-  <h2>④ 잠그기</h2>
+  <h2>⑤ 잠그기</h2>
   <div class="hint">주변 업체 앱을 열 때 넣는 <b>데이터 비밀번호</b>와 같아야 합니다.</div>
   <input type="password" id="pw" placeholder="데이터 비밀번호">
   <button id="enc" disabled>🔐 암호화하기</button>
@@ -93,7 +104,7 @@ th{color:#6b7280;font-weight:700;}
 </div>
 
 <div class="card" id="outCard" style="display:none;">
-  <h2>⑤ 결과</h2>
+  <h2>⑥ 결과</h2>
   <div class="hint">내려받아 클로드에게 주시면 저장소에 <code>nearby-extra.js</code> 로 올립니다.</div>
   <div class="out" id="out"></div>
   <button class="sub2" id="dl">💾 nearby-extra.js 로 저장</button>
@@ -105,18 +116,61 @@ th{color:#6b7280;font-weight:700;}
 <script>
 const $ = id => document.getElementById(id);
 const KAKAO_JS_KEY = "5588680e2268293ece13b0575ea1fde7";
-let RIVAL = [], DEBT = [], geocoded = false;
+let RIVAL = [], DEBT = [], DEAL = [], geocoded = false;
 
-/* ── TSV 읽기 ── */
+/* ── 붙여넣은 표 읽기 ──
+   시트를 그대로 긁어 와도 되도록 생김새를 알아본다.
+   머리글이 영문 키(name·addr…)면 그대로 쓰고, 아니면 아래 세 모양으로 맞춘다. */
+const LAYOUTS = [
+  { /* 미수금 원장 */
+    test: h => h.includes("주소▲") && h.includes("금액") && h.includes("청구부서"),
+    map: { code: 2, name: 3, addr: 5, tel: 6, grade: 7, branch: 10, person: 11, amount: 15 } },
+  { /* 계약처 */
+    test: h => h[0] === "코드" && h[1] === "업체명" && h.includes("유형"),
+    map: { code: 0, name: 1, email: 3, tel: 4, contact: 5, addr: 6, types: 7 } },
+];
+const SIDO = /(서울특별시|서울|부산광역시|부산|대구광역시|대구|인천광역시|인천|광주광역시|광주|대전광역시|대전|울산광역시|울산|세종특별자치시|세종|경기도|경기|강원특별자치도|강원도|강원|충청북도|충북|충청남도|충남|전북특별자치도|전라북도|전북|전라남도|전남|경상북도|경북|경상남도|경남|제주특별자치도|제주)/g;
+function firstAddr(a) {
+  a = String(a || "").replace(/\s+/g, " ").trim();
+  const ms = [...a.matchAll(SIDO)];
+  return (ms.length > 1 ? a.slice(0, ms[1].index).trim().replace(/,$/, "") : a);
+}
+function splitRow(l) {
+  /* 탭이 없으면 쉼표로 자른다. 따옴표 안의 쉼표는 살린다. */
+  if (l.includes("\t")) return l.split("\t");
+  const out = []; let cur = "", q = false;
+  for (const ch of l) {
+    if (ch === '"') { q = !q; continue; }
+    if (ch === "," && !q) { out.push(cur); cur = ""; continue; }
+    cur += ch;
+  }
+  out.push(cur); return out;
+}
+/* 엑셀은 위에 안내 줄이 있고 머리글이 아래에 있다 — 머리글 줄을 찾아 거기서부터 읽는다.
+   'name (업체명)' 처럼 괄호가 붙은 머리글은 앞부분만 쓴다. */
+const KEYS = ["name","code","addr","tel","email","contact","types","amount","grade","branch",
+              "person","biz","cat2","sales","fields","lastVisit","visits","lat","lng"];
+const cleanHead = c => c.trim().replace(/^﻿/, "").split(" (")[0].trim();
+function findHead(lines) {
+  for (let i = 0; i < Math.min(6, lines.length); i++) {
+    const h = splitRow(lines[i]).map(cleanHead);
+    if (LAYOUTS.some(L => L.test(h)) || h.filter(x => KEYS.includes(x)).length >= 2) return { i, h };
+  }
+  return { i: 0, h: splitRow(lines[0]).map(cleanHead) };
+}
 function parseTsv(t) {
-  const lines = t.replace(/\r/g, "").split("\n").filter(l => l.trim());
+  const lines = t.replace(/\r/g, "").split("\n").filter(l => l.trim() && l.replace(/[,\t]/g, "").trim());
   if (lines.length < 2) return [];
-  const head = lines[0].split("\t").map(s => s.trim().replace(/^﻿/, ""));
-  return lines.slice(1).map(l => {
-    const c = l.split("\t"), o = {};
-    head.forEach((h, i) => { const v = (c[i] || "").trim(); if (v) o[h] = v; });
+  const { i: hi, h: head } = findHead(lines);
+  const lay = LAYOUTS.find(L => L.test(head));
+  const rows = lines.slice(hi + 1).map(l => {
+    const c = splitRow(l), o = {};
+    if (lay) { for (const k in lay.map) { const v = (c[lay.map[k]] || "").trim(); if (v) o[k] = v; } }
+    else head.forEach((h, i) => { const v = (c[i] || "").trim(); if (h && v) o[h] = v; });
+    if (o.addr) o.addr = firstAddr(o.addr);
     return o;
   }).filter(o => o.name);
+  return rows;
 }
 $("tsv").addEventListener("input", () => {
   RIVAL = parseTsv($("tsv").value); geocoded = false;
@@ -125,14 +179,21 @@ $("tsv").addEventListener("input", () => {
   $("tsvSt").textContent = RIVAL.length
     ? `${RIVAL.length}곳 읽었습니다` + (withXY ? ` · 좌표가 이미 있는 곳 ${withXY}` : "")
     : "";
-  $("enc").disabled = !RIVAL.length && !DEBT.length;
+  refresh();
 });
 $("debt").addEventListener("input", () => {
   DEBT = parseTsv($("debt").value); geocoded = false;
   $("debtSt").className = "st" + (DEBT.length ? " good" : "");
   $("debtSt").textContent = DEBT.length ? `${DEBT.length}곳 읽었습니다` : "";
-  $("enc").disabled = !RIVAL.length && !DEBT.length;
+  refresh();
 });
+$("deal").addEventListener("input", () => {
+  DEAL = parseTsv($("deal").value); geocoded = false;
+  $("dealSt").className = "st" + (DEAL.length ? " good" : "");
+  $("dealSt").textContent = DEAL.length ? `${DEAL.length}줄 읽었습니다` : "";
+  refresh();
+});
+function refresh(){ $("enc").disabled = !(RIVAL.length || DEBT.length || DEAL.length); }
 
 /* ── 카카오 ── */
 let kakaoLoading = null;
@@ -167,7 +228,7 @@ function findOne(gc, ps, addr, name) {
 }
 
 $("geo").onclick = async () => {
-  const ALL = RIVAL.concat(DEBT);
+  const ALL = RIVAL.concat(DEBT, DEAL);
   if (!ALL.length) { $("geoSt").className = "st bad"; $("geoSt").textContent = "먼저 시트를 붙여 넣으세요"; return; }
   $("geo").disabled = true; $("bar").style.display = "block";
   $("geoSt").className = "st"; $("geoSt").textContent = "카카오 지도를 부르는 중…";
@@ -206,7 +267,8 @@ $("enc").onclick = async () => {
   const pw = $("pw").value, st = $("encSt");
   st.className = "st";
   if (!pw) { st.className = "st bad"; st.textContent = "비밀번호를 넣어 주세요"; return; }
-  if ((RIVAL.length || DEBT.length) && !geocoded && !RIVAL.concat(DEBT).every(r => r.lat && r.lng)) {
+  const ALL = RIVAL.concat(DEBT, DEAL);
+  if (ALL.length && !geocoded && !ALL.every(r => r.lat && r.lng)) {
     if (!confirm("좌표를 아직 안 찾았습니다. 이대로 잠글까요?\n(지도에는 안 뜨고 목록에만 나옵니다)")) return;
   }
   const pick = (r, keys) => {
@@ -217,9 +279,18 @@ $("enc").onclick = async () => {
   };
   const rival = RIVAL.map(r => pick(r, ["biz", "cat2", "sales", "fields", "branch", "person", "lastVisit", "visits"]));
   const debt = DEBT.map(r => pick(r, ["code", "tel", "amount", "grade", "branch", "person"]));
+  /* 계약처는 한 업체가 유형 수만큼 여러 줄로 온다 — 코드로 묶고 유형을 합친다 */
+  const dealMap = new Map();
+  DEAL.forEach(r => {
+    const key = String(r.code || r.name);
+    const o = dealMap.get(key) || pick(r, ["code", "tel", "email", "contact"]);
+    if (r.types) o.types = [...new Set((o.types ? o.types.split("·") : []).concat(r.types.split("·")))].join("·");
+    dealMap.set(key, o);
+  });
+  const deal = [...dealMap.values()];
   st.textContent = "암호화 중…";
   try {
-    const data = new TextEncoder().encode(JSON.stringify({ debt, rival }));
+    const data = new TextEncoder().encode(JSON.stringify({ deal, debt, rival }));
     const salt = crypto.getRandomValues(new Uint8Array(16));
     const iv = crypto.getRandomValues(new Uint8Array(12));
     const bk = await crypto.subtle.importKey("raw", new TextEncoder().encode(pw), "PBKDF2", false, ["deriveKey"]);
@@ -238,7 +309,8 @@ $("enc").onclick = async () => {
     $("outCard").style.display = "";
     st.className = "st good";
     const dxy = back.debt.filter(r => r.lat && r.lng).length;
-    st.textContent = `완료 — 경쟁사 ${back.rival.length}곳(좌표 ${xy}) · 미수금 ${back.debt.length}곳(좌표 ${dxy}) · ${(window._out.length / 1024).toFixed(0)}KB`;
+    st.textContent = `완료 — 경쟁사 ${back.rival.length}곳(좌표 ${xy}) · 미수금 ${back.debt.length}곳(좌표 ${dxy})`
+      + ` · 계약처 보강 ${(back.deal || []).length}곳 · ${(window._out.length / 1024).toFixed(0)}KB`;
   } catch (e) { st.className = "st bad"; st.textContent = "실패: " + e.message; }
 };
 

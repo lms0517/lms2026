@@ -416,8 +416,11 @@ function renderLock() {
 
 /* ── 미수금·경쟁사 명단 ──
    nearby-extra.js 가 같은 비밀번호로 암호화된 명단을 들고 있다.
-     { debt:  [{name, code, addr, tel, amount, grade, branch, person, lat, lng}, …]
+     { deal:  [{code, name, tel, email, contact, types, addr, lat, lng}, …]
+       debt:  [{name, code, addr, tel, amount, grade, branch, person, lat, lng}, …]
        rival: [{name, addr, biz, cat2, sales, fields, branch, person, lastVisit, visits, lat, lng}, …] }
+   계약처는 입고미회수가 원장이다 — 같은 업체가 있으면 연락처·이메일·사용 유형만 채우고,
+   없으면(미회수가 없는 계약처) 새로 넣는다.
    미수금은 입고미회수 목록에 같은 업체가 있으면 그 업체를 미수금으로 바꾸고,
    없으면 새로 넣는다. 경쟁사는 우리 목록에 없는 업체라 늘 새로 넣는다.
    파일이 없으면 아무 일도 하지 않는다.                              */
@@ -444,6 +447,13 @@ function applyExtra(recs, extra) {
   const byName = new Map(), byCode = new Map();
   recs.forEach(r => { byName.set(r.name, r); if (r.code) byCode.set(String(r.code), r); });
   const add = [];
+  (extra.deal || []).forEach((x, i) => {
+    if (!x || !x.name) return;
+    const hit = (x.code && byCode.get(String(x.code))) || byName.get(x.name);
+    const carry = { tel: x.tel, email: x.email, contact: x.contact, types: x.types };
+    if (hit) { Object.keys(carry).forEach(k => { if (carry[k] && !hit[k]) hit[k] = carry[k]; }); return; }
+    add.push(placeXY(Object.assign({}, x, { id: "deal|" + (x.code || i), kind: "deal", fkey: "", qty: 0 }), x));
+  });
   (extra.debt || []).forEach((x, i) => {
     if (!x || !x.name) return;
     const hit = byName.get(x.name) || (x.code && byCode.get(String(x.code)));
@@ -575,10 +585,10 @@ function cardBody(r) {
   const last = r.lastInDisplay || (r.lastIn ? md(r.lastIn) : "");
   const inb = String(r.inboundDisplay || r.inbound || "");
   return {
-    meta: [r.person, r.driver].filter(Boolean).join(" · ") || "-",
+    meta: [r.person, r.driver, r.contact].filter(Boolean).join(" · ") || "-",
     nums: (r.fkey ? `<span class="year ${catCls(r.fkey)}">${esc(r.fkey)}</span>` : "") +
           (inb ? `<span class="inb-date">${last ? last.split("/").pop() + "일 · " : ""}입고 ${esc(inb)}</span>` : ""),
-    sub3: ""
+    sub3: r.types ? "사용 " + r.types : ""
   };
 }
 function cardHtml(r) {
