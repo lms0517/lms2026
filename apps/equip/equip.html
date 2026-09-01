@@ -469,10 +469,6 @@ const MODELS=[
  {id:'reach', cat:'창고장비', kind:'reach', name:'리치트럭 (입승식)', en:'Reach Truck',
   tons:[1.5,2.0,2.5], base:{'1.5':1010000,'2':1110000,'2.5':1210000},
   power:'battery', desc:'좁은 통로 · 고층 랙 (통로폭 2.5m 내외)'},
- {id:'picker', cat:'창고장비', kind:'picker', name:'오더피커', en:'Order Picker',
-  tons:[1.0], base:{'1':1160000}, power:'battery', desc:'다품종 피킹 중심 운영센터'},
- {id:'stacker', cat:'창고장비', kind:'stacker', name:'보행식 스태커', en:'Walkie Stacker',
-  tons:[1.0,1.5], base:{'1':510000,'1.5':560000}, power:'battery', desc:'소형 창고 · 저빈도 적재'},
  {id:'ppt', cat:'창고장비', kind:'ppt', name:'전동 유니트트럭', en:'Electric Pallet Truck',
   tons:[1.5,2.0], base:{'1.5':360000,'2':410000}, power:'battery', desc:'수평 이동 전용 — 단상 충전으로 충분'},
 ];
@@ -588,29 +584,7 @@ function svgReach(o){
   ${tireCircle(330,324,24,'nonmark')}
   <text x="180" y="374" font-size="13" font-weight="700" fill="#9a938a" font-family="sans-serif">FORK ▸</text></svg>`;
 }
-function svgPicker(o){
-  const mastTop=110-(o.lift-3)*18, c=o.body;
-  return `<svg viewBox="0 0 560 400" xmlns="http://www.w3.org/2000/svg">
-  <ellipse cx="290" cy="342" rx="215" ry="26" fill="#f0efec" stroke="#dcdad4"/>
-  ${mastSvg(240,330,mastTop,'3f',200)}
-  <rect x="176" y="168" width="70" height="42" rx="5" fill="${c}" stroke="rgba(0,0,0,.18)"/>
-  <rect x="176" y="160" width="70" height="10" rx="4" fill="#3d4348"/>
-  <path d="M182 168 L182 132 M240 168 L240 132" stroke="#3d4348" stroke-width="5" stroke-linecap="round"/>
-  <rect x="176" y="128" width="70" height="7" rx="3.5" fill="#3d4348"/>
-  <path d="M246 322 L246 240 Q246 230 258 230 L350 230 Q366 230 366 246 L366 322 Z" fill="${c}" stroke="rgba(0,0,0,.18)"/>
-  <path d="M338 230 L350 230 Q366 230 366 246 L366 322 L338 322 Z" fill="rgba(0,0,0,.22)"/>
-  ${tireCircle(280,326,20,'nonmark')}${tireCircle(340,326,20,'nonmark')}</svg>`;
-}
-function svgStacker(o){
-  const mastTop=Math.max(170-(o.lift-3)*20,80), c=o.body;
-  return `<svg viewBox="0 0 560 400" xmlns="http://www.w3.org/2000/svg">
-  <ellipse cx="290" cy="342" rx="200" ry="24" fill="#f0efec" stroke="#dcdad4"/>
-  ${mastSvg(230,330,mastTop,'2f',318)}
-  <path d="M272 322 L272 246 Q272 236 284 236 L330 236 Q344 236 344 250 L344 322 Z" fill="${c}" stroke="rgba(0,0,0,.18)"/>
-  <line x1="344" y1="252" x2="396" y2="216" stroke="#3d4348" stroke-width="8" stroke-linecap="round"/>
-  <ellipse cx="402" cy="212" rx="14" ry="8" transform="rotate(-32 402 212)" fill="#2f3438"/>
-  ${tireCircle(300,328,16,'nonmark')}${tireCircle(212,332,9,'nonmark')}</svg>`;
-}
+
 function svgPPT(o){
   const c=o.body;
   return `<svg viewBox="0 0 560 400" xmlns="http://www.w3.org/2000/svg">
@@ -623,8 +597,8 @@ function svgPPT(o){
   ${tireCircle(334,330,17,'nonmark')}</svg>`;
 }
 function svgOf(kind,o){
-  switch(kind){case 'reach':return svgReach(o);case 'picker':return svgPicker(o);
-    case 'stacker':return svgStacker(o);case 'ppt':return svgPPT(o);default:return svgCB(o);}
+  switch(kind){case 'reach':return svgReach(o);
+    case 'ppt':return svgPPT(o);default:return svgCB(o);}
 }
 /* ═════════ 장비 이미지 — 360° 회전 · 사진 · 일러스트 ═════════
    photos/ 폴더에 파일을 넣으면 일러스트 대신 실물이 뜬다. 있는 것부터 채우면 된다.
@@ -635,7 +609,7 @@ function svgOf(kind,o){
      ② 단일 사진 — photos/<기종>.jpg
      ③ 둘 다 없으면 일러스트로 자동 대체된다.
 
-   <기종> = diesel · lpg · elec · reach · picker · stacker · ppt
+   <기종> = diesel · lpg · elec · reach · ppt
    엔진식에서 "전동(리튬) 전환"을 고르면 <기종>-electric 을 먼저 찾는다.
    확장자는 jpg · png · webp 순으로 찾는다.                                    */
 const PHOTO_DIR='photos/', PHOTO_EXTS=['.jpg','.png','.webp'], SPIN_MAX=48;
@@ -796,7 +770,7 @@ const hasMast=()=>model().kind!=='ppt';
 const isBattery=()=>model().power==='battery';
 function chargerNeed(){ /* 필수 11항 */
   if(!isBattery())return null;
-  if(['ppt','stacker','picker'].includes(model().kind)&&S.shift===1)return 'single';
+  if(model().kind==='ppt'&&S.shift===1)return 'single';
   if(S.ton>=2.5||S.shift>=2)return 'three';
   return 'single';
 }
