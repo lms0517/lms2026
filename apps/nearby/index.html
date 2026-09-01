@@ -84,6 +84,8 @@ button{ border:none; background:none; cursor:pointer; }
 .card .year.yn{ background:#e8f5e9; color:#2e7d32; }
 .card .year.yyj{ background:#e0f2f1; color:#00695c; }
 .card .inb-date{ font-size:14px; color:#e53935; font-weight:700; white-space:nowrap; }
+.card .amt{ font-size:13.5px; color:#e53935; font-weight:800; white-space:nowrap; }
+.card .sub3{ font-size:11.5px; color:#6b7280; margin-top:4px; line-height:1.5; }
 .card .btn-row{ display:flex; gap:7px; border-top:1px solid #f0f0f0; padding-top:8px; margin-top:9px; }
 .card .tel-btn,.card .navi-btn{ flex:1; height:36px; border-radius:8px; background:#fff;
   font-size:13px; font-weight:700; }
@@ -414,8 +416,10 @@ function renderLock() {
 
 /* ── 미수금·경쟁사 명단 ──
    nearby-extra.js 가 같은 비밀번호로 암호화된 명단을 들고 있다.
-     { debt:  ["업체명 또는 코드", …]            기존 업체를 미수금으로 표시
-       rival: [{name, addr, tel, person, note, lat, lng}, …]  새 업체로 추가 }
+     { debt:  [{name, code, addr, tel, amount, grade, branch, person, lat, lng}, …]
+       rival: [{name, addr, biz, cat2, sales, fields, branch, person, lastVisit, visits, lat, lng}, …] }
+   미수금은 입고미회수 목록에 같은 업체가 있으면 그 업체를 미수금으로 바꾸고,
+   없으면 새로 넣는다. 경쟁사는 우리 목록에 없는 업체라 늘 새로 넣는다.
    파일이 없으면 아무 일도 하지 않는다.                              */
 async function loadExtra(password) {
   if (typeof window.NEARBY_EXTRA_ENC !== "string") return null;
@@ -428,20 +432,28 @@ async function loadExtra(password) {
     return JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({ name: "AES-GCM", iv }, k, ct)));
   } catch (e) { return null; }
 }
+function placeXY(o, x) {
+  if (x.lat && x.lng) { o.lat = +x.lat; o.lng = +x.lng; o.approx = false; return o; }
+  const h = findRegion(x.addr || "");
+  if (h) { o.lat = h.lat; o.lng = h.lng; o.approx = true; }
+  else { o.lat = null; o.lng = null; o.approx = false; }
+  return o;
+}
 function applyExtra(recs, extra) {
   if (!extra) return recs;
-  const debt = new Set((extra.debt || []).map(x => String(x).trim()).filter(Boolean));
-  if (debt.size) recs.forEach(r => { if (debt.has(r.name) || debt.has(String(r.code))) r.kind = "debt"; });
-  const add = (extra.rival || []).map((x, i) => {
-    const o = Object.assign({}, x, { id: "rival|" + (x.code || i), kind: "rival", fkey: "", qty: 0 });
-    if (x.lat && x.lng) { o.lat = +x.lat; o.lng = +x.lng; o.approx = false; }
-    else {
-      const h = findRegion(x.addr || "");
-      if (h) { o.lat = h.lat; o.lng = h.lng; o.approx = true; }
-      else { o.lat = null; o.lng = null; o.approx = false; }
-    }
-    return o;
-  }).filter(r => r.name);
+  const byName = new Map(), byCode = new Map();
+  recs.forEach(r => { byName.set(r.name, r); if (r.code) byCode.set(String(r.code), r); });
+  const add = [];
+  (extra.debt || []).forEach((x, i) => {
+    if (!x || !x.name) return;
+    const hit = byName.get(x.name) || (x.code && byCode.get(String(x.code)));
+    if (hit) { hit.kind = "debt"; Object.assign(hit, { amount: x.amount, grade: x.grade, branch: x.branch, dperson: x.person }); return; }
+    add.push(placeXY(Object.assign({}, x, { id: "debt|" + (x.code || i), kind: "debt", fkey: "", qty: 0, dperson: x.person }), x));
+  });
+  (extra.rival || []).forEach((x, i) => {
+    if (!x || !x.name) return;
+    add.push(placeXY(Object.assign({}, x, { id: "rival|" + (x.code || i), kind: "rival", fkey: "", qty: 0 }), x));
+  });
   return recs.concat(add);
 }
 
@@ -539,11 +551,39 @@ function compute() {
   withD.sort((x, y) => x.dist - y.dist);
   return withD;
 }
+/* 분류마다 보여 줄 것이 다르다 — 두 번째 줄(meta·nums)과 세 번째 줄을 나눠 만든다 */
+function cardBody(r) {
+  const md = s => String(s || "").slice(5).replace("-", ".");
+  if (r.kind === "rival") {
+    return {
+      meta: [r.branch, r.person].filter(Boolean).join(" · ") || "-",
+      nums: (r.biz ? `<span class="year yg">${esc(r.biz)}</span>` : "") +
+            (r.cat2 ? `<span class="year">${esc(r.cat2)}</span>` : "") +
+            (r.sales ? `<span class="amt">연 ${esc(r.sales)}천원</span>` : ""),
+      sub3: [r.fields, r.lastVisit ? `최종방문 ${md(r.lastVisit)}${r.visits ? ` (${esc(r.visits)}회)` : ""}` : ""]
+              .filter(Boolean).join(" · ")
+    };
+  }
+  if (r.kind === "debt") {
+    return {
+      meta: [r.branch, r.dperson || r.person].filter(Boolean).join(" · ") || "-",
+      nums: (r.grade ? `<span class="year yc">${esc(r.grade)}</span>` : "") +
+            (r.amount ? `<span class="amt">미수 ${esc(r.amount)}원</span>` : ""),
+      sub3: ""
+    };
+  }
+  const last = r.lastInDisplay || (r.lastIn ? md(r.lastIn) : "");
+  const inb = String(r.inboundDisplay || r.inbound || "");
+  return {
+    meta: [r.person, r.driver].filter(Boolean).join(" · ") || "-",
+    nums: (r.fkey ? `<span class="year ${catCls(r.fkey)}">${esc(r.fkey)}</span>` : "") +
+          (inb ? `<span class="inb-date">${last ? last.split("/").pop() + "일 · " : ""}입고 ${esc(inb)}</span>` : ""),
+    sub3: ""
+  };
+}
 function cardHtml(r) {
   const d = r.dist != null ? r.dist.toFixed(2) + " km" : "";
-  const last = r.lastInDisplay || (r.lastIn ? String(r.lastIn).slice(5).replace("-", ".") : "");
-  const inb = String(r.inboundDisplay || r.inbound || "");
-  const inbStr = last ? `${last.split("/").pop()}일 · 입고 ${esc(inb)}` : (inb ? `입고 ${esc(inb)}` : "");
+  const b = cardBody(r);
   const tel = String(r.tel || r.personTel || "").replace(/\D/g, "");
   return `<div class="card" data-id="${esc(r.id)}">
     <div class="top">
@@ -555,12 +595,10 @@ function cardHtml(r) {
           <span class="addr-short">${esc(r.addrShort || r.addr || "")}${r.approx ? " (시·군 중심)" : ""}</span>
         </div>
         <div class="staff-row">
-          <div class="meta">${esc(r.person || r.note || "-")}${r.driver ? " · " + esc(r.driver) : ""}</div>
-          <div class="nums">
-            ${r.fkey ? `<span class="year ${catCls(r.fkey)}">${esc(r.fkey)}</span>` : ""}
-            ${inbStr ? `<span class="inb-date">${inbStr}</span>` : ""}
-          </div>
+          <div class="meta">${esc(b.meta)}</div>
+          <div class="nums">${b.nums}</div>
         </div>
+        ${b.sub3 ? `<div class="sub3">${esc(b.sub3)}</div>` : ""}
       </div>
     </div>
     ${(tel || (r.lat && r.lng)) ? `<div class="btn-row">
@@ -707,12 +745,13 @@ function drawMarkers(fit) {
   $("mapRadius").textContent = "반경 " + state.radiusKm + "km";
 }
 function openInfo(r) {
-  const last = r.lastInDisplay || (r.lastIn ? String(r.lastIn).slice(5).replace("-", ".") : "");
+  const b = cardBody(r);
   const tel = String(r.tel || r.personTel || "").replace(/\D/g, "");
   $("mapInfo").innerHTML = `
     <div class="mi-h"><div class="mi-n">${esc(r.name)}</div><button class="mi-x" id="miX">✕</button></div>
-    <div class="mi-r">${KIND[r.kind].label}${r.fkey ? " · " + esc(r.fkey) : ""}${r.dist != null ? " · " + r.dist.toFixed(2) + "km" : ""}${r.person ? " · 담당 " + esc(r.person) : ""}</div>
-    ${(r.inboundDisplay || r.inbound) ? `<div class="mi-r">입고 <b>${esc(String(r.inboundDisplay || r.inbound))}</b>${last ? " · 최종 " + esc(last) : ""}</div>` : ""}
+    <div class="mi-r">${KIND[r.kind].label}${r.dist != null ? " · " + r.dist.toFixed(2) + "km" : ""}${b.meta && b.meta !== "-" ? " · " + esc(b.meta) : ""}</div>
+    ${b.nums ? `<div class="mi-r">${b.nums}</div>` : ""}
+    ${b.sub3 ? `<div class="mi-r">${esc(b.sub3)}</div>` : ""}
     ${r.addr ? `<div class="mi-r">${esc(r.addr)}${r.approx ? " (시·군 중심)" : ""}</div>` : ""}
     ${r.code ? `<div class="mi-r">코드 ${esc(r.code)}</div>` : ""}
     <div class="mi-b">
