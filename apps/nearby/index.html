@@ -511,9 +511,10 @@ function cardBody(r) {
     };
   }
   return {
-    meta: [r.contact, r.person].filter(Boolean).join(" · ") || "-",
-    nums: r.code ? `<span class="year">코드 ${esc(r.code)}</span>` : "",
-    sub3: r.types ? "사용 " + r.types : ""
+    meta: r.contact ? "업체담당자 : " + r.contact : "-",
+    nums: (r.code ? `<span class="year">코드 ${esc(r.code)}</span>` : "") +
+          (r.person ? `<span class="year yg">KPP ${esc(r.person)}</span>` : ""),
+    sub3: ""
   };
 }
 function cardHtml(r) {
