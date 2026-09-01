@@ -84,12 +84,6 @@ button{ border:none; background:none; cursor:pointer; }
 .card .year.yn{ background:#e8f5e9; color:#2e7d32; }
 .card .year.yyj{ background:#e0f2f1; color:#00695c; }
 .card .inb-date{ font-size:14px; color:#e53935; font-weight:700; white-space:nowrap; }
-.card .right-col{ display:flex; flex-direction:column; align-items:stretch; gap:8px; min-width:82px; flex:none; }
-.card .share-btn{ padding:5px 8px; border:1.5px solid #1a73e8; border-radius:8px; background:#fff;
-  color:#1a73e8; font-size:12px; font-weight:700; white-space:nowrap; }
-.card .share-btn:active{ background:#1a73e8; color:#fff; }
-.card .code-box{ border:1.5px solid #bbb; border-radius:6px; background:#f8f8f8; padding:4px 6px;
-  text-align:center; font-size:11px; font-weight:700; color:#333; cursor:pointer; user-select:none; }
 .card .btn-row{ display:flex; gap:7px; border-top:1px solid #f0f0f0; padding-top:8px; margin-top:9px; }
 .card .tel-btn,.card .navi-btn{ flex:1; height:36px; border-radius:8px; background:#fff;
   font-size:13px; font-weight:700; }
@@ -541,10 +535,6 @@ function cardHtml(r) {
           </div>
         </div>
       </div>
-      <div class="right-col">
-        <button class="share-btn">🔔 공유</button>
-        ${r.code ? `<div class="code-box">코드 ${esc(r.code)}</div>` : ""}
-      </div>
     </div>
     ${(tel || (r.lat && r.lng)) ? `<div class="btn-row">
       ${tel ? `<button class="tel-btn" data-tel="${esc(tel)}">📞 전화</button>` : ""}
@@ -578,32 +568,12 @@ function bindCards() {
     if (t) t.onclick = () => { location.href = "tel:" + t.dataset.tel; };
     const n = el.querySelector(".navi-btn");
     if (n) n.onclick = () => window.open(naviUrl(r), "_blank", "noopener");
-    const s = el.querySelector(".share-btn");
-    if (s) s.onclick = () => share(r);
-    const c = el.querySelector(".code-box");
-    if (c) c.onclick = () => copy(r.code, "코드를 복사했습니다");
   });
 }
 function naviUrl(r) {
   const nm = encodeURIComponent(r.name || "목적지");
   if (state.anchor) return `https://map.kakao.com/link/from/출발,${state.anchor.lat},${state.anchor.lng}/to/${nm},${r.lat},${r.lng}`;
   return `https://map.kakao.com/link/to/${nm},${r.lat},${r.lng}`;
-}
-function shareText(r) {
-  const last = r.lastInDisplay || (r.lastIn ? String(r.lastIn).slice(5).replace("-", ".") : "");
-  return [r.name, r.addr, r.code ? "코드 " + r.code : "",
-    r.inboundDisplay || r.inbound ? "입고 " + (r.inboundDisplay || r.inbound) : "",
-    last ? "최종입고 " + last : "", r.person ? "담당 " + r.person : ""].filter(Boolean).join("\n");
-}
-function share(r) {
-  const t = shareText(r);
-  if (navigator.share) { navigator.share({ title: r.name, text: t }).catch(() => {}); return; }
-  copy(t, "업체 정보를 복사했습니다");
-}
-function copy(t, msg) {
-  if (!t) return;
-  if (navigator.clipboard) navigator.clipboard.writeText(t).then(() => toast(msg)).catch(() => toast("복사할 수 없습니다"));
-  else toast("복사할 수 없습니다");
 }
 
 /* ═══════ 지도모드 ═══════ */
@@ -613,12 +583,31 @@ function loadKakao() {
   if (kakaoLoading) return kakaoLoading;
   kakaoLoading = new Promise((res, rej) => {
     const s = document.createElement("script");
-    s.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${KAKAO_JS_KEY}&autoload=false&libraries=clusterer,services`;
-    s.onload = () => kakao.maps.load(res);
+    s.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${KAKAO_JS_KEY}&autoload=false&libraries=clusterer,services`;
+    s.onload = () => {
+      if (!window.kakao || !kakao.maps) { rej(new Error("blocked")); return; }
+      kakao.maps.load(res);
+    };
     s.onerror = () => rej(new Error("sdk"));
     document.head.appendChild(s);
+    setTimeout(() => rej(new Error("timeout")), 12000);
   });
+  /* 실패한 약속을 캐시에 남기면 다시 시도해도 계속 실패한다 */
+  kakaoLoading.catch(() => { kakaoLoading = null; });
   return kakaoLoading;
+}
+/* 왜 안 되는지 화면에서 바로 알 수 있게 적어 준다 */
+function mapFail(why) {
+  const m = $("mapMsg");
+  m.style.display = "block";
+  m.innerHTML = `<div style="font-weight:800;margin-bottom:7px">지도를 불러오지 못했습니다</div>
+    <div style="font-size:12.5px;color:#555;line-height:1.7">${esc(why)}<br>
+      현재 주소 <b style="color:#123c7a">${esc(location.origin)}</b><br>
+      카카오 개발자센터 → 내 애플리케이션 → 앱 설정 → 플랫폼 → Web 에<br>이 주소가 등록돼야 지도가 열립니다.</div>
+    <button id="mapRetry" style="margin-top:11px;height:38px;padding:0 18px;border-radius:9px;
+      background:#123c7a;color:#fff;font-size:13.5px;font-weight:800">다시 시도</button>`;
+  const r = $("mapRetry");
+  if (r) r.onclick = () => { m.style.display = "none"; kmap = null; openMap(); };
 }
 function pinImage(color) {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="26" height="36" viewBox="0 0 26 36"><path d="M13 0C6 0 0 5.6 0 13c0 9 13 23 13 23s13-14 13-23C26 5.6 20 0 13 0z" fill="${color}" stroke="#fff" stroke-width="2"/><circle cx="13" cy="13" r="5" fill="#fff"/></svg>`;
@@ -697,20 +686,27 @@ async function openMap() {
   $("mapInfo").style.display = "none";
   $("mapRadius").textContent = "반경 " + state.radiusKm + "km";
   renderLegend();
+  $("mapMsg").style.display = "none";
   try { await loadKakao(); }
   catch (e) {
-    $("mapMsg").style.display = "block";
-    $("mapMsg").textContent = "지도를 불러오지 못했습니다 — 등록된 주소에서만 열립니다";
+    mapFail(e.message === "timeout" ? "카카오 서버 응답이 없습니다 (네트워크 확인)"
+      : "카카오 지도 스크립트가 차단되었습니다.");
     return;
   }
-  if (!kmap) {
-    const c = state.anchor || { lat: 35.335, lng: 129.037 };
-    kmap = new kakao.maps.Map($("mapCanvas"), { center: new kakao.maps.LatLng(c.lat, c.lng), level: 7 });
-    clusterer = new kakao.maps.MarkerClusterer({ map: kmap, averageCenter: true, minLevel: 7, gridSize: 60 });
-    kakao.maps.event.addListener(kmap, "zoom_changed", syncScale);
-  }
+  try {
+    if (!kmap) {
+      const c = state.anchor || { lat: 35.335, lng: 129.037 };
+      kmap = new kakao.maps.Map($("mapCanvas"), { center: new kakao.maps.LatLng(c.lat, c.lng), level: 7 });
+      clusterer = new kakao.maps.MarkerClusterer({ map: kmap, averageCenter: true, minLevel: 7, gridSize: 60 });
+      kakao.maps.event.addListener(kmap, "zoom_changed", syncScale);
+    }
+  } catch (e) { kmap = null; mapFail("지도를 만들지 못했습니다 — " + e.message); return; }
   drawMarkers(true);
   syncScale();
+  /* 키가 이 주소에 등록돼 있지 않으면 스크립트는 받아지지만 타일이 안 온다 */
+  setTimeout(() => {
+    if (mapOn && kmap && !$("mapCanvas").querySelector("img")) mapFail("이 주소가 카카오 앱에 등록돼 있지 않습니다.");
+  }, 3500);
 }
 function closeMap() { $("mapSheet").classList.remove("on"); mapOn = false; }
 
