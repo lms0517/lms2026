@@ -94,6 +94,19 @@ button{ border:none; background:none; cursor:pointer; }
 .card .noloc{ font-size:11.5px; color:#b0b6bd; text-align:center; padding-top:8px;
   border-top:1px solid #f0f0f0; margin-top:9px; }
 
+/* 주변 신규 발굴 — 네이버 지도로 넘긴다 */
+.disc{ background:#fff; border:1px solid #e3e8ef; border-radius:12px; padding:16px 15px 15px; }
+.disc .dh{ font-size:14.5px; font-weight:800; color:#123c7a; margin-bottom:5px; }
+.disc p{ font-size:12.5px; color:#6b7280; line-height:1.7; margin-bottom:13px; }
+.disc .kws{ display:flex; flex-direction:column; gap:8px; }
+.disc .kw{ display:flex; align-items:center; gap:9px; height:50px; padding:0 14px;
+  border:1.5px solid #03c75a; border-radius:11px; background:#fff; color:#03c75a;
+  font-size:14.5px; font-weight:800; text-decoration:none; }
+.disc .kw:active{ background:#03c75a; color:#fff; }
+.disc .kw .ic{ font-size:17px; }
+.disc .kw .go{ margin-left:auto; font-size:12px; font-weight:700; opacity:.75; }
+.disc .foot{ font-size:11.5px; color:#9aa4b2; line-height:1.65; margin-top:12px; }
+
 .empty{ text-align:center; color:#9aa4b2; font-size:13.5px; padding:44px 20px; line-height:1.8; }
 .more{ width:100%; height:46px; border-radius:10px; border:1px solid #d9dee6; background:#fff;
   color:#17509b; font-size:14px; font-weight:800; margin-bottom:12px; }
@@ -324,6 +337,17 @@ const KIND = {
   rival: { label: "경쟁사",    color: "#d97706" }
 };
 const KIND_ORDER = ["deal", "debt", "rival"];
+/* 신규는 우리 데이터에 없는 업체를 찾는 자리다 — 세는 대상이 아니라 발굴 화면으로 넘긴다 */
+const NEW_KW = [["제조공장", "🏭"], ["물류센터", "🏢"], ["창고", "📦"]];
+function naverUrl(kw) {
+  const a = state.anchor;
+  if (!a) return "https://map.naver.com/p/search/" + encodeURIComponent(kw);
+  if (a.label && a.label !== "현재 위치")
+    return "https://map.naver.com/p/search/" + encodeURIComponent(a.label + " " + kw);
+  /* 지명이 없으면 좌표로 중심을 잡아 넘긴다 */
+  return "https://map.naver.com/p/search/" + encodeURIComponent(kw) +
+    `?c=${a.lng.toFixed(6)},${a.lat.toFixed(6)},14,0,0,0,dh`;
+}
 /* 입고미회수 업체는 KPP 파렛트를 쓰고 있는 곳이므로 전부 계약처다.
    기록에 분류가 붙어 있으면 그 값이 이긴다.                          */
 function kindOf(r) {
@@ -458,7 +482,9 @@ function renderCatRow() {
   $("catRow").innerHTML = '<span class="lb">분류</span>' +
     `<button class="chip ${state.cats === null ? "on" : ""}" data-c="">전체 ${n.all.toLocaleString()}</button>` +
     KIND_ORDER.map(k => `<button class="chip ${state.cats === k ? "on" : ""}" data-c="${k}">
-      <span class="kd" style="background:${KIND[k].color}"></span>${KIND[k].label} ${n[k].toLocaleString()}</button>`).join("");
+      <span class="kd" style="background:${KIND[k].color}"></span>${KIND[k].label} ${n[k].toLocaleString()}</button>`).join("") +
+    `<button class="chip ${state.cats === "new" ? "on" : ""}" data-c="new">
+      <span class="kd" style="background:#03c75a"></span>신규</button>`;
   $("catRow").querySelectorAll(".chip").forEach(b => b.onclick = () => {
     state.cats = b.dataset.c || null; state.shown = 60;
     renderCatRow(); render();
@@ -502,6 +528,7 @@ function geocode(q) {
 
 /* ═══════ 목록 ═══════ */
 function compute() {
+  if (state.cats === "new") return [];
   let pool = RECS;
   if (state.cats) pool = pool.filter(r => r.kind === state.cats);
   const a = state.anchor;
@@ -546,6 +573,22 @@ function render() {
   const list = compute();
   state.list = list;
   const a = state.anchor;
+  $("btnMap").style.display = state.cats === "new" ? "none" : "";
+  if (state.cats === "new") {
+    $("hdSub").textContent = a ? `${a.label} 주변 신규 발굴` : "지역을 잡아 주세요";
+    $("cnt").innerHTML = "";
+    $("list").innerHTML = !a
+      ? '<div class="empty">📍 현재 위치로 찾기를 누르거나<br>지역을 검색해 주세요.</div>'
+      : `<div class="disc">
+          <div class="dh">📍 ${esc(a.label)} 주변 신규 발굴</div>
+          <p>우리 데이터에 없는 업체를 찾는 자리입니다.<br>누르면 네이버 지도에서 그 주변 업종이 검색됩니다.</p>
+          <div class="kws">${NEW_KW.map(([k, ic]) =>
+            `<a class="kw" href="${esc(naverUrl(k))}" target="_blank" rel="noopener">
+               <span class="ic">${ic}</span>${esc(k)}<span class="go">네이버 지도 ›</span></a>`).join("")}</div>
+          <div class="foot">찾은 업체는 업무일지에 적어 두면 다음부터 이 목록에 함께 뜹니다.</div>
+        </div>`;
+    return;
+  }
   $("hdSub").textContent = a ? `${a.label} 기준 · 반경 ${state.radiusKm}km` : "위치를 잡아 주세요";
   $("cnt").innerHTML = a
     ? `${esc(a.label)} 기준 · 반경 ${state.radiusKm}km 안 <b>${list.length.toLocaleString()}곳</b>` +
