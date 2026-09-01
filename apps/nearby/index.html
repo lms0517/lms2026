@@ -327,9 +327,9 @@ function distKm(a, b, c, d) {
 
 /* ═══════ 분류 ═══════ */
 const KIND = {
-  deal:  { label: "계약처",    color: "#1d4ed8" },
-  debt:  { label: "미수금업체", color: "#dc2626" },
-  rival: { label: "경쟁사",    color: "#d97706" }
+  deal:  { label: "계약처",    color: "#1d4ed8", edge: "#fff", ink: "#fff" },
+  debt:  { label: "미수금업체", color: "#d4ff00", edge: "#333", ink: "#333" },  /* 형광 — 흰 바탕에 묻히니 테두리를 어둡게 */
+  rival: { label: "경쟁사",    color: "#dc2626", edge: "#fff", ink: "#fff" }
 };
 const KIND_ORDER = ["deal", "debt", "rival"];
 /* 신규는 우리 데이터에 없는 업체를 찾는 자리다 — 세는 대상이 아니라 발굴 화면으로 넘긴다 */
@@ -344,6 +344,7 @@ function naverUrl(kw) {
     `?c=${a.lng.toFixed(6)},${a.lat.toFixed(6)},14,0,0,0,dh`;
 }
 function kindColor(k) { return (KIND[k] || KIND.deal).color; }
+function kindEdge(k) { return (KIND[k] || KIND.deal).edge; }
 
 /* ═══════ 상태 ═══════ */
 const LS = { radius: "kppnear_radius", cats: "kppnear_cats" };
@@ -432,7 +433,7 @@ function renderCatRow() {
   $("catRow").innerHTML = '<span class="lb">분류</span>' +
     `<button class="chip ${state.cats === null ? "on" : ""}" data-c="">전체 ${n.all.toLocaleString()}</button>` +
     KIND_ORDER.map(k => `<button class="chip ${state.cats === k ? "on" : ""}" data-c="${k}">
-      <span class="kd" style="background:${KIND[k].color}"></span>${KIND[k].label} ${n[k].toLocaleString()}</button>`).join("") +
+      <span class="kd" style="background:${KIND[k].color};border:1px solid ${KIND[k].edge === "#fff" ? "transparent" : "#333"}"></span>${KIND[k].label} ${n[k].toLocaleString()}</button>`).join("") +
     `<button class="chip ${state.cats === "new" ? "on" : ""}" data-c="new">
       <span class="kd" style="background:#03c75a"></span>신규</button>`;
   $("catRow").querySelectorAll(".chip").forEach(b => b.onclick = () => {
@@ -525,7 +526,7 @@ function cardHtml(r) {
     <div class="top">
       <div class="left-col">
         <div class="nm-row">
-          <span class="kdot" style="background:${kindColor(r.kind)}"></span>
+          <span class="kdot" style="background:${kindColor(r.kind)};border:1px solid ${kindEdge(r.kind) === "#fff" ? "transparent" : "#333"}"></span>
           <div class="dist">${d}</div>
           <div class="name">${esc(r.name)}</div>
           <span class="addr-short">${esc(r.addrShort || r.addr || "")}${r.approx ? " (시·군 중심)" : ""}</span>
@@ -627,13 +628,10 @@ function mapFail(why) {
   const r = $("mapRetry");
   if (r) r.onclick = () => { m.style.display = "none"; kmap = null; openMap(); };
 }
-function pinImage(color) {
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="26" height="36" viewBox="0 0 26 36"><path d="M13 0C6 0 0 5.6 0 13c0 9 13 23 13 23s13-14 13-23C26 5.6 20 0 13 0z" fill="${color}" stroke="#fff" stroke-width="2"/><circle cx="13" cy="13" r="5" fill="#fff"/></svg>`;
-  return new kakao.maps.MarkerImage("data:image/svg+xml;base64," + btoa(svg), new kakao.maps.Size(26, 36), { offset: new kakao.maps.Point(13, 36) });
-}
-function qtyImage(qty, color) {
-  const txt = String(qty), w = txt.length <= 2 ? 32 : (txt.length === 3 ? 38 : 44);
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${w}"><circle cx="${w / 2}" cy="${w / 2}" r="${w / 2 - 3}" fill="${color}" stroke="#fff" stroke-width="3"/><text x="${w / 2}" y="${w / 2}" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" font-size="14" font-weight="bold" fill="#fff">${txt}</text></svg>`;
+/* 분류마다 색이 다른 동그란 마커 */
+function dotImage(kind) {
+  const k = KIND[kind] || KIND.deal, w = 22;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${w}"><circle cx="${w / 2}" cy="${w / 2}" r="${w / 2 - 2.5}" fill="${k.color}" stroke="${k.edge}" stroke-width="2.5"/></svg>`;
   return new kakao.maps.MarkerImage("data:image/svg+xml;base64," + btoa(svg), new kakao.maps.Size(w, w), { offset: new kakao.maps.Point(w / 2, w / 2) });
 }
 function flagImage() {
@@ -645,24 +643,33 @@ const LEVEL_SCALE = { 1: "20m", 2: "30m", 3: "50m", 4: "100m", 5: "250m", 6: "50
 function syncScale() { if (kmap) $("mapScaleVal").textContent = LEVEL_SCALE[kmap.getLevel()] || ""; }
 
 function renderLegend() {
-  const ks = state.cats ? [state.cats] : KIND_ORDER;
-  $("mapLegend").innerHTML = ks.map(k =>
-    `<span style="display:inline-flex;align-items:center;gap:4px;"><span style="width:11px;height:11px;border-radius:50%;background:${KIND[k].color};"></span>${KIND[k].label}</span>`).join("") +
+  const n = {}; mapItems().forEach(r => n[r.kind] = (n[r.kind] || 0) + 1);
+  $("mapLegend").innerHTML = KIND_ORDER.map(k =>
+    `<span style="display:inline-flex;align-items:center;gap:4px;"><span style="width:12px;height:12px;border-radius:50%;background:${KIND[k].color};border:1.5px solid ${KIND[k].edge === "#fff" ? "#bbb" : "#333"};"></span>${KIND[k].label} ${n[k] || 0}</span>`).join("") +
     '<span style="color:#1976d2;">⚑ 기준 위치</span>';
 }
 function clearMarkers() {
   if (clusterer) clusterer.clear();
   markers.forEach(m => m.setMap(null)); markers = [];
 }
+/* 지도에 올릴 것 — 목록과 달리 분류를 가리지 않는다.
+   계약처·미수금·경쟁사를 한 화면에서 같이 보는 게 지도모드의 쓸모다.
+   반경은 그대로 지킨다.                                              */
+function mapItems() {
+  const a = state.anchor;
+  if (!a) return [];
+  return RECS.filter(r => r.lat && r.lng)
+    .map(r => Object.assign({}, r, { dist: distKm(a.lat, a.lng, r.lat, r.lng) }))
+    .filter(r => state.radiusKm == null || r.dist <= state.radiusKm);
+}
 function drawMarkers(fit) {
   if (!kmap) return;
   clearMarkers();
-  const items = state.list.filter(r => r.lat && r.lng);
+  const items = mapItems();
   const bounds = new kakao.maps.LatLngBounds();
   items.forEach(r => {
     const pos = new kakao.maps.LatLng(r.lat, r.lng);
-    const col = kindColor(r.kind);
-    const m = new kakao.maps.Marker({ position: pos, image: r.qty > 0 ? qtyImage(r.qty, col) : pinImage(col) });
+    const m = new kakao.maps.Marker({ position: pos, image: dotImage(r.kind) });
     kakao.maps.event.addListener(m, "click", () => openInfo(r));
     markers.push(m); bounds.extend(pos);
   });
@@ -686,7 +693,7 @@ function openInfo(r) {
   const tel = String(r.tel || r.personTel || "").replace(/\D/g, "");
   $("mapInfo").innerHTML = `
     <div class="mi-h"><div class="mi-n">${esc(r.name)}</div><button class="mi-x" id="miX">✕</button></div>
-    <div class="mi-r">${KIND[r.kind].label}${r.dist != null ? " · " + r.dist.toFixed(2) + "km" : ""}${b.meta && b.meta !== "-" ? " · " + esc(b.meta) : ""}</div>
+    <div class="mi-r">${KIND[r.kind].label}${b.meta && b.meta !== "-" ? " · " + esc(b.meta) : ""}</div>
     ${b.nums ? `<div class="mi-r">${b.nums}</div>` : ""}
     ${b.sub3 ? `<div class="mi-r">${esc(b.sub3)}</div>` : ""}
     ${r.addr ? `<div class="mi-r">${esc(r.addr)}${r.approx ? " (시·군 중심)" : ""}</div>` : ""}
