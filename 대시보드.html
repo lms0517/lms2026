@@ -102,7 +102,8 @@ input,textarea,select{font-family:inherit;font-size:15px;}
 .subtabs{display:flex;gap:6px;background:var(--blue-ll);border:1px solid var(--line);
   border-radius:var(--r-md);padding:4px;margin-bottom:14px;}
 .subtabs .stb{flex:1;padding:9px 6px;border-radius:7px;font-size:13.5px;font-weight:700;
-  color:var(--sub);transition:.14s;}
+  color:var(--sub);transition:.14s;text-align:center;text-decoration:none;cursor:pointer;
+  display:block;line-height:1.5;}
 .subtabs .stb.on{background:var(--blue);color:#fff;box-shadow:var(--sh);}
 .subtabs .stb:active{transform:scale(.98);}
 .ccard.act{box-shadow:0 0 0 2px var(--blue),var(--sh-hv);}
@@ -550,7 +551,7 @@ a.btn{text-decoration:none;box-sizing:border-box;}
   <div class="view" id="v-comp">
     <div class="subtabs" id="compSub">
       <button class="stb on" data-s="info">🏢 업체정보</button>
-      <button class="stb" data-s="near">📍 주변 업체</button>
+      <a class="stb" id="nearLink" href="apps/nearby/" target="_blank" rel="noopener">📍 주변 업체</a>
     </div>
 
     <!-- 업체정보 -->
@@ -1681,14 +1682,12 @@ const REGIONS=[
 ];
 
 /* 업체 탭 안 좌우 전환.
-   주변 업체는 전체화면 앱이다 — 지도와 카드가 화면을 다 써야 해서 따로 뗐다.
-   누르면 새 창으로 열고 탭은 업체정보로 되돌린다.                     */
-const NEARBY_APP='apps/nearby/';
+   주변 업체는 전체화면 앱이라 따로 뗐다 — 지도와 카드가 화면을 다 써야 한다.
+   버튼이 아니라 <a> 로 둔다. window.open 은 미리보기 iframe 이나
+   카톡 같은 인앱 브라우저에서 조용히 막히지만 링크는 막히지 않는다.     */
 let compSubView='info';
-$('compSub').querySelectorAll('.stb').forEach(b=>b.onclick=()=>{
-  if(b.dataset.s==='near'){ window.open(NEARBY_APP,'_blank','noopener'); return; }
+$('compSub').querySelectorAll('button.stb').forEach(b=>b.onclick=()=>{
   compSubView=b.dataset.s;
-  $('compSub').querySelectorAll('.stb').forEach(x=>x.classList.toggle('on',x===b));
   $('compInfo').style.display='';
   $('main').scrollTop=0;
   render();
