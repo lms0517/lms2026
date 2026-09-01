@@ -422,10 +422,18 @@ const LS = { radius: "kppnear_radius", cats: "kppnear_cats" };
 const state = {
   anchor: null,          /* {lat,lng,label} */
   radiusKm: +(localStorage.getItem(LS.radius) || 3),
-  cats: null,            /* null = 전체 */
+  cats: [],              /* 고른 분류 — 빈 배열이면 전체. 복수선택 가능 */
+  newMode: false,        /* '신규'는 걸러내기가 아니라 다른 화면이라 따로 둔다 */
   shown: 60,
   list: []
 };
+/* 지난번에 고른 분류를 기억한다 */
+try {
+  const v = JSON.parse(localStorage.getItem(LS.cats) || "[]");
+  if (Array.isArray(v)) state.cats = v.filter(k => KIND[k]);
+} catch (e) { /* 저장값이 깨졌으면 전체로 시작한다 */ }
+/* 고른 분류만 남긴다 — 하나도 안 고르면 전체가 대상이다 */
+function catPass(r) { return !state.cats.length || state.cats.includes(r.kind); }
 
 function toast(msg) {
   const t = $("toast"); t.textContent = msg; t.classList.add("on");
@@ -502,15 +510,27 @@ function kindCounts() {
 }
 function renderCatRow() {
   const n = kindCounts();
+  const allOn = !state.cats.length && !state.newMode;
   $("catRow").innerHTML = '<span class="lb">분류</span>' +
-    `<button class="chip ${state.cats === null ? "on" : ""}" data-c="">전체 ${n.all.toLocaleString()}</button>` +
-    KIND_ORDER.map(k => `<button class="chip ${state.cats === k ? "on" : ""}" data-c="${k}">
+    `<button class="chip ${allOn ? "on" : ""}" data-c="">전체 ${n.all.toLocaleString()}</button>` +
+    KIND_ORDER.map(k => `<button class="chip ${!state.newMode && state.cats.includes(k) ? "on" : ""}" data-c="${k}">
       <span class="kd" style="background:${KIND[k].color};border:1px solid ${KIND[k].edge === "#fff" ? "transparent" : "#333"}"></span>${KIND[k].label} ${n[k].toLocaleString()}</button>`).join("") +
-    `<button class="chip ${state.cats === "new" ? "on" : ""}" data-c="new">
+    `<button class="chip ${state.newMode ? "on" : ""}" data-c="new">
       <span class="kd" style="background:#03c75a"></span>신규</button>`;
+  /* 분류는 여러 개를 눌러 겹쳐 볼 수 있다. '전체'와 '신규'만 혼자 선다 */
   $("catRow").querySelectorAll(".chip").forEach(b => b.onclick = () => {
-    state.cats = b.dataset.c || null; state.shown = 60;
+    const c = b.dataset.c;
+    if (c === "") { state.cats = []; state.newMode = false; }
+    else if (c === "new") { state.cats = []; state.newMode = !state.newMode; }
+    else {
+      state.newMode = false;
+      const i = state.cats.indexOf(c);
+      if (i >= 0) state.cats.splice(i, 1); else state.cats.push(c);
+    }
+    localStorage.setItem(LS.cats, JSON.stringify(state.cats));
+    state.shown = 60;
     renderCatRow(); render();
+    if (mapOn) { drawMarkers(true); renderLegend(); }
   });
 }
 
@@ -551,9 +571,8 @@ function geocode(q) {
 
 /* ═══════ 목록 ═══════ */
 function compute() {
-  if (state.cats === "new") return [];
-  let pool = RECS;
-  if (state.cats) pool = pool.filter(r => r.kind === state.cats);
+  if (state.newMode) return [];
+  const pool = RECS.filter(catPass);
   const a = state.anchor;
   if (!a) return pool.slice(0, 0);
   const withD = pool.filter(r => r.lat && r.lng)
@@ -623,8 +642,8 @@ function render() {
   const list = compute();
   state.list = list;
   const a = state.anchor;
-  $("btnMap").style.display = state.cats === "new" ? "none" : "";
-  if (state.cats === "new") {
+  $("btnMap").style.display = state.newMode ? "none" : "";
+  if (state.newMode) {
     $("hdSub").textContent = a ? `${a.label} 주변 신규 발굴` : "지역을 잡아 주세요";
     $("cnt").innerHTML = "";
     $("list").innerHTML = !a
@@ -642,7 +661,7 @@ function render() {
   $("hdSub").textContent = a ? `${a.label} 기준 · 반경 ${state.radiusKm}km` : "위치를 잡아 주세요";
   $("cnt").innerHTML = a
     ? `${esc(a.label)} 기준 · 반경 ${state.radiusKm}km 안 <b>${list.length.toLocaleString()}곳</b>` +
-      ` <span>/ 전체 ${RECS.length.toLocaleString()}곳</span>`
+      ` <span>/ ${state.cats.length ? state.cats.map(k => KIND[k].label).join("·") : "전체"} ${RECS.filter(catPass).length.toLocaleString()}곳</span>`
     : "";
   if (!a) { $("list").innerHTML = '<div class="empty">📍 현재 위치로 찾기를 누르거나<br>지역을 검색해 주세요.</div>'; return; }
   if (!list.length) { $("list").innerHTML = '<div class="empty">반경 안에 업체가 없습니다.<br>반경을 넓혀 보세요.</div>'; return; }
@@ -730,22 +749,24 @@ function syncScale() { if (kmap) $("mapScaleVal").textContent = LEVEL_SCALE[kmap
 
 function renderLegend() {
   const n = {}; mapItems().forEach(r => n[r.kind] = (n[r.kind] || 0) + 1);
-  $("mapLegend").innerHTML = KIND_ORDER.map(k =>
+  /* 고른 분류만 범례에 세운다 */
+  const show = KIND_ORDER.filter(k => !state.cats.length || state.cats.includes(k));
+  $("mapLegend").innerHTML = show.map(k =>
     `<span style="display:inline-flex;align-items:center;gap:4px;"><span style="width:12px;height:12px;border-radius:50%;background:${KIND[k].color};border:1.5px solid ${KIND[k].edge === "#fff" ? "#bbb" : "#333"};"></span>${KIND[k].label} ${n[k] || 0}</span>`).join("") +
-    '<span style="color:#555;">경쟁사 숫자 = 연매출(억)</span>' +
+    (show.includes("rival") ? '<span style="color:#555;">경쟁사 숫자 = 연매출(억)</span>' : "") +
     '<span style="color:#1976d2;">⚑ 기준 위치</span>';
 }
 function clearMarkers() {
   if (clusterer) clusterer.clear();
   markers.forEach(m => m.setMap(null)); markers = [];
 }
-/* 지도에 올릴 것 — 목록과 달리 분류를 가리지 않는다.
-   계약처·미수금·경쟁사를 한 화면에서 같이 보는 게 지도모드의 쓸모다.
+/* 지도에 올릴 것 — 카드모드에서 고른 분류를 그대로 따른다.
+   아무것도 안 고르면 계약처·미수금·경쟁사가 한 화면에 같이 뜬다.
    반경은 그대로 지킨다.                                              */
 function mapItems() {
   const a = state.anchor;
   if (!a) return [];
-  return RECS.filter(r => r.lat && r.lng)
+  return RECS.filter(r => r.lat && r.lng && catPass(r))
     .map(r => Object.assign({}, r, { dist: distKm(a.lat, a.lng, r.lat, r.lng) }))
     .filter(r => state.radiusKm == null || r.dist <= state.radiusKm);
 }
