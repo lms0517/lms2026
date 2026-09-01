@@ -92,6 +92,9 @@ button{ border:none; background:none; cursor:pointer; }
 .card .tel-btn{ border:2px solid #e53935; color:#e53935; }
 .card .tel-btn:active{ background:#e53935; color:#fff; }
 .card .navi-btn{ border:2px solid #1976d2; color:#1976d2; }
+.card .mail-btn{ flex:1; height:36px; border-radius:8px; background:#fff; border:2px solid #6b7280;
+  color:#6b7280; font-size:13px; font-weight:700; display:flex; align-items:center;
+  justify-content:center; text-decoration:none; }
 .card .navi-btn:active{ background:#1976d2; color:#fff; }
 .card .noloc{ font-size:11.5px; color:#b0b6bd; text-align:center; padding-top:8px;
   border-top:1px solid #f0f0f0; margin-top:9px; }
@@ -245,8 +248,7 @@ button{ border:none; background:none; cursor:pointer; }
 
 <div class="toast" id="toast"></div>
 
-<script src="../../nearby-data.js"></script>
-<!-- 미수금·경쟁사 명단 — 아직 없으면 이 파일만 빠진다 -->
+<!-- 계약처·미수금·경쟁사 명단 (암호문) -->
 <script src="../../nearby-extra.js"></script>
 <script>
 "use strict";
@@ -259,13 +261,15 @@ const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c =>
 const KAKAO_JS_KEY = "5588680e2268293ece13b0575ea1fde7";
 
 /* ═══════ 데이터 ═══════
-   입고미회수앱의 암호문을 그대로 쓴다. base64(salt16 + iv12 + 암호문),
-   PBKDF2-SHA256 10만회 → AES-256-GCM. 비밀번호는 이 기기에만 남는다. */
+   계약처·미수금·경쟁사 세 명단이 nearby-extra.js 에 암호문으로 들어 있다.
+   base64(salt16 + iv12 + 암호문), PBKDF2-SHA256 10만회 → AES-256-GCM.
+   비밀번호는 이 기기에만 남는다.                                        */
 const PW_KEY = "bmm_near_pw";
 let RECS = [];
+const hasEnc = () => typeof window.NEARBY_EXTRA_ENC === "string" && window.NEARBY_EXTRA_ENC.length > 100;
 
 async function decryptData(password) {
-  const raw = Uint8Array.from(atob(window.NEARBY_ENC), c => c.charCodeAt(0));
+  const raw = Uint8Array.from(atob(window.NEARBY_EXTRA_ENC), c => c.charCodeAt(0));
   const salt = raw.slice(0, 16), iv = raw.slice(16, 28), ct = raw.slice(28);
   const bk = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveKey"]);
   const k = await crypto.subtle.deriveKey({ name: "PBKDF2", salt, iterations: 100000, hash: "SHA-256" },
@@ -322,17 +326,6 @@ function distKm(a, b, c, d) {
 }
 
 /* ═══════ 분류 ═══════ */
-function fkeyOf(cat, sub) {
-  if (cat === "25년") return sub === "건자재" ? "25년건자재" : "25년일반";
-  if (cat === "일반") return "26년일반";
-  if (cat === "건자재") return "26년건자재";
-  if (cat === "신규") return "신규업체";
-  return cat || "";
-}
-const catCls = k => k.indexOf("25년") === 0 ? "y25" : k === "영업지원" ? "yyj"
-  : k === "26년일반" ? "yg" : k === "26년건자재" ? "yc" : "yn";
-/* 분류는 영업 관점 셋이다. 25·26년 일반/건자재는 회수 관리용 구분이라
-   카드 배지로만 남기고 거르는 기준으로는 쓰지 않는다.                */
 const KIND = {
   deal:  { label: "계약처",    color: "#1d4ed8" },
   debt:  { label: "미수금업체", color: "#dc2626" },
@@ -350,22 +343,7 @@ function naverUrl(kw) {
   return "https://map.naver.com/p/search/" + encodeURIComponent(kw) +
     `?c=${a.lng.toFixed(6)},${a.lat.toFixed(6)},14,0,0,0,dh`;
 }
-/* 입고미회수 업체는 KPP 파렛트를 쓰고 있는 곳이므로 전부 계약처다.
-   기록에 분류가 붙어 있으면 그 값이 이긴다.                          */
-function kindOf(r) {
-  const k = String(r.kind || r.분류 || "").trim();
-  if (k === "미수금" || k === "미수금업체" || k === "debt") return "debt";
-  if (k === "경쟁사" || k === "rival") return "rival";
-  return "deal";
-}
 function kindColor(k) { return (KIND[k] || KIND.deal).color; }
-function qtyOf(r) {
-  if (r.inboundDisplay && String(r.inboundDisplay).includes("/")) {
-    const p = String(r.inboundDisplay).split("/").map(x => x.trim()).filter(Boolean);
-    return parseFloat(p[p.length - 1]) || 0;
-  }
-  return parseFloat(r.inbound) || 0;
-}
 
 /* ═══════ 상태 ═══════ */
 const LS = { radius: "kppnear_radius", cats: "kppnear_cats" };
@@ -385,13 +363,13 @@ function toast(msg) {
 /* ═══════ 잠금 ═══════ */
 function renderLock() {
   const box = $("lockBox");
-  if (typeof window.NEARBY_ENC !== "string") {
-    box.innerHTML = '<div class="empty">업체 데이터 파일을 찾지 못했습니다.<br>nearby-data.js 가 저장소 최상위에 있어야 합니다.</div>';
+  if (!hasEnc()) {
+    box.innerHTML = '<div class="empty">명단 파일이 아직 없습니다.<br>tools/rival-import.html 로 만든<br><b>nearby-extra.js</b> 가 저장소 최상위에 있어야 합니다.</div>';
     return;
   }
   box.innerHTML = `<div class="lock">
     <b>🔒 업체 데이터 잠금해제</b>
-    <p>현장업무 지원앱과 같은 <b>데이터 비밀번호</b>입니다.<br>한 번만 넣으면 이 기기에 저장되어 다음부터 바로 열립니다.</p>
+    <p>명단을 잠글 때 쓴 <b>데이터 비밀번호</b>입니다.<br>한 번만 넣으면 이 기기에 저장되어 다음부터 바로 열립니다.</p>
     <input type="password" id="pw" placeholder="데이터 비밀번호">
     <div class="err" id="pwErr"></div>
     <button id="pwGo">🔓 불러오기</button>
@@ -401,7 +379,7 @@ function renderLock() {
     if (!pw) { $("pwErr").textContent = "비밀번호를 입력하세요"; $("pwErr").style.display = "block"; return; }
     $("pwGo").textContent = "푸는 중…"; $("pwErr").style.display = "none";
     try {
-      RECS = applyExtra(normalize(await decryptData(pw)), await loadExtra(pw));
+      RECS = buildRecords(await decryptData(pw));
       localStorage.setItem(PW_KEY, pw);
       start();
     } catch (e) {
@@ -414,27 +392,7 @@ function renderLock() {
   $("pw").onkeydown = e => { if (e.key === "Enter") run(); };
 }
 
-/* ── 미수금·경쟁사 명단 ──
-   nearby-extra.js 가 같은 비밀번호로 암호화된 명단을 들고 있다.
-     { deal:  [{code, name, tel, email, contact, types, addr, lat, lng}, …]
-       debt:  [{name, code, addr, tel, amount, grade, branch, person, lat, lng}, …]
-       rival: [{name, addr, biz, cat2, sales, fields, branch, person, lastVisit, visits, lat, lng}, …] }
-   계약처는 입고미회수가 원장이다 — 같은 업체가 있으면 연락처·이메일·사용 유형만 채우고,
-   없으면(미회수가 없는 계약처) 새로 넣는다.
-   미수금은 입고미회수 목록에 같은 업체가 있으면 그 업체를 미수금으로 바꾸고,
-   없으면 새로 넣는다. 경쟁사는 우리 목록에 없는 업체라 늘 새로 넣는다.
-   파일이 없으면 아무 일도 하지 않는다.                              */
-async function loadExtra(password) {
-  if (typeof window.NEARBY_EXTRA_ENC !== "string") return null;
-  try {
-    const raw = Uint8Array.from(atob(window.NEARBY_EXTRA_ENC), c => c.charCodeAt(0));
-    const salt = raw.slice(0, 16), iv = raw.slice(16, 28), ct = raw.slice(28);
-    const bk = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveKey"]);
-    const k = await crypto.subtle.deriveKey({ name: "PBKDF2", salt, iterations: 100000, hash: "SHA-256" },
-      bk, { name: "AES-GCM", length: 256 }, false, ["decrypt"]);
-    return JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({ name: "AES-GCM", iv }, k, ct)));
-  } catch (e) { return null; }
-}
+/* 좌표가 없으면 주소의 시·군 중심으로 근사한다 */
 function placeXY(o, x) {
   if (x.lat && x.lng) { o.lat = +x.lat; o.lng = +x.lng; o.approx = false; return o; }
   const h = findRegion(x.addr || "");
@@ -442,46 +400,16 @@ function placeXY(o, x) {
   else { o.lat = null; o.lng = null; o.approx = false; }
   return o;
 }
-function applyExtra(recs, extra) {
-  if (!extra) return recs;
-  const byName = new Map(), byCode = new Map();
-  recs.forEach(r => { byName.set(r.name, r); if (r.code) byCode.set(String(r.code), r); });
-  const add = [];
-  (extra.deal || []).forEach((x, i) => {
-    if (!x || !x.name) return;
-    const hit = (x.code && byCode.get(String(x.code))) || byName.get(x.name);
-    const carry = { tel: x.tel, email: x.email, contact: x.contact, types: x.types };
-    if (hit) { Object.keys(carry).forEach(k => { if (carry[k] && !hit[k]) hit[k] = carry[k]; }); return; }
-    add.push(placeXY(Object.assign({}, x, { id: "deal|" + (x.code || i), kind: "deal", fkey: "", qty: 0 }), x));
+/* 세 명단을 한 목록으로 편다 */
+function buildRecords(x) {
+  const out = [];
+  [["deal", x && x.deal], ["debt", x && x.debt], ["rival", x && x.rival]].forEach(([kind, list]) => {
+    (list || []).forEach((o, i) => {
+      if (!o || !o.name) return;
+      out.push(placeXY(Object.assign({}, o, { id: kind + "|" + (o.code || i), kind }), o));
+    });
   });
-  (extra.debt || []).forEach((x, i) => {
-    if (!x || !x.name) return;
-    const hit = byName.get(x.name) || (x.code && byCode.get(String(x.code)));
-    if (hit) { hit.kind = "debt"; Object.assign(hit, { amount: x.amount, grade: x.grade, branch: x.branch, dperson: x.person }); return; }
-    add.push(placeXY(Object.assign({}, x, { id: "debt|" + (x.code || i), kind: "debt", fkey: "", qty: 0, dperson: x.person }), x));
-  });
-  (extra.rival || []).forEach((x, i) => {
-    if (!x || !x.name) return;
-    add.push(placeXY(Object.assign({}, x, { id: "rival|" + (x.code || i), kind: "rival", fkey: "", qty: 0 }), x));
-  });
-  return recs.concat(add);
-}
-
-/* 좌표가 없으면 주소의 시·군 중심으로 근사한다 */
-function normalize(arr) {
-  return (arr || []).map(r => {
-    const o = Object.assign({}, r);
-    o.fkey = fkeyOf(r.category, r.subcat);
-    o.kind = kindOf(r);
-    o.qty = qtyOf(r);
-    if (r.lat && r.lng) { o.lat = +r.lat; o.lng = +r.lng; o.approx = false; }
-    else {
-      const h = findRegion(r.addr || "");
-      if (h) { o.lat = h.lat; o.lng = h.lng; o.approx = true; }
-      else { o.lat = null; o.lng = null; o.approx = false; }
-    }
-    return o;
-  }).filter(r => r.name);
+  return out;
 }
 
 /* ═══════ 시작 ═══════ */
@@ -582,12 +510,9 @@ function cardBody(r) {
       sub3: ""
     };
   }
-  const last = r.lastInDisplay || (r.lastIn ? md(r.lastIn) : "");
-  const inb = String(r.inboundDisplay || r.inbound || "");
   return {
-    meta: [r.person, r.driver, r.contact].filter(Boolean).join(" · ") || "-",
-    nums: (r.fkey ? `<span class="year ${catCls(r.fkey)}">${esc(r.fkey)}</span>` : "") +
-          (inb ? `<span class="inb-date">${last ? last.split("/").pop() + "일 · " : ""}입고 ${esc(inb)}</span>` : ""),
+    meta: [r.contact, r.person].filter(Boolean).join(" · ") || "-",
+    nums: r.code ? `<span class="year">코드 ${esc(r.code)}</span>` : "",
     sub3: r.types ? "사용 " + r.types : ""
   };
 }
@@ -611,8 +536,9 @@ function cardHtml(r) {
         ${b.sub3 ? `<div class="sub3">${esc(b.sub3)}</div>` : ""}
       </div>
     </div>
-    ${(tel || (r.lat && r.lng)) ? `<div class="btn-row">
+    ${(tel || r.email || (r.lat && r.lng)) ? `<div class="btn-row">
       ${tel ? `<button class="tel-btn" data-tel="${esc(tel)}">📞 전화</button>` : ""}
+      ${r.email ? `<a class="mail-btn" href="mailto:${esc(String(r.email).split(",")[0].trim())}">✉️ 메일</a>` : ""}
       ${(r.lat && r.lng) ? `<button class="navi-btn">🧭 길찾기</button>` : ""}
     </div>` : `<div class="noloc">전화·좌표가 등록되지 않은 업체입니다</div>`}
   </div>`;
@@ -840,8 +766,8 @@ $("locQ").onkeydown = e => { if (e.key === "Enter") $("locOk").click(); };
 /* ═══════ 시작 ═══════ */
 (async function boot() {
   const pw = localStorage.getItem(PW_KEY);
-  if (pw && typeof window.NEARBY_ENC === "string") {
-    try { RECS = applyExtra(normalize(await decryptData(pw)), await loadExtra(pw)); start(); return; }
+  if (pw && hasEnc()) {
+    try { RECS = buildRecords(await decryptData(pw)); start(); return; }
     catch (e) { localStorage.removeItem(PW_KEY); }
   }
   renderLock();
