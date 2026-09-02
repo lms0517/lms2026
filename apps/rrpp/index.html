@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="theme-color" content="#123c7a">
+<meta name="theme-color" content="#0c447c">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>당사 S3 유니트 제안</title>
@@ -21,14 +21,14 @@
   select { -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath fill='%236b7280' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px !important; }
   input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
   input, select { width: 100%; padding: 11px 12px; border: 1px solid #d1d5db; border-radius: 9px; background: #fff; color: #111; font-size: 14px; line-height: 1.2; }
-  input:focus, select:focus { outline: none; border-color: #123c7a; box-shadow: 0 0 0 3px rgba(18,60,122,0.12); }
+  input:focus, select:focus { outline: none; border-color: #0c447c; box-shadow: 0 0 0 3px rgba(12,68,124,0.12); }
   input, select, textarea { transition: border-color .15s ease, box-shadow .15s ease; }
   button { transition: transform .09s ease, box-shadow .15s ease, background .15s ease, color .15s ease, border-color .15s ease; }
   button:active:not(:disabled) { transform: scale(0.97); }
-  .selChip { width:100%; box-sizing:border-box; padding:11px 8px; border-radius:10px; font-size:14px; font-family:inherit; font-weight:700; border:none; background:#e8edf2; color:#123c7a; text-align:center; text-align-last:center; cursor:pointer; box-shadow:4px 4px 8px #c3c8cd,-3px -3px 7px #ffffff; }
+  .selChip { width:100%; box-sizing:border-box; padding:11px 8px; border-radius:10px; font-size:14px; font-family:inherit; font-weight:700; border:none; background:#e8edf2; color:#0c447c; text-align:center; text-align-last:center; cursor:pointer; box-shadow:4px 4px 8px #c3c8cd,-3px -3px 7px #ffffff; }
   .selChip:focus, .selChip:active { outline:none; }
   .selChip option { background:#fff; color:#111; font-weight:400; }
-  .selChip option:checked { background:#eff6ff; color:#123c7a; font-weight:600; }
+  .selChip option:checked { background:#eff6ff; color:#0c447c; font-weight:600; }
   .selFlat { width:100%; box-sizing:border-box; border:none; border-radius:10px; background:#e8edf2; color:#334155; font-weight:700; font-size:13px; text-align:center; text-align-last:center; cursor:pointer; box-shadow:4px 4px 8px #c3c8cd,-3px -3px 7px #ffffff; }
   .selFlat:focus, .selFlat:active { outline:none; }
   ::-webkit-scrollbar { display: none; }
@@ -504,7 +504,7 @@ function S3App() {
 
   // ── 색상 ──
   const C = {
-    primary: '#123c7a', accent: '#e0a32e', bg: '#eef0f4', card: '#e8edf2',
+    primary: '#0c447c', accent: '#e0a32e', bg: '#eef0f4', card: '#e8edf2',
     border: '#e5e7eb', muted: '#6b7280', green: '#16a34a', red: '#dc2626',
     yellow: '#92400e', blueBg: '#eff6ff', greenBg: '#f0fdf4', redBg: '#fef2f2', amberBg: '#fffbeb',
   };
@@ -514,19 +514,13 @@ function S3App() {
   const SUNK     = 'inset 3px 3px 7px #ccd2d8, inset -3px -3px 7px #ffffff'; // 오목한 패널
   const KEYCAP   = '0 4px 0 #4a6a88, inset 0 1px 0 rgba(255,255,255,0.6)';   // 눌리는 키캡
 
-  const card    = { background: C.card, borderRadius: 14, border: 'none', padding: '14px 16px', marginBottom: 10, boxShadow: RAISED };
-  const label   = { fontSize: 11, fontWeight: 700, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 5, display: 'block' };
+  const card    = { background: C.card, borderRadius: 14, border: 'none', padding: '14px 16px', marginBottom: 9, boxShadow: RAISED };
+  const label   = { fontSize: 12, fontWeight: 500, color: C.muted, marginBottom: 7, display: 'block' };
   const rowStyle= { display: 'flex', gap: 8, marginBottom: 10 };
-  const secTitle= { fontSize: 13, fontWeight: 800, color: C.primary, marginBottom: 10, paddingBottom: 6, borderBottom: `1px solid rgba(18,60,122,0.13)`, display: 'flex', alignItems: 'center', gap: 6 };
-  const btnPri  = { background: 'linear-gradient(135deg,#1e40af,#2563eb)', color: '#fff', border: 'none', borderRadius: 10, padding: '13px 0', width: '100%', fontWeight: 700, fontSize: 15, cursor: 'pointer', boxShadow: '0 3px 12px rgba(37,99,235,.35)' };
-  const btnSec  = {
-    background: 'linear-gradient(180deg,#dbe8f7 0%,#b8d0ed 100%)', color: C.primary,
-    borderTop: '1.5px solid #e8f0fa', borderLeft: '1.5px solid #d0e2f4',
-    borderRight: '1.5px solid #7a9fc0', borderBottom: '3px solid #5a7fa0',
-    borderRadius: 10, padding: '11px 0', width: '100%', fontWeight: 700, fontSize: 14, cursor: 'pointer',
-    boxShadow: KEYCAP,
-  };
-  const btnGhost= { background: '#e8edf2', color: C.muted, border: 'none', borderRadius: 10, padding: '11px 0', width: '100%', fontWeight: 700, fontSize: 13, cursor: 'pointer', boxShadow: RAISED_S };
+  const secTitle= { fontSize: 11, fontWeight: 600, letterSpacing: 0.5, color: C.primary, marginBottom: 7, display: 'flex', alignItems: 'center', gap: 6 };
+  const btnPri  = { display: 'block', width: '100%', padding: '13px', borderRadius: 10, fontSize: 15, fontWeight: 500, cursor: 'pointer', textAlign: 'center', background: C.primary, color: '#fff', border: 'none' };
+  const btnSec  = { display: 'block', width: '100%', padding: '13px', borderRadius: 10, fontSize: 15, fontWeight: 500, cursor: 'pointer', textAlign: 'center', background: 'none', border: '0.5px solid #d1d5db', color: '#111' };
+  const btnGhost= { display: 'block', width: '100%', padding: '11px', borderRadius: 10, fontSize: 13, fontWeight: 500, cursor: 'pointer', textAlign: 'center', background: '#f1f5f9', color: '#64748b', border: '1px solid #e2e8f0' };
   const inset   = (bg) => ({ background: bg, borderRadius: 10, boxShadow: SUNK, border: 'none' });
 
   const doCopy = async (text, ref, setDone) => {
@@ -594,8 +588,8 @@ ${simRows ? `<table><tr><th>항목</th><th>내용</th></tr>${simRows}</table>` :
 @page{size:A4;margin:16mm}
 *{margin:0;padding:0;box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 body{font-family:'Malgun Gothic','맑은 고딕','Apple SD Gothic Neo',sans-serif;color:#1a1a1a;font-size:11px;line-height:1.6}
-.hd{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid #123c7a;padding-bottom:10px;margin-bottom:14px}
-.hd .l .sub{font-size:9px;color:#123c7a;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.hd{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid #0c447c;padding-bottom:10px;margin-bottom:14px}
+.hd .l .sub{font-size:9px;color:#0c447c;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
 .hd .l b{font-size:18px;color:#0f172a;display:block;margin-top:3px}
 .hd .r{text-align:right;font-size:9px;color:#64748b;line-height:1.8}
 .to{font-size:13px;font-weight:700;color:#0f172a;margin-bottom:2px}
@@ -605,19 +599,19 @@ body{font-family:'Malgun Gothic','맑은 고딕','Apple SD Gothic Neo',sans-seri
 .kpi .b.hl{background:#eff6ff;border-color:#93c5fd}
 .kpi .b.g{background:#f0fdf4;border-color:#86efac}
 .kpi .lbl{font-size:9px;color:#64748b;margin-bottom:4px}
-.kpi .v{font-size:16px;font-weight:800;color:#123c7a}
+.kpi .v{font-size:16px;font-weight:800;color:#0c447c}
 .kpi .v small{font-size:10px;font-weight:500;margin-left:2px}
 .kpi.two .b .v{font-size:18px}
-.sec{font-size:11.5px;font-weight:700;color:#123c7a;border-left:4px solid #123c7a;padding-left:8px;margin:16px 0 6px}
+.sec{font-size:11.5px;font-weight:700;color:#0c447c;border-left:4px solid #0c447c;padding-left:8px;margin:16px 0 6px}
 table{width:100%;border-collapse:collapse;margin-top:4px;font-size:10.5px}
-th{background:#123c7a;color:#fff;padding:7px 10px;font-weight:700;text-align:left}
+th{background:#0c447c;color:#fff;padding:7px 10px;font-weight:700;text-align:left}
 td{padding:6px 10px;border-bottom:1px solid #e5e7eb}
 tr:last-child td{border-bottom:none}
 tr:nth-child(even) td{background:#f8fafc}
 td.r{text-align:right}
 .notice{background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:10px 12px;margin-top:14px;font-size:9.5px;color:#64748b;line-height:1.7}
 .footer{margin-top:20px;padding-top:12px;border-top:1px solid #e5e7eb;font-size:9px;color:#9ca3af;text-align:center}
-.noprint{position:fixed;top:14px;right:14px;background:#123c7a;color:#fff;border:none;padding:9px 18px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
+.noprint{position:fixed;top:14px;right:14px;background:#0c447c;color:#fff;border:none;padding:9px 18px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
 </style>
 </head><body>
 <button class="noprint" onclick="window.print()">📄 PDF로 저장 / 인쇄</button>
@@ -683,44 +677,37 @@ ${savingBlock}
     setTimeout(() => URL.revokeObjectURL(url), 3000);
   };
 
-  const tabStyle = (active) => active ? {
-    flex: 1, padding: '9px 0', borderRadius: 9, fontSize: 13.5, cursor: 'pointer', fontWeight: 800,
-    letterSpacing: '-0.01em',
-    background: 'linear-gradient(180deg,#dbe8f7 0%,#b8d0ed 100%)', color: C.primary,
-    borderTop: '1.5px solid #e8f0fa', borderLeft: '1.5px solid #d0e2f4',
-    borderRight: '1.5px solid #7a9fc0', borderBottom: '3px solid #5a7fa0',
-    boxShadow: KEYCAP,
-  } : {
-    flex: 1, padding: '9px 0', borderRadius: 9, fontSize: 13.5, cursor: 'pointer', fontWeight: 600,
-    letterSpacing: '-0.01em',
-    background: 'transparent', color: 'rgba(255,255,255,0.62)', border: 'none', borderBottom: '3px solid transparent', boxShadow: 'none',
-  };
+  /* 탭 — 운송견적앱과 같은 흰 바탕 밑줄형 */
+  const tabStyle = (active) => ({
+    flex: 1, padding: '14px 0', fontSize: 14, fontWeight: active ? 600 : 400, textAlign: 'center',
+    color: active ? C.primary : '#6b7280', cursor: 'pointer',
+    borderTop: 'none', borderLeft: 'none', borderRight: 'none',
+    borderBottom: active ? `2.5px solid ${C.primary}` : '2.5px solid transparent',
+    background: active ? 'linear-gradient(to bottom, rgba(12,68,124,0.04), rgba(12,68,124,0))' : 'none',
+  });
 
   return (
-    <div style={{ background: C.bg, minHeight: '100vh' }}>
-      {/* 헤더 — 운송견적 앱과 동일한 다크 그라디언트 + 그림자로 층 분리 */}
-      <div style={{ background: 'linear-gradient(135deg, #1c2333 0%, #2d3748 100%)', padding: '15px 16px 12px', position: 'sticky', top: 0, zIndex: 100, boxShadow: '0 2px 10px rgba(0,0,0,0.35)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
-          <div style={{ background: 'linear-gradient(160deg,#fbbf24 0%,#d97706 100%)', borderRadius: 9, width: 34, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 3px 8px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.45)' }}>
-            <span style={{ fontSize: 17 }}>📦</span>
+    <div style={{ background: '#fff', minHeight: '100vh' }}>
+      {/* 헤더 — 운송견적앱과 같은 다크 그라디언트 한 줄 */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, background: 'linear-gradient(135deg, #1c2333 0%, #2d3748 100%)', padding: '16px 14px', boxShadow: '0 2px 8px rgba(0,0,0,0.35)' }}>
+        <div style={{ lineHeight: 1.2, minWidth: 0 }}>
+          <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.7)', letterSpacing: 1, fontWeight: 500 }}>
+            <span style={{ color: '#ff4d4d', fontWeight: 800 }}>당사</span> · 당사
           </div>
-          <div style={{ flex: 1, lineHeight: 1.25, minWidth: 0 }}>
-            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.7)', letterSpacing: 1, fontWeight: 500 }}>
-              <span style={{ color: '#ff4d4d', fontWeight: 800 }}>당사</span> · 당사
-            </div>
-            <div style={{ color: '#fff', fontWeight: 700, fontSize: 16, letterSpacing: '-0.02em' }}>S3 유니트 SYSTEM</div>
-          </div>
-          <button aria-label="매입가 데이터" onClick={() => { setCostStat(''); setShowData(true); }}
-            style={{ background: 'rgba(255,255,255,0.16)', border: '1px solid rgba(255,255,255,0.28)', borderRadius: 9, width: 34, height: 34, color: '#fff', fontSize: 16, cursor: 'pointer', flexShrink: 0 }}>⚙</button>
+          <div style={{ fontSize: 16, color: '#fff', fontWeight: 700 }}>S3 유니트 SYSTEM</div>
         </div>
-        <div style={{ display: 'flex', gap: 8, marginTop: 12, background: 'rgba(0,0,0,0.28)', borderRadius: 12, padding: 5, boxShadow: 'inset 0 2px 5px rgba(0,0,0,0.4)' }}>
-          {[['quote','💰 견적'], ['table','📊 조건표']].map(([t, l]) => (
-            <button key={t} style={tabStyle(tab === t)} onClick={() => setTab(t)}>{l}</button>
-          ))}
-        </div>
+        <button type="button" aria-label="매입가 데이터" onClick={() => { setCostStat(''); setShowData(true); }}
+          style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 3, background: 'rgba(255,255,255,0.16)', border: '1px solid rgba(255,255,255,0.3)', borderRadius: 16, color: '#fff', fontSize: 12, fontWeight: 600, padding: '7px 13px', cursor: 'pointer', whiteSpace: 'nowrap' }}>⚙ 매입가</button>
       </div>
 
-      <div style={{ padding: '12px 12px 100px' }}>
+      {/* 탭 — 헤더 밑에 붙는 흰 줄 */}
+      <div style={{ display: 'flex', borderBottom: '0.5px solid #e5e7eb', background: '#fff', position: 'sticky', top: 0, zIndex: 50 }}>
+        {[['quote','견적'], ['table','조건표']].map(([t, l]) => (
+          <button type="button" key={t} style={tabStyle(tab === t)} onClick={() => setTab(t)}>{l}</button>
+        ))}
+      </div>
+
+      <div style={{ maxWidth: 380, margin: '0 auto', padding: '10px 12px 100px' }}>
 
         {/* 매입가 잠금해제 — 앱에 암호문으로 내장, 비번 1회 입력 후 이 기기에 저장 */}
         {!hasCost && hasEncCost() && (
@@ -734,10 +721,11 @@ ${savingBlock}
               onKeyDown={e => { if (e.key === 'Enter') doUnlock(); }}
               style={{ marginBottom: 9, background: 'rgba(255,255,255,0.95)' }} />
             {unlockErr && <div style={{ fontSize: 12, color: '#fca5a5', fontWeight: 700, marginBottom: 8 }}>{unlockErr}</div>}
-            <button style={btnSec} disabled={unlockBusy} onClick={doUnlock}>
+            <button style={{ ...btnSec, background: '#fff', color: C.primary, border: 'none', fontWeight: 600 }}
+              disabled={unlockBusy} onClick={doUnlock}>
               {unlockBusy ? '확인 중…' : '🔓 잠금해제'}
             </button>
-            <button style={{ ...btnGhost, marginTop: 7, background: 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.8)', boxShadow: 'none' }}
+            <button style={{ ...btnGhost, marginTop: 7, background: 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.28)' }}
               onClick={() => { setCostStat(''); setShowData(true); }}>📥 매입가 JSON 직접 불러오기</button>
           </div>
         )}
@@ -1091,14 +1079,14 @@ ${savingBlock}
               )}
             </div>
             {/* 입력수정/저장 — 접이 외부 */}
-            <div style={{ display: 'flex', gap: 8, marginBottom: 10, marginTop: -4 }}>
-              <button style={{ ...btnGhost, flex: 2, fontSize: 12 }}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, marginTop: 6 }}>
+              <button style={{ flex: 1, padding: '10px', background: 'none', border: 'none', color: C.primary, fontSize: 14, fontWeight: 500, cursor: 'pointer', textAlign: 'center' }}
                 onClick={() => setF(p => ({ ...INIT, palletType: p.palletType }))}>
-                ← 입력수정 / 초기화
+                ← 입력 수정 / 초기화
               </button>
-              <button style={{ ...btnSec, flex: 1, fontSize: 13 }}
+              <button style={{ background: 'linear-gradient(135deg,#0c447c,#1565c0)', border: 'none', borderRadius: 24, color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', padding: '13px 26px', whiteSpace: 'nowrap', boxShadow: '0 3px 10px rgba(12,68,124,0.30)' }}
                 onClick={() => setShowSaveMenu(true)}>
-                📋 저장
+                💾 저장
               </button>
             </div>
 
@@ -1220,7 +1208,8 @@ ${savingBlock}
 
             {/* ─── 하단 버튼 ─── */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <button style={btnPri} onClick={handlePrint}>
+              <button onClick={handlePrint}
+                style={{ display: 'block', width: '100%', padding: '13px', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer', textAlign: 'center', background: 'linear-gradient(135deg,#1e40af,#2563eb)', color: '#fff', border: 'none', boxShadow: '0 3px 12px rgba(37,99,235,.35)' }}>
                 📄 제안서 PDF 저장 / 인쇄
               </button>
             </div>
@@ -1417,9 +1406,9 @@ ${savingBlock}
           onClick={() => setShowSaveMenu(false)}>
           <div style={{ background: '#fff', borderRadius: '20px 20px 0 0', padding: '20px 16px 40px', width: '100%', maxWidth: 480, margin: '0 auto' }}
             onClick={e => e.stopPropagation()}>
-            <div style={{ textAlign: 'center', fontSize: 15, fontWeight: 800, color: '#123c7a', marginBottom: 16 }}>저장 방식 선택</div>
+            <div style={{ textAlign: 'center', fontSize: 15, fontWeight: 800, color: '#0c447c', marginBottom: 16 }}>저장 방식 선택</div>
             <div style={{ display: 'flex', gap: 10 }}>
-              <button style={{ flex: 1, padding: '18px 0', borderRadius: 12, border: '2px solid #123c7a', background: '#eff6ff', color: '#123c7a', fontWeight: 800, fontSize: 16, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}
+              <button style={{ flex: 1, padding: '18px 0', borderRadius: 12, border: '2px solid #0c447c', background: '#eff6ff', color: '#0c447c', fontWeight: 800, fontSize: 16, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}
                 onClick={() => { setShowSaveMenu(false); setShowModal(true); }}>
                 <span style={{ fontSize: 28 }}>📤</span>
                 공유
