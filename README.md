@@ -20,7 +20,7 @@
 외부에 남아 있는 앱 두 개는 대시보드에서 링크로 엽니다.
 
 - 운송견적 — `ipgomi-app.github.io/a2026/`
-- 엔지니어링 제안 — `ipgomi-app.github.io/B2026/v2/`
+- 엔지니어링 제안 — `lms0517.github.io/lms2026/apps/eng/`
 
 ## 대시보드 안에서 앱을 늘리려면
 
