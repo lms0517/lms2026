@@ -587,9 +587,10 @@ function cardBody(r) {
   if (r.kind === "rival") {
     return {
       meta: [r.branch, r.person].filter(Boolean).join(" · ") || "-",
-      nums: (r.biz ? `<span class="year yg">${esc(r.biz)}</span>` : "") +
+      nums: (r.code ? `<span class="year">코드 ${esc(r.code)}</span>` : "") +
+            (r.biz ? `<span class="year yg">${esc(r.biz)}</span>` : "") +
             (r.cat2 ? `<span class="year">${esc(r.cat2)}</span>` : "") +
-            (r.sales ? `<span class="amt">연 ${esc(r.sales)}천원</span>` : ""),
+            (r.sales ? `<span class="amt">연 ${esc(Number(r.sales).toLocaleString())}천원</span>` : ""),
       sub3: [r.fields, r.lastVisit ? `최종방문 ${md(r.lastVisit)}${r.visits ? ` (${esc(r.visits)}회)` : ""}` : ""]
               .filter(Boolean).join(" · ")
     };

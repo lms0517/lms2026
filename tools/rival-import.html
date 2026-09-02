@@ -128,6 +128,18 @@ const LAYOUTS = [
   { /* 계약처 */
     test: h => h[0] === "코드" && h[1] === "업체명" && h.includes("유형"),
     map: { code: 0, name: 1, person: 2, email: 3, tel: 4, contact: 5, addr: 6, types: 7 } },
+  { /* 경쟁사 (Bigs 시트) — 머리글이 두 줄이라 아랫줄을 잡는다 */
+    test: h => h[2] === "거래처명" && h[3] === "사업자번호" && h.includes("주소▲"),
+    map: { name: 2, bizno: 3, branch: 9, person: 12, cdept: 14, contact: 16, code: 18, kpp: 20,
+           sales: 21, addr: 31, cat2: 32, biz: 33, biz2: 34, visits: 43, lastVisit: 44 },
+    /* 사업분야는 금액이 적힌 칸을 모아서 만든다 */
+    post: (o, c) => {
+      const F = { 22: "PPS", 23: "산업자재유통", 24: "지게차", 25: "SCM", 26: "건설장비", 27: "OA" };
+      const f = Object.keys(F).filter(i => (c[i] || "").trim()).map(i => F[i]);
+      if (f.length) o.fields = f.join("·");
+      if (o.sales) o.sales = o.sales.replace(/[,\s]/g, "");
+      if (o.visits) o.visits = o.visits.replace(/[,\s]/g, "");
+    } },
 ];
 const SIDO = /(서울특별시|서울|부산광역시|부산|대구광역시|대구|인천광역시|인천|광주광역시|광주|대전광역시|대전|울산광역시|울산|세종특별자치시|세종|경기도|경기|강원특별자치도|강원도|강원|충청북도|충북|충청남도|충남|전북특별자치도|전라북도|전북|전라남도|전남|경상북도|경북|경상남도|경남|제주특별자치도|제주)/g;
 function firstAddr(a) {
@@ -183,7 +195,10 @@ function parseTsv(t) {
   const lay = LAYOUTS.find(L => L.test(head));
   const rows = lines.slice(hi + 1).map(l => {
     const c = splitRow(l), o = {};
-    if (lay) { for (const k in lay.map) { const v = (c[lay.map[k]] || "").trim(); if (v) o[k] = v; } }
+    if (lay) {
+      for (const k in lay.map) { const v = (c[lay.map[k]] || "").trim(); if (v) o[k] = v; }
+      if (lay.post) lay.post(o, c);
+    }
     else head.forEach((h, i) => { const v = (c[i] || "").trim(); if (h && v) o[h] = v; });
     if (o.addr) o.addr = firstAddr(o.addr);
     if (o.tel) o.tel = fixTel(o.tel);
