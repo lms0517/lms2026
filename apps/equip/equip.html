@@ -195,6 +195,27 @@ h1.big{font-size:23px;font-weight:800;letter-spacing:-.03em}
 .tile .rec{position:absolute;top:9px;right:10px;font-size:9.5px;font-weight:800;color:var(--best)}
 .tile.dis{opacity:.4;pointer-events:none}
 
+/* 한 줄 드롭다운 — 타일 격자 대신 세로 공간을 아낀다 */
+.selOne{width:100%;border:1.5px solid var(--line-d);border-radius:8px;padding:11px 34px 11px 12px;
+  font-size:14.5px;font-weight:700;background:#fff;color:var(--ink);appearance:none;-webkit-appearance:none;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'><path d='M1 1.5 6 6.5 11 1.5' fill='none' stroke='%23777' stroke-width='1.8' stroke-linecap='round'/></svg>");
+  background-repeat:no-repeat;background-position:right 12px center;background-size:12px 8px}
+.selOne:focus{outline:none;border-color:var(--ink);box-shadow:0 0 0 1px var(--ink)}
+.selOne option:disabled{color:#bbb}
+/* 다중 선택(어태치먼트·안전·특수환경)은 한 줄 체크 행으로 */
+.orows{display:flex;flex-direction:column;gap:6px}
+.orow{display:flex;align-items:center;gap:9px;width:100%;text-align:left;background:#fff;
+  border:1.5px solid var(--line-d);border-radius:8px;padding:9px 11px}
+.orow i{flex:none;width:18px;height:18px;border-radius:5px;border:1.5px solid var(--line-d);
+  display:flex;align-items:center;justify-content:center;font-style:normal;font-size:11px;font-weight:800;color:#fff}
+.orow.on{border-color:var(--ink);box-shadow:0 0 0 1px var(--ink)}
+.orow.on i{background:var(--blue);border-color:var(--blue)}
+.orow.on i:after{content:'✓'}
+.orow b{font-size:13.5px;letter-spacing:-.02em;flex:none}
+.orow .d{font-size:11px;color:var(--mut);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.orow .p{font-size:12px;font-weight:800;flex:none}
+.orow .p.zero{color:var(--mut);font-weight:600}
+
 /* 폼 */
 .fldRow{display:flex;gap:9px;flex-wrap:wrap}
 .fld{flex:1;min-width:140px}
@@ -344,7 +365,10 @@ h1.big{font-size:23px;font-weight:800;letter-spacing:-.03em}
   #optNote{margin-top:8px}
   #stage #stageNote{display:none}
   #stageNoteBottom{display:block;font-size:11px;color:var(--mut);line-height:1.55;margin-top:22px}
-  #panel{margin-top:0;padding-top:18px}
+  #panel{margin-top:0;padding-top:16px}
+  #panelTitle{display:none}          /* 경로(마스트·타이어 › …)와 겹친다 */
+  .psec{margin-bottom:20px}
+  .hintNote{margin-top:8px}
 }
 /* 화면이 짧은 기기 — 사진 영역을 더 줄인다 */
 @media (max-width:899px) and (max-height:700px){
@@ -1095,57 +1119,68 @@ function renderBuild(){
 document.querySelectorAll('#crumbs .cr').forEach(c=>c.onclick=()=>{U.tab=+c.dataset.t;renderBuild();scrollPanel();});
 const tile=(on,click,inner,dis)=>`<button class="tile ${on?'on':''} ${dis?'dis':''}" onclick="${click}">${inner}</button>`;
 const priceTag=p=>p?`<div class="p">+ 월 ${p.toLocaleString()}원</div>`:`<div class="p zero">기본 포함</div>`;
+/* 한 줄 드롭다운 한 벌 — items: {v, t, dis} */
+const selSec=(title,cur,items,onch,cur2,note)=>`<div class="psec">
+  <div class="ph"><b>${title}</b>${cur2?`<span class="cur">${cur2}</span>`:''}</div>
+  <select class="selOne" onchange="${onch}">${items.map(o=>
+    `<option value="${o.v}"${String(o.v)===String(cur)?' selected':''}${o.dis?' disabled':''}>${o.t}</option>`).join('')}</select>
+  ${note||''}</div>`;
+const pTxt=p=>p?`+ 월 ${p.toLocaleString()}원`:'기본 포함';
+/* 다중 선택 한 줄 행 */
+const orow=(on,click,nm,d,p)=>`<button class="orow ${on?'on':''}" onclick="${click}"><i></i><b>${nm}</b><span class="d">${d}</span><span class="p${p?'':' zero'}">${p?'+ '+p.toLocaleString()+'원':'기본'}</span></button>`;
 
 function tabMast(){
   if(!hasMast())return tonSec()+`<div class="psec"><div class="hintNote ok">전동 유니트트럭은 저상 리프트(약 0.2m) 전용으로 마스트 선택이 없습니다.</div></div>`;
   const m=model();
-  const tireT=['cb','cbe'].includes(m.kind)?`<div class="tiles c3">
-    ${tile(S.tire==='solid',"set('tire','solid')",`<b>솔리드</b><div class="d">실내·평탄 바닥</div>${priceTag(0)}`)}
-    ${tile(S.tire==='pneu',"set('tire','pneu')",`<b>공기압</b><div class="d">실외·요철 노면</div>${priceTag(0)}`,m.kind==='cbe')}
-    ${tile(S.tire==='nonmark',"set('tire','nonmark')",`<b>논마킹</b><div class="d">식품·바닥오염 방지</div>${priceTag(20000)}`)}</div>
-    <div class="hintNote">타이어는 건설기계 등록과도 연결됩니다 — <b>솔리드 타이어</b>는 전동식 등록 제외 요건 중 하나입니다.</div>`
-    :`<div class="hintNote ok">창고장비는 우레탄(논마킹) 휠 기본 사양입니다.</div>`;
+  const tireSec=['cb','cbe'].includes(m.kind)
+    ? selSec('타이어', S.tire, [
+        {v:'solid',   t:`솔리드 — 실내·평탄 바닥 (${pTxt(0)})`},
+        {v:'pneu',    t:`공기압 — 실외·요철 노면 (${pTxt(0)})`, dis:m.kind==='cbe'},
+        {v:'nonmark', t:`논마킹 — 식품·바닥오염 방지 (${pTxt(20000)})`}],
+        "set('tire',this.value)", '',
+        '<div class="hintNote">타이어는 건설기계 등록과도 연결됩니다 — <b>솔리드 타이어</b>는 전동식 등록 제외 요건 중 하나입니다.</div>')
+    : `<div class="psec"><div class="ph"><b>타이어</b></div><div class="hintNote ok">창고장비는 우레탄(논마킹) 휠 기본 사양입니다.</div></div>`;
   return tonSec()
-   +`<div class="psec"><div class="ph"><b>마스트</b></div><div class="tiles c3">
-      ${tile(S.mast==='2f',"set('mast','2f')",`<b>2단 표준</b><div class="d">일반 창고</div>${priceTag(0)}`)}
-      ${tile(S.mast==='2fl',"set('mast','2fl')",`<b>2단 프리리프트</b><div class="d">컨테이너 내부</div>${priceTag(40000)}`)}
-      ${tile(S.mast==='3f',"set('mast','3f')",`<b>3단</b><div class="d">저천장 + 고인상</div>${priceTag(80000)}`)}</div></div>
-     <div class="psec"><div class="ph"><b>최대 인상 높이</b><span class="cur">${S.lift.toFixed(1)} m</span></div>
-      <div class="tiles c3">${LIFTS.map(l=>tile(S.lift===l,`set('lift',${l})`,
-        `<b>${l.toFixed(1)} m</b>${l>=6?priceTag(100000):l>=4.5?priceTag(50000):priceTag(0)}`)).join('')}</div>
-      <div class="hintNote">천장·도어 높이 제한과 랙 최상단 높이를 함께 확인하세요. 마스트 하강 높이가 도어보다 낮아야 진입할 수 있습니다.</div></div>
-     <div class="psec"><div class="ph"><b>타이어</b></div>${tireT}</div>`;
+   + selSec('마스트', S.mast, [
+       {v:'2f',  t:`2단 표준 — 일반 창고 (${pTxt(0)})`},
+       {v:'2fl', t:`2단 프리리프트 — 컨테이너 내부 (${pTxt(40000)})`},
+       {v:'3f',  t:`3단 — 저천장 + 고인상 (${pTxt(80000)})`}], "set('mast',this.value)")
+   + selSec('최대 인상 높이', S.lift,
+       LIFTS.map(l=>({v:l, t:`${l.toFixed(1)} m (${pTxt(l>=6?100000:l>=4.5?50000:0)})`})),
+       "set('lift',+this.value)", `${S.lift.toFixed(1)} m`,
+       '<div class="hintNote">천장·도어 높이 제한과 랙 최상단 높이를 함께 확인하세요. 마스트 하강 높이가 도어보다 낮아야 진입할 수 있습니다.</div>')
+   + tireSec;
 }
 function tonSec(){
-  return `<div class="psec"><div class="ph"><b>톤수 (최대 적재하중)</b><span class="cur">실제 최대 적재물 무게 기준</span></div>
-  <div class="tiles c3">${model().tons.map(t=>tile(S.ton===t,`set('ton',${t})`,
-    `<b>${t.toFixed(1)} t</b><div class="p zero">월 ${model().base[String(t)].toLocaleString()}원~</div>`)).join('')}</div>
-  <div class="hintNote">인상 높이가 올라가면 허용 하중이 줄어듭니다(하중곡선). 최대 높이에서 드는 실제 무게 기준으로 여유 있게 선택하세요.</div></div>`;
+  return selSec('톤수 (최대 적재하중)', S.ton,
+    model().tons.map(t=>({v:t, t:`${t.toFixed(1)} t — 월 ${model().base[String(t)].toLocaleString()}원~`})),
+    "set('ton',+this.value)", '실제 최대 적재물 무게 기준',
+    '<div class="hintNote">인상 높이가 올라가면 허용 하중이 줄어듭니다(하중곡선). 최대 높이에서 드는 실제 무게 기준으로 여유 있게 선택하세요.</div>');
 }
 /* 전동식은 배터리 종류가 기준가의 15% 를 좌우한다 — 여기서 고른다 */
 function battSec(){
   if(!isBattery())return '';
-  return `<div class="psec"><div class="ph"><b>배터리</b><span class="cur">${S.battery==='li'?'리튬(LFP)':'납산'}</span></div>
-    <div class="tiles">
-      ${tile(S.battery==='li',"set('battery','li')",`<span class="rec">권장</span><b>리튬 (LFP)</b><div class="d">기회충전 — 식사·휴게 중 충전, 배터리 교체 불필요</div><div class="p">+ 기준가의 15%</div>`)}
-      ${tile(S.battery==='pb',"set('battery','pb')",`<b>납산 배터리</b><div class="d">초기 비용 절감 — 교대 시 예비 배터리 검토</div>${priceTag(0)}`)}</div>
-    ${S.shift>=2&&S.battery==='pb'?'<div class="hintNote warn">2~3교대 + 납산은 배터리 교체 인력·충전실 공간이 추가로 듭니다. 리튬(기회충전) 비교를 권장합니다.</div>':''}</div>`;
+  return selSec('배터리', S.battery, [
+      {v:'li', t:'리튬 (LFP) — 기회충전, 교체 불필요 (+ 기준가의 15%) · 권장'},
+      {v:'pb', t:'납산 배터리 — 초기 비용 절감 (기본 포함)'}],
+      "set('battery',this.value)", S.battery==='li'?'리튬(LFP)':'납산',
+      S.shift>=2&&S.battery==='pb'?'<div class="hintNote warn">2~3교대 + 납산은 배터리 교체 인력·충전실 공간이 추가로 듭니다. 리튬(기회충전) 비교를 권장합니다.</div>':'');
 }
 function tabOpt(){
   const grp=(title,list,sel,key)=>`<div class="psec"><div class="ph"><b>${title}</b><span class="cur">${sel.length}개 선택</span></div>
-    <div class="tiles">${list.map(o=>tile(sel.includes(o.id),`togOpt('${key}','${o.id}')`,
-      `<b>${o.nm}</b><div class="d">${o.d}</div>${priceTag(o.p)}`)).join('')}</div></div>`;
+    <div class="orows">${list.map(o=>orow(sel.includes(o.id),`togOpt('${key}','${o.id}')`,o.nm,o.d,o.p)).join('')}</div></div>`;
   return battSec()+grp('어태치먼트',OPT_ATT,S.att,'att')+grp('안전 사양',OPT_SAFE,S.safe,'safe')+grp('특수환경 사양',OPT_ENV,S.env,'env')
    +`<div class="hintNote">어태치먼트로 밀기·바닥 긁기 작업을 하면 충격이 누적돼 반납 시 분쟁이 될 수 있습니다 — 실제 작업 방식을 계약 전에 알려주세요.</div>`;
 }
 function tabOps(){
   const reg=regCheck(), need=chargerNeed();
-  const chSec=isBattery()?`<div class="psec"><div class="ph"><b>충전기</b><span class="cur">${need==='three'?'삼상 권장':'단상 가능'}</span></div>
-    <div class="tiles c3">
-      ${tile(S.charger==='auto',"set('charger','auto')",`<b>자동 추천</b><div class="d">조건 기준 산정</div>`)}
-      ${tile(S.charger==='single',"set('charger','single')",`<b>단상</b><div class="d">야간충전·소형·단기</div>${priceTag(20000)}`)}
-      ${tile(S.charger==='three',"set('charger','three')",`<b>삼상(외장)</b><div class="d">2.5t↑ · 2~3교대</div>${priceTag(60000)}`)}</div>
-    <div class="fldRow" style="margin-top:10px">
+  const chSec=isBattery()?selSec('충전기', S.charger, [
+      {v:'auto',   t:'자동 추천 — 조건 기준 산정'},
+      {v:'single', t:`단상 — 야간충전·소형·단기 (${pTxt(20000)})`},
+      {v:'three',  t:`삼상(외장) — 2.5t↑ · 2~3교대 (${pTxt(60000)})`}],
+      "set('charger',this.value)", need==='three'?'삼상 권장':'단상 가능')
+   +`<div class="psec">
+    <div class="fldRow">
       <div class="fld"><label>배전반 여유 용량 (필수 12)</label>
         <select onchange="set('panelCap',this.value)">
           <option value="" ${S.panelCap===''?'selected':''}>미확인 (현장 실사 필요)</option>
@@ -1161,10 +1196,10 @@ function tabOps(){
         </select></div>`:''}
     </div>
     ${S.panelCap===''?'<div class="hintNote">전동 제안은 충전 인프라에서 막히면 계약이 늦어집니다 — 배전반 여유 용량·설치 위치·가능 대수를 실사에서 확인합니다.</div>':''}</div>`:'';
-  return `<div class="psec"><div class="ph"><b>임대 기간</b></div>
-    <div class="tiles">${TERMS.map(t=>tile(S.term===t.id,`set('term','${t.id}')`,
-      `<b>${t.nm}</b><div class="d">${t.mul===1?'기준 임대료':t.mul>1?`기준가 × ${t.mul}`:`기준가 × ${t.mul} 할인`}</div>`)).join('')}</div></div>
-  <div class="psec"><div class="ph"><b>대수 · 교대</b></div><div class="fldRow">
+  return selSec('임대 기간', S.term,
+    TERMS.map(t=>({v:t.id, t:`${t.nm} — ${t.mul===1?'기준 임대료':t.mul>1?`기준가 × ${t.mul}`:`기준가 × ${t.mul} 할인`}`})),
+    "set('term',this.value)")
+  +`<div class="psec"><div class="ph"><b>대수 · 교대</b></div><div class="fldRow">
     <div class="fld"><label>대수 ${S.units>=3?'(3대 이상 5% 할인)':''}</label>
       <div class="stepper"><button onclick="set('units',Math.max(1,S.units-1))">−</button>
       <span class="v">${S.units}대</span><button onclick="set('units',S.units+1)">+</button></div></div>
