@@ -97,6 +97,10 @@ h1.big{font-size:23px;font-weight:800;letter-spacing:-.03em}
 .chip{border:1.5px solid var(--line-d);border-radius:20px;padding:7px 15px;font-size:13.5px;font-weight:700;
   color:var(--sub);white-space:nowrap;flex-shrink:0;transition:.12s}
 .chip.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.chipRow{display:flex;align-items:center;gap:8px}
+.chipRow .chips{flex:1;min-width:0}
+.chip.reset{flex:none;border-style:dashed;color:var(--mut);padding:7px 12px;font-size:12.5px}
+.chip.reset:active{background:var(--panel)}
 
 /* 기종 카드 */
 #mdlGrid{display:grid;grid-template-columns:1fr;gap:12px;margin-top:14px}
@@ -227,6 +231,19 @@ h1.big{font-size:23px;font-weight:800;letter-spacing:-.03em}
 .fld select,.fld input,.fld textarea{width:100%;border:1.5px solid var(--line-d);border-radius:7px;padding:11px;
   font-size:15px;background:#fff}
 .fld textarea{resize:vertical;min-height:64px;line-height:1.5}
+.shareGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+.shareOpt{display:flex;flex-direction:column;align-items:center;gap:3px;text-align:center;
+  border:1.5px solid var(--line-d);border-radius:10px;padding:14px 8px;background:#fff;color:var(--ink);
+  text-decoration:none;font-family:inherit}
+.shareOpt .ic{font-size:21px;line-height:1}
+.shareOpt b{font-size:13.5px;font-weight:800}
+.shareOpt span:last-child{font-size:10.5px;color:var(--mut);line-height:1.35}
+.shareOpt:active{border-color:var(--ink)}
+.qrWrap{margin-top:16px;display:flex;flex-direction:column;align-items:center;gap:9px;
+  border:1px solid var(--line);border-radius:10px;padding:16px;background:var(--panel)}
+.qrWrap canvas{border-radius:6px}
+.qrTx{font-size:11.5px;color:var(--sub);text-align:center;line-height:1.5}
+.qrCopy{border:1.5px solid var(--line-d);border-radius:7px;padding:9px 16px;font-size:13px;font-weight:700;background:#fff}
 .stepper{display:flex;align-items:center;border:1.5px solid var(--line-d);border-radius:7px;overflow:hidden}
 .stepper button{width:44px;padding:10px 0;font-size:17px;font-weight:700;background:var(--panel)}
 .stepper .v{flex:1;text-align:center;font-weight:800;font-size:15px}
@@ -455,7 +472,10 @@ h1.big{font-size:23px;font-weight:800;letter-spacing:-.03em}
     </div>
     <h1 class="big">어떤 장비가 필요하세요?</h1>
     <div class="lead">현장 조건에 맞는 기종을 고르면 <b>견적 필수 확인 15항목</b>을 자동으로 점검해 드립니다.<br>월 임대료는 장기(36개월) 기준 참고가이며 최종가는 현장 실사 후 확정됩니다.</div>
-    <div class="chips" id="catChips" style="margin-top:18px"></div>
+    <div class="chipRow" style="margin-top:18px">
+      <div class="chips" id="catChips"></div>
+      <button class="chip reset" onclick="resetAll()" title="작성 중인 견적을 지우고 처음부터">↺ 초기화</button>
+    </div>
     <div id="mdlGrid"></div>
   </div></section>
 
@@ -609,6 +629,15 @@ function toast(m){const t=$('toast');t.textContent=m;t.classList.add('on');clear
 function lsGet(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}}
 function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
 function saveDraft(){U.touched=true;lsSet(KEY.draft,S);}
+/* 작성 중인 견적을 지우고 기본값으로 — 저장된 견적함은 건드리지 않는다 */
+function resetAll(){
+  if(U.touched&&!confirm('작성 중인 견적을 지우고 처음부터 시작할까요?\n(견적함에 저장한 견적은 그대로 있습니다)'))return;
+  S=Object.assign({},DEF,{att:[],safe:['rcam'],env:[],checks:{}});
+  U.tab=0;U.cat='전체';U.editId=null;U.touched=false;
+  try{localStorage.removeItem(KEY.draft)}catch(e){}
+  try{history.replaceState(null,'','?v=home')}catch(e){}
+  renderHome();go('home');toast('초기화했습니다');
+}
 
 /* ═════════ 장비 SVG ═════════ */
 function tireCircle(cx,cy,r,tire){
@@ -1373,7 +1402,7 @@ function openSum(){
       ${p.items.map(([n,v])=>`<tr><td class="k">${esc(n)}</td><td class="v">+ ${v.toLocaleString()}원</td></tr>`).join('')}
       <tr><td class="k"><b>월 임대료 합계</b></td><td class="v"><b>${W(p.final)}</b></td></tr></table></div>`;
   openSheet('견적 요약 · 필수 15항목',body,
-    [{t:'📤 공유',c:'dk',f:'shareText(quoteText())'},{t:'💾 견적함 저장',c:'pri',f:'openSave()'}]);
+    [{t:'📤 공유',c:'dk',f:'shareMenu()'},{t:'💾 견적함 저장',c:'pri',f:'openSave()'}]);
 }
 
 /* ═════════ 견적요청 양식 텍스트 ═════════ */
@@ -1393,6 +1422,274 @@ function quoteText(cust){
   out.push('— 그룹사 장비 임대 · 문의 1800-5540');
   return out.join('\n');
 }
+/* ── QR 인코더 (대시보드와 같은 코드, 외부 라이브러리 없음) ── */
+const QR=(()=>{
+  /* 버전별 [블록당 EC 코드워드, [[블록수, 데이터 코드워드], ...]] */
+  const EC={1:[10,[[1,16]]],2:[16,[[1,28]]],3:[26,[[1,44]]],4:[18,[[2,32]]],5:[24,[[2,43]]],
+    6:[16,[[4,27]]],7:[18,[[4,31]]],8:[22,[[2,38],[2,39]]],9:[22,[[3,36],[2,37]]],10:[26,[[4,43],[1,44]]]};
+  const ALIGN={1:[],2:[6,18],3:[6,22],4:[6,26],5:[6,30],6:[6,34],7:[6,22,38],8:[6,24,42],9:[6,26,46],10:[6,28,50]};
+  const VERBITS={7:0x07C94,8:0x085BC,9:0x09A99,10:0x0A4D3};
+
+  /* GF(256), 원시다항식 0x11D */
+  const EXP=new Uint8Array(512), LOG=new Uint8Array(256);
+  for(let i=0,x=1;i<255;i++){EXP[i]=x;LOG[x]=i;x<<=1;if(x&0x100)x^=0x11D;}
+  for(let i=255;i<512;i++)EXP[i]=EXP[i-255];
+  const mul=(a,b)=>(a&&b)?EXP[LOG[a]+LOG[b]]:0;
+
+  /* 생성다항식 ∏(x - α^i) — 내림차순 계수, g[0]=1 */
+  function rsGen(n){let g=[1];for(let i=0;i<n;i++){const ng=new Array(g.length+1).fill(0);
+    for(let j=0;j<g.length;j++){ng[j]^=g[j];ng[j+1]^=mul(g[j],EXP[i]);}g=ng;}return g;}
+  function rsEnc(data,n){const g=rsGen(n),res=new Array(n).fill(0);
+    for(const d of data){const f=d^res[0];res.shift();res.push(0);
+      for(let i=0;i<n;i++)res[i]^=mul(g[i+1],f);}
+    return res;}
+
+  const dataCap=v=>EC[v][1].reduce((s,[n,d])=>s+n*d,0);
+  const cciBits=v=>v<10?8:16;
+
+  function encode(text){
+    const bytes=Array.from(new TextEncoder().encode(text));
+    let v=0;
+    for(let i=1;i<=10;i++){
+      if(4+cciBits(i)+8*bytes.length<=dataCap(i)*8){v=i;break;}
+    }
+    if(!v)throw new Error('QR: 내용이 너무 깁니다');
+
+    /* 비트스트림 */
+    const bits=[];
+    const push=(val,len)=>{for(let i=len-1;i>=0;i--)bits.push((val>>i)&1);};
+    push(4,4); push(bytes.length,cciBits(v)); bytes.forEach(b=>push(b,8));
+    const cap=dataCap(v)*8;
+    for(let i=0;i<4&&bits.length<cap;i++)bits.push(0);
+    while(bits.length%8)bits.push(0);
+    const words=[];
+    for(let i=0;i<bits.length;i+=8){let b=0;for(let j=0;j<8;j++)b=(b<<1)|bits[i+j];words.push(b);}
+    for(let i=0;words.length<dataCap(v);i++)words.push(i%2?0x11:0xEC);
+
+    /* 블록 분할 + RS */
+    const [ecLen,groups]=EC[v];
+    const dBlocks=[],eBlocks=[];let p=0;
+    groups.forEach(([cnt,dlen])=>{for(let i=0;i<cnt;i++){
+      const d=words.slice(p,p+dlen);p+=dlen;dBlocks.push(d);eBlocks.push(rsEnc(d,ecLen));}});
+
+    /* 인터리브 */
+    const out=[];
+    const maxD=Math.max(...dBlocks.map(b=>b.length));
+    for(let i=0;i<maxD;i++)dBlocks.forEach(b=>{if(i<b.length)out.push(b[i]);});
+    for(let i=0;i<ecLen;i++)eBlocks.forEach(b=>out.push(b[i]));
+    return {v,out};
+  }
+
+  function buildMatrix(v,out){
+    const n=4*v+17;
+    const m=Array.from({length:n},()=>new Array(n).fill(null));   /* null=데이터 자리 */
+    const fn=Array.from({length:n},()=>new Array(n).fill(false)); /* 기능 패턴 여부 */
+    const set=(r,c,val)=>{m[r][c]=val;fn[r][c]=true;};
+
+    /* 파인더 + 분리자 */
+    const finder=(r0,c0)=>{
+      for(let r=-1;r<=7;r++)for(let c=-1;c<=7;c++){
+        const r1=r0+r,c1=c0+c;if(r1<0||r1>=n||c1<0||c1>=n)continue;
+        const on=(r>=0&&r<=6&&(c===0||c===6))||(c>=0&&c<=6&&(r===0||r===6))||(r>=2&&r<=4&&c>=2&&c<=4);
+        set(r1,c1,on);}};
+    finder(0,0);finder(0,n-7);finder(n-7,0);
+
+    /* 타이밍 */
+    for(let i=8;i<n-8;i++){set(6,i,i%2===0);set(i,6,i%2===0);}
+
+    /* 얼라인먼트 */
+    const ap=ALIGN[v];
+    ap.forEach(r=>ap.forEach(c=>{
+      if((r<=8&&c<=8)||(r<=8&&c>=n-9)||(r>=n-9&&c<=8))return;
+      for(let dr=-2;dr<=2;dr++)for(let dc=-2;dc<=2;dc++)
+        set(r+dr,c+dc,Math.max(Math.abs(dr),Math.abs(dc))!==1);}));
+
+    /* 포맷 정보 자리 예약 + 다크 모듈 */
+    for(let i=0;i<9;i++){if(!fn[8][i])set(8,i,false);if(!fn[i][8])set(i,8,false);}
+    for(let i=0;i<8;i++){if(!fn[8][n-1-i])set(8,n-1-i,false);if(!fn[n-1-i][8])set(n-1-i,8,false);}
+    set(n-8,8,true);
+
+    /* 버전 정보 자리 예약 (v7+) */
+    if(v>=7)for(let i=0;i<18;i++){
+      const a=Math.floor(i/3),b=i%3;
+      set(n-11+b,a,false);set(a,n-11+b,false);}
+
+    /* 데이터 배치 — 우하단부터 지그재그, 6열 건너뜀 */
+    let bi=0;const bit=()=>{const byte=out[bi>>3];const b=byte===undefined?0:(byte>>(7-(bi&7)))&1;bi++;return b===1;};
+    let up=true;
+    for(let c=n-1;c>0;c-=2){
+      if(c===6)c--;
+      for(let k=0;k<n;k++){
+        const r=up?n-1-k:k;
+        for(const cc of [c,c-1]) if(m[r][cc]===null) m[r][cc]=bit();
+      }
+      up=!up;
+    }
+
+    return {n,m,fn};
+  }
+
+  const MASKS=[
+    (r,c)=>(r+c)%2===0, (r,c)=>r%2===0, (r,c)=>c%3===0, (r,c)=>(r+c)%3===0,
+    (r,c)=>(Math.floor(r/2)+Math.floor(c/3))%2===0, (r,c)=>(r*c)%2+(r*c)%3===0,
+    (r,c)=>((r*c)%2+(r*c)%3)%2===0, (r,c)=>((r+c)%2+(r*c)%3)%2===0];
+
+  function formatBits(mask){
+    /* EC레벨 M = 00 */
+    let d=(0<<3)|mask, rem=d<<10;
+    for(let i=4;i>=0;i--) if(rem&(1<<(i+10))) rem^=0x537<<i;
+    return ((d<<10)|rem)^0x5412;
+  }
+
+  function applyFormat(n,m,fn,mask){
+    const f=formatBits(mask);
+    /* 15비트를 MSB(비트14)부터 순서대로 배치한다 */
+    const bitAt=i=>((f>>(14-i))&1)===1;
+    for(let i=0;i<=5;i++)m[8][i]=bitAt(i);
+    m[8][7]=bitAt(6); m[8][8]=bitAt(7); m[7][8]=bitAt(8);
+    for(let i=9;i<15;i++)m[14-i][8]=bitAt(i);
+    for(let i=0;i<=7;i++)m[n-1-i][8]=bitAt(i);
+    for(let i=8;i<15;i++)m[8][n-15+i]=bitAt(i);
+    m[n-8][8]=true;
+  }
+
+  function applyVersion(n,m,v){
+    if(v<7)return;
+    const bits=VERBITS[v];
+    for(let i=0;i<18;i++){
+      const on=((bits>>i)&1)===1, a=Math.floor(i/3), b=i%3;
+      m[n-11+b][a]=on; m[a][n-11+b]=on;
+    }
+  }
+
+  function penalty(n,m){
+    let p=0;
+    /* 규칙1 — 같은 색 5개 이상 연속 */
+    for(let i=0;i<n;i++){
+      for(const line of [m[i], m.map(row=>row[i])]){
+        let run=1;
+        for(let j=1;j<n;j++){
+          if(line[j]===line[j-1])run++;
+          else{if(run>=5)p+=3+(run-5);run=1;}
+        }
+        if(run>=5)p+=3+(run-5);
+      }
+    }
+    /* 규칙2 — 2x2 같은 색 */
+    for(let r=0;r<n-1;r++)for(let c=0;c<n-1;c++)
+      if(m[r][c]===m[r][c+1]&&m[r][c]===m[r+1][c]&&m[r][c]===m[r+1][c+1])p+=3;
+    /* 규칙3 — 1:1:3:1:1 패턴 */
+    const pat1=[true,false,true,true,true,false,true,false,false,false,false];
+    const pat2=[false,false,false,false,true,false,true,true,true,false,true];
+    const match=(line,s,pat)=>{for(let i=0;i<11;i++)if(line[s+i]!==pat[i])return false;return true;};
+    for(let i=0;i<n;i++){
+      const row=m[i], col=m.map(r=>r[i]);
+      for(let j=0;j+11<=n;j++){
+        if(match(row,j,pat1)||match(row,j,pat2))p+=40;
+        if(match(col,j,pat1)||match(col,j,pat2))p+=40;
+      }
+    }
+    /* 규칙4 — 어두운 모듈 비율 */
+    let dark=0;m.forEach(r=>r.forEach(v=>{if(v)dark++;}));
+    const pct=dark*100/(n*n);
+    p+=Math.floor(Math.abs(pct-50)/5)*10;
+    return p;
+  }
+
+  function make(text){
+    const {v,out}=encode(text);
+    const base=buildMatrix(v,out);
+    let best=null;
+    for(let mask=0;mask<8;mask++){
+      const m=base.m.map(r=>r.slice());
+      for(let r=0;r<base.n;r++)for(let c=0;c<base.n;c++)
+        if(!base.fn[r][c]&&MASKS[mask](r,c))m[r][c]=!m[r][c];
+      applyFormat(base.n,m,base.fn,mask);
+      applyVersion(base.n,m,v);
+      const p=penalty(base.n,m);
+      if(!best||p<best.p)best={p,m,mask};
+    }
+    return {size:base.n,modules:best.m,version:v,mask:best.mask};
+  }
+  return {make};
+})();
+
+function drawQR(canvas,text){
+  let q;
+  try{q=QR.make(text);}catch(e){return false;}
+  const scale=Math.max(2,Math.floor(220/(q.size+8))), quiet=4, px=(q.size+quiet*2)*scale;
+  canvas.width=px;canvas.height=px;
+  canvas.style.width=px+'px';canvas.style.height=px+'px';
+  const g=canvas.getContext('2d');
+  g.fillStyle='#fff';g.fillRect(0,0,px,px);
+  g.fillStyle='#0d2f61';
+  for(let r=0;r<q.size;r++)for(let c=0;c<q.size;c++)
+    if(q.modules[r][c])g.fillRect((c+quiet)*scale,(r+quiet)*scale,scale,scale);
+  return true;
+}
+
+/* ── 견적 상태를 짧은 링크로 (QR 용) ── */
+function encState(){
+  const out=[];
+  for(const k in DEF){
+    if(k==='checks'||k==='color')continue;
+    const d=DEF[k], v=S[k];
+    if(Array.isArray(d)){ if((v||[]).join('.')!==d.join('.')) out.push(k+':'+(v||[]).join('.')); }
+    else if(String(v)!==String(d)) out.push(k+':'+v);
+  }
+  return out.join(',');
+}
+function stateLink(){
+  const u=new URL(location.href); u.search=''; u.hash='';
+  const q=encState();
+  return u.href + (q?'?q='+encodeURIComponent(q):'');
+}
+function applyStateFromUrl(){
+  const q=new URLSearchParams(location.search).get('q');
+  if(!q)return false;
+  try{
+    q.split(',').forEach(pair=>{
+      const i=pair.indexOf(':'); if(i<0)return;
+      const k=pair.slice(0,i), v=pair.slice(i+1);
+      if(!(k in DEF)||k==='checks')return;
+      const d=DEF[k];
+      S[k]=Array.isArray(d)?(v?v.split('.'):[]):(typeof d==='number'?+v:v);
+    });
+    return true;
+  }catch(e){return false;}
+}
+
+/* ── '공유' — 이메일 / QR / 톡 중 고른다 ── */
+function shareMenu(){
+  const txt=quoteText(), link=stateLink();
+  const subject=encodeURIComponent(`장비 임대 견적 — ${model().name} ${S.ton}t`);
+  const body=encodeURIComponent(txt+'\n\n■ 같은 조건으로 열어보기\n'+link);
+  openSheet('견적 전달',
+    `<div class="shareGrid">
+       <a class="shareOpt" href="mailto:?subject=${subject}&body=${body}"><span class="ic">✉️</span><b>이메일</b><span>메일 앱이 열립니다</span></a>
+       <button class="shareOpt" onclick="showQuoteQR()"><span class="ic">▦</span><b>QR</b><span>화면을 보여 주고 찍게</span></button>
+       <button class="shareOpt" onclick="shareText(quoteText())"><span class="ic">💬</span><b>톡</b><span>카톡·문자 등 공유창</span></button>
+     </div>
+     <div id="shareQRBox"></div>`,
+    [{t:'← 요약으로',c:'dk',f:'openSum()'},{t:'닫기',c:'pri',f:'closeSheet()'}]);
+}
+function showQuoteQR(){
+  const box=$('shareQRBox'), link=stateLink();
+  box.innerHTML=`<div class="qrWrap"><canvas id="qrCv"></canvas>
+    <div class="qrTx">찍으면 이 견적이 같은 조건으로 열립니다</div>
+    <button class="qrCopy" onclick="copyLink()">링크 복사</button></div>`;
+  if(!drawQR($('qrCv'),link)){
+    box.innerHTML=`<div class="qrWrap"><div class="qrTx">주소가 길어 QR 로 담지 못했습니다 — 링크로 보내주세요.</div>
+      <button class="qrCopy" onclick="copyLink()">링크 복사</button></div>`;
+  }
+  box.scrollIntoView({block:'nearest'});
+}
+function copyLink(){
+  const l=stateLink();
+  if(navigator.clipboard)navigator.clipboard.writeText(l).then(()=>toast('링크를 복사했습니다')).catch(()=>prompt('복사하세요',l));
+  else prompt('복사하세요',l);
+}
+
 function shareText(txt){
   if(navigator.share){navigator.share({title:'장비 임대 견적',text:txt}).catch(()=>{});return;}
   if(navigator.clipboard){navigator.clipboard.writeText(txt).then(()=>toast('견적 내용을 복사했습니다')).catch(()=>prompt('복사하세요',txt));return;}
@@ -1424,8 +1721,10 @@ if(location.protocol.startsWith('http')&&'serviceWorker' in navigator){
   if(d&&d.modelId){S=Object.assign({},DEF,d);S.att=S.att||[];S.safe=S.safe||[];S.env=S.env||[];S.checks=S.checks||{};U.touched=true;}
   netState();
   const v=new URLSearchParams(location.search).get('v');
+  const shared=applyStateFromUrl();   // QR·링크로 받은 견적이면 그 조건으로 연다
   renderHome();
-  go(['home','saved','check','build'].includes(v)?v:'home',false);
+  go(shared?'build':(['home','saved','check','build'].includes(v)?v:'home'),false);
+  if(shared)toast('공유받은 조건으로 열었습니다');
 })();
 </script>
 </body>
