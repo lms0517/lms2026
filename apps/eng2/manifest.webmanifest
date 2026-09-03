@@ -1,13 +1,13 @@
 {
-  "name": "ENG 개념제안",
-  "short_name": "ENG v2",
+  "name": "ENG 개념제안 (밝은 스타일)",
+  "short_name": "ENG 라이트",
   "description": "1차 개념제안 도구 — 최소 질문으로 제안 방향·개략 투자비",
   "start_url": "index.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#0B0F1A",
-  "theme_color": "#0B0F1A",
+  "background_color": "#eef0f4",
+  "theme_color": "#eef0f4",
   "lang": "ko",
   "dir": "ltr",
   "icons": [

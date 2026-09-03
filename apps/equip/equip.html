@@ -310,6 +310,49 @@ h1.big{font-size:23px;font-weight:800;letter-spacing:-.03em}
   pointer-events:none;max-width:88vw;text-align:center}
 #toast.on{opacity:1;transform:translateX(-50%)}
 
+#stageNoteBottom{display:none}
+
+/* ══════ 모바일 — 상단 최소화 + 장비 사진 고정 ══════ */
+@media (max-width:899px){
+  /* 헤더를 최대한 얇게 */
+  #gnb .row1{padding:7px 14px;gap:9px}
+  #gnb .logo img{width:24px;height:24px}
+  #gnb .logo{font-size:14.5px}
+  #gnb .htt{font-size:14.5px}
+  #gnb .htt small{font-size:10.5px}
+  .iconbtn{width:32px;height:32px;font-size:15px}
+  #steps{padding:0 14px}
+  .stepTab{padding:3px 13px 6px 0}
+  .stepTab .no{font-size:11.5px}
+  .stepTab .nm{font-size:13px}
+  .stepTab+.stepTab{padding-left:13px}
+  .stepTab.on:after{right:13px;height:2.5px}
+  #crumbs{padding:0 14px 6px;font-size:11.5px}
+  #crumbs .cr{padding:1px 0}
+
+  /* 장비 사진은 붙박이 — 아래 선택지만 스크롤된다 */
+  #stage{position:sticky;top:0;z-index:15;background:var(--bg);
+    padding:6px 14px 8px;max-height:42vh;overflow-y:auto;-webkit-overflow-scrolling:touch;
+    box-shadow:0 3px 10px rgba(0,0,0,.06)}
+  /* 기종명은 헤더에 이미 있다 — 여기선 생략해 사진 자리를 넓힌다 */
+  #stTitle{display:none}
+  #stSub{font-size:11.5px;margin-top:0;gap:2px 10px}
+  #vizWrap{margin-top:4px}
+  #optNote,#specView{max-width:100%}
+  #vuToggle{margin-top:7px;max-width:240px}
+  #vuToggle button{padding:7px 0;font-size:12.5px}
+  #optNote{margin-top:8px}
+  #stage #stageNote{display:none}
+  #stageNoteBottom{display:block;font-size:11px;color:var(--mut);line-height:1.55;margin-top:22px}
+  #panel{margin-top:0;padding-top:18px}
+}
+/* 화면이 짧은 기기 — 사진 영역을 더 줄인다 */
+@media (max-width:899px) and (max-height:700px){
+  #stage{max-height:40vh}
+  #viz{max-width:min(100%,26vh)}
+  #optNote .cap{display:none}
+}
+
 /* ══════ 데스크톱 ══════ */
 @media (min-width:900px){
   #gnb .row1{padding:14px 28px}
@@ -344,9 +387,9 @@ h1.big{font-size:23px;font-weight:800;letter-spacing:-.03em}
 }
 @media (max-width:899px){
   #priceNote{display:none}
-  /* 스테이지가 화면을 다 먹지 않도록 — 옵션 패널이 한 스크롤 안에 들어오게 */
-  #viz{max-width:420px}
-  #viz svg{max-height:34vh}
+  /* 사진 높이를 화면에 맞춘다. 핀 좌표가 어긋나지 않게 #viz 자체의 폭을 줄인다 (사진비 560:400) */
+  #viz{max-width:min(100%,30vh)}
+  #viz svg{max-height:22vh}
   /* 요약 표는 항목명 위 / 값 아래로 쌓는다 */
   .sg td{display:block;border:none;padding:0}
   .sg td.k{width:auto;font-size:12px;padding-top:9px}
@@ -424,6 +467,7 @@ h1.big{font-size:23px;font-weight:800;letter-spacing:-.03em}
       <div id="panel">
         <div id="panelTitle">마스트 · 타이어</div>
         <div id="panelBody"></div>
+        <div id="stageNoteBottom">* 상기 이미지는 사양 선택을 돕기 위한 참고용 일러스트입니다. (실제 장비 외관은 제조사·연식에 따라 다를 수 있습니다)</div>
       </div>
     </div>
   </section>
