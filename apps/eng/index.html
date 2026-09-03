@@ -174,6 +174,23 @@ a.btn{text-decoration:none}
 .stat.hl .v{color:var(--accent-2)}
 .stat.green .v{color:var(--green)}
 .stat .sub{font-size:10.5px;color:var(--muted);margin-top:3px}
+/* 압축형 — 취급량처럼 숫자 둘을 한 줄에 */
+.stat.slim{padding:9px 14px;display:flex;align-items:center;gap:14px;grid-column:1/-1}
+.stat.slim .l{margin:0;flex:0 0 auto}
+.stat.slim .v{font-size:17px;white-space:nowrap}
+.stat.slim .v small{font-size:11px}
+.stat.slim .sep{color:var(--line);font-size:18px}
+.stat.slim .sub{margin:0 0 0 auto;text-align:right}
+/* 권장 규모 두 값을 한 칸에 */
+.stat .v2{display:flex;flex-direction:column;gap:2px}
+.stat .v2 .r{display:flex;align-items:baseline;gap:6px;font-family:'IBM Plex Mono',monospace}
+.stat .v2 .r b{font-size:19px;font-weight:700;color:var(--ink)}
+.stat .v2 .r span{font-size:10.5px;color:var(--muted)}
+.stat .v2 .r.on b{color:var(--accent-2)}
+/* 추천 시스템 카드 — 아랫부분 더보기 */
+.solu .body.fold{display:none}
+.solu .body.fold.show{display:block}
+.solu .more{display:block;width:100%;padding:11px;background:none;border:none;border-top:1px solid var(--line);color:var(--accent);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
 
 /* recommended solution */
 .solu{border:1px solid var(--accent);border-radius:var(--radius);overflow:hidden;margin-bottom:14px;box-shadow:var(--sh-md),0 0 0 1px rgba(92,132,230,.12),var(--hl)}
@@ -1567,6 +1584,37 @@ const CAPEX = {
     pltPerUnitHr:      10    // 무인지게차 1대 시간당 처리 PLT          — 추정
   },
 
+  /* ── 고정형 이송설비(컨베이어 라인) 모델 ───────────────────────
+     단가 중 체인 컨베이어·사이즈체커·로딩가이드·제어는 셔틀 견적 3건 실측(COMMON).
+     구간·속도·능력·턴테이블은 추정 — TSPG 견적으로 보정할 것. */
+  CONV: {
+    label:"고정형 이송설비 (파렛트 컨베이어 라인)",
+    segM:          2.5,       // 체인 컨베이어 1 Set 길이(m) — 추정
+    speedMpm:      12,        // 체인 컨베이어 속도 m/min — 추정(파렛트 체인 10~15)
+    capPerLineHr:  120,       // 라인 1개 시간당 통과 능력(PL/h) — 추정(30초 피치)
+    bufferMin:     15,        // 축적 버퍼 = 시간당 물량의 15분치 — 추정
+    turntable:    12000000,   // 턴테이블 1개소 — 추정
+    transfer:      9500000,   // 직각 이재기(Transfer) — 추정
+    rateInstall:   0.177,     // 설치·시운전(셔틀 견적 3건 평균)
+    rateLogistics: 0.034,
+    overhead: [["일반 관리비",0.10],["기업 이윤",0.05]]
+  },
+  /* ── 자동 상하차(ATLS) 모델 — 전부 추정. 국내 실적 견적으로 보정 필요 ── */
+  DOCK: {
+    label:"자동 상하차 (ATLS)",
+    cycleMinManual: 30,       // 수동 상하차 1대 소요(분)
+    cycleMinAuto:    6,       // 자동 상하차 1대 소요(분) — 접안·결합 포함
+    hoursPerDay:     8,
+    dockCap:        16,       // 도크 1구 1일 처리 차량(8h ÷ 30분)
+    unitConv:    220000000,   // 컨베이어형(슬랫/체인) 도크 1구 — 전용 트레일러 필요 — 추정
+    unitAgv:     300000000,   // AGV·로봇형 도크 1구 — 불특정 차량 가능 — 추정
+    leveler:       9000000,   // 도크 레벨러·실터 1구
+    trailerMod:   25000000,   // 전용 트레일러 개조(컨베이어형) 1대
+    control:      18000000,   // 도크 제어반·안전센서 1구
+    rateInstall:   0.18,
+    overhead: [["일반 관리비 및 기업 이윤",0.10]]
+  },
+
   /* 영업 시스템 키 → 원가 모델 매핑 */
   MODEL_OF: {
     shuttle4way:"4way",   // 실측 2건
@@ -1689,6 +1737,76 @@ const CAPEX = {
         ["설계 공수", md+" MD × "+fmt(A.mdRate)+"원","추정"],
         ["WMS", wantWms?"포함 "+fmt(A.wms)+"원":"제외","실측"],
         ["설치·시운전", "재료비 × "+(A.rateInstall*100).toFixed(0)+"%","추정"]
+      ]
+    });
+  },
+
+  /* ── 컨베이어 라인 산출 ── ctx: {inHr, outHr, lenIn, lenOut, tiers, lifterQty} */
+  estimateConv(ctx){
+    const V=this.CONV, C=this.COMMON, L=this.L.bind(this);
+    const linesIn  = Math.max(1, Math.ceil((ctx.inHr||0)/V.capPerLineHr));
+    const linesOut = Math.max(1, Math.ceil((ctx.outHr||0)/V.capPerLineHr));
+    const segIn  = Math.max(2, Math.ceil((ctx.lenIn||20)/V.segM)) * linesIn;
+    const segOut = Math.max(2, Math.ceil((ctx.lenOut||20)/V.segM)) * linesOut;
+    const perHr  = (ctx.inHr||0)+(ctx.outHr||0);
+    const buffer = Math.max(3, Math.round(perHr*V.bufferMin/60));
+    const turns  = 2*(linesIn+linesOut);                        // 라인당 90° 전환 2개소
+    const transfers = linesIn+linesOut;                          // 랙 스테이션 이재
+    const lines=[
+      L("이송설비","Chain Conveyor 입고 라인",`${linesIn}라인 × ${Math.round((ctx.lenIn||20))}m`,"Set",segIn,C.conveyor),
+      L("이송설비","Chain Conveyor 출고 라인",`${linesOut}라인 × ${Math.round((ctx.lenOut||20))}m`,"Set",segOut,C.conveyor),
+      L("이송설비","축적 버퍼 컨베이어",`${buffer} PLT 대기 (${V.bufferMin}분치)`,"Set",Math.ceil(buffer/2),C.conveyor),
+      L("이송설비","턴테이블","90° 방향 전환","EA",turns,V.turntable),
+      L("이송설비","직각 이재기","랙 입출고 스테이션 접속","EA",transfers,V.transfer),
+      L("이송설비","Size Checker","Over Size Check","Set",linesIn,C.sizeChecker),
+      L("이송설비","Loading Guide","-","Set",linesIn,C.loadingGuide),
+      L("제어","이송 제어","Main & OP Panel, 센서 외","기구",segIn+segOut+turns+transfers,Math.round(C.ioCtrlPerUnit*0.35))
+    ];
+    const equip = lines.reduce((a,l)=>a+l.amt,0);
+    lines.push(L("부대비용","포장비, 운반비 및 장비비","설비계 × "+(V.rateLogistics*100).toFixed(1)+"%","Lot",1,Math.round(equip*V.rateLogistics)));
+    lines.push(L("부대비용","설치, 시운전 & 교육","설비계 × "+(V.rateInstall*100).toFixed(1)+"%","Lot",1,Math.round(equip*V.rateInstall)));
+    return this.finish({
+      model:"conv", modelLabel:V.label, lines,
+      groupOrder:["이송설비","제어","부대비용"], equipGroups:["이송설비","제어"],
+      overhead:V.overhead, excluded:["바닥 보강·트렌치 공사","전기 인입·분전반","기존 설비 철거·이설"], cells:0,
+      qty:{linesIn,linesOut,segIn,segOut,buffer,turns,transfers,perHr},
+      basis:[
+        ["라인 수", `입고 ${linesIn} · 출고 ${linesOut} — 라인당 ${V.capPerLineHr} PL/h(30초 피치) 기준`, "추정"],
+        ["구간 길이", `입고 ${Math.round(ctx.lenIn||20)}m · 출고 ${Math.round(ctx.lenOut||20)}m — 도크↔검수↔랙 스테이션 (레이아웃 기하)`, "추정"],
+        ["컨베이어 단가", fmt(C.conveyor)+"원/Set (2.5m) — 셔틀 견적 3건 동일", "실측"],
+        ["버퍼", `${buffer} PLT — 시간당 ${fmt(perHr)} PL의 ${V.bufferMin}분치`, "추정"],
+        ["턴테이블·이재기", `${turns}개소 · ${transfers}개소`, "추정"]
+      ]
+    });
+  },
+  /* ── ATLS 산출 ── ctx: {perDay, type:'conv'|'agv', dedicated:bool} */
+  estimateDock(ctx){
+    const D=this.DOCK, L=this.L.bind(this);
+    const trucks = Math.max(1, Math.ceil((ctx.perDay||0)/CONFIG.PLT_PER_TRUCK));
+    const docks  = Math.max(1, Math.ceil(trucks/D.dockCap));
+    const type   = ctx.type||"conv";
+    const unit   = type==="agv" ? D.unitAgv : D.unitConv;
+    const trailers = type==="conv" ? Math.max(2, Math.ceil(trucks/4)) : 0;   // 전용 트레일러 순환 — 추정(하루 4회전)
+    const lines=[
+      L("상하차 설비", type==="agv"?"ATLS 본체 (AGV·로봇형)":"ATLS 본체 (컨베이어형)", type==="agv"?"불특정 차량 대응":"전용 트레일러 슬랫 접속","구",docks,unit),
+      L("상하차 설비","도크 레벨러·실터","-","구",docks,D.leveler),
+      L("상하차 설비","도크 제어반·안전센서","접안 감지, 비상정지","구",docks,D.control)
+    ];
+    if(trailers) lines.push(L("차량","전용 트레일러 개조","바닥 슬랫 컨베이어 장착","대",trailers,D.trailerMod));
+    const equip = lines.reduce((a,l)=>a+l.amt,0);
+    lines.push(L("부대비용","설치, 시운전 & 교육","설비계 × "+(D.rateInstall*100).toFixed(0)+"%","Lot",1,Math.round(equip*D.rateInstall)));
+    const hoursManual = +(trucks*D.cycleMinManual/60).toFixed(1), hoursAuto=+(trucks*D.cycleMinAuto/60).toFixed(1);
+    return this.finish({
+      model:"dock", modelLabel:D.label+(type==="agv"?" · AGV형":" · 컨베이어형"), lines,
+      groupOrder:["상하차 설비","차량","부대비용"], equipGroups:["상하차 설비","차량"],
+      overhead:D.overhead, excluded:["도크 토목·캐노피 공사","차량 대기장","트레일러 차량 본체"], cells:0,
+      qty:{trucks,docks,type,trailers,hoursManual,hoursAuto},
+      basis:[
+        ["차량 대수", `일 ${trucks}대 = 일 취급 ${fmt(ctx.perDay||0)} PL ÷ 대당 ${CONFIG.PLT_PER_TRUCK} PL`, "추정"],
+        ["도크 수", `${docks}구 — 도크 1구 1일 ${D.dockCap}대(8h ÷ ${D.cycleMinManual}분)`, "추정"],
+        ["상하차 시간", `수동 ${hoursManual}h/일 → 자동 ${hoursAuto}h/일 (대당 ${D.cycleMinManual}→${D.cycleMinAuto}분)`, "추정"],
+        ["본체 단가", fmt(unit)+"원/구 — 국내 실적 견적 없음, 보정 필요", "추정"],
+        ...(trailers?[["전용 트레일러", `${trailers}대 개조 (하루 4회전 순환)`, "추정"]]:[])
       ]
     });
   },
@@ -2068,11 +2186,19 @@ const Engine = {
       } else {
         v = "cond"; why = `시간당 ${fmt(hr)} PLT로는 전 구간 컨베이어화의 투자 대비 효과가 낮습니다. 입출고 버퍼 구간에만 부분 적용을 권합니다.`;
       }
-      R.conv = { v, why, note, spec:[
-        ["적용 구간",   "도크 ↔ 입고 검수 ↔ 랙 입출고 스테이션"],
-        ["버퍼 수량",   hr ? Math.max(3, Math.round(hr/4))+" PLT 상당 (약 15분 분량)" : "—"],
-        ["수직 연결",   est.tiers>=4 ? "리프트 필요(단수 "+est.tiers+")" : "평면 이송으로 가능"],
-        ["턴테이블",    "방향 전환부 1~2개소(레이아웃 확정 후)"]
+      /* 구간 길이 — 레이아웃 기하: 도크(랙 왼쪽 바깥) → 검수·사이즈체커 → 리프트 前 스테이션 */
+      const ly = roi.layout || {};
+      const lenIn  = Math.round(CONFIG.STATION_ZONE_M + 6 + (ly.rackW||20)*0.25);     // 도크→스테이션
+      const lenOut = Math.round(CONFIG.STATION_ZONE_M + (ly.rackW||20)*0.5 + 4);      // 스테이션→출고 버퍼→도크
+      const cv = hr ? CAPEX.estimateConv({ inHr:tp.inHr, outHr:tp.outHr, lenIn, lenOut, tiers:est.tiers, lifterQty:qty.lifterQty||1 }) : null;
+      R.conv = { v, why, note, capex:cv, spec:[
+        ["적용 구간",   "도크 ↔ 검수·사이즈체커 ↔ 랙 입출고 스테이션"],
+        ["라인 구성",   cv ? `입고 ${cv.qty.linesIn}라인 ${lenIn}m · 출고 ${cv.qty.linesOut}라인 ${lenOut}m` : "—"],
+        ["컨베이어",    cv ? `체인 ${cv.qty.segIn+cv.qty.segOut} Set (${CAPEX.CONV.segM}m) · ${CAPEX.CONV.speedMpm} m/min` : "—"],
+        ["버퍼 수량",   cv ? `${cv.qty.buffer} PLT (${CAPEX.CONV.bufferMin}분치)` : "—"],
+        ["턴테이블·이재기", cv ? `${cv.qty.turns}개소 · ${cv.qty.transfers}개소` : "—"],
+        ["수직 연결",   est.tiers>=4 ? "리프트 "+(qty.lifterQty||1)+"대 (자동창고 견적에 포함)" : "평면 이송으로 가능"],
+        ["개략 투자비", cv ? won(cv.totalMan)+"원 (VAT 별도 · 추정)" : "—"]
       ]};
     })();
 
@@ -2088,11 +2214,16 @@ const Engine = {
       } else {
         v = "ask";  why = `하루 약 ${trucks}대 수준이라 자동 상하차만으로는 투자 회수가 어려울 수 있습니다. 공장–창고 간 전용 셔틀 운행이 있다면 달라집니다.`;
       }
-      R.dock = { v, why, note, spec:[
-        ["추정 차량 대수", trucks ? `약 ${trucks}대/일` : "—"],
-        ["산출 근거",      trucks ? `일 취급 ${fmt(tp.perDay)} PL ÷ 대당 ${CONFIG.PLT_PER_TRUCK} PL` : "입출고량 필요"],
+      const dkC = trucks ? CAPEX.estimateDock({ perDay:tp.perDay, type:"conv" }) : null;
+      const dkA = trucks ? CAPEX.estimateDock({ perDay:tp.perDay, type:"agv"  }) : null;
+      R.dock = { v, why, note, capex:dkC, capexAlt:dkA, spec:[
+        ["추정 차량 대수", trucks ? `약 ${trucks}대/일 (일 취급 ${fmt(tp.perDay)} PL ÷ ${CONFIG.PLT_PER_TRUCK} PL)` : "—"],
+        ["도크 수",        dkC ? `${dkC.qty.docks}구 (도크 1구 1일 ${CAPEX.DOCK.dockCap}대)` : "—"],
+        ["상하차 시간",    dkC ? `수동 ${dkC.qty.hoursManual}h → 자동 ${dkC.qty.hoursAuto}h /일` : "—"],
+        ["유형 A · 컨베이어형", dkC ? `전용 트레일러 ${dkC.qty.trailers}대 개조 · ${won(dkC.totalMan)}원` : "—"],
+        ["유형 B · AGV형",     dkA ? `불특정 차량 가능 · ${won(dkA.totalMan)}원` : "—"],
         ["연결 방향",      "도크 → 입고 컨베이어 → 랙 입출고 스테이션"],
-        ["전제 조건",      "전용 트레일러 · 표준 파렛트 · 도크 레벨러"]
+        ["전제 조건",      "표준 파렛트 · 도크 레벨러 · (컨베이어형) 전용 트레일러"]
       ]};
     })();
 
@@ -2626,14 +2757,11 @@ function renderResult(){
   // 권장 구축 규모: 재고 기반 / 물동량 기반 각각 표시 (재무계산 적용 기준은 ✓ + 강조)
   const tapHint = `<span style="font-size:9px;color:var(--accent-2);font-family:'IBM Plex Mono',monospace;display:block;margin-top:2px">탭 → 계산 근거 ▼</span>`;
   const targetTiles = `<div class="stat calc-tap" onclick="showTargetModal()" style="cursor:pointer">
-         <div class="l">권장 규모 · 재고 기반 ${tapHint}</div>
-         <div class="v">${roi.targetFromStock?fmt(roi.targetFromStock):'—'}<small>Cells</small></div>
-         <div class="sub">${d.stock?'현 재고 '+fmt(d.stock)+'매 ×1.2'+(roi.targetDriver==='stock'?' · ✓ 적용':''):'재고 미입력'}</div>
-       </div>
-       <div class="stat calc-tap" onclick="showTargetModal()" style="cursor:pointer">
-         <div class="l">권장 규모 · 물동량 기반 ${tapHint}</div>
-         <div class="v">${roi.targetFromVolume?fmt(roi.targetFromVolume):'—'}<small>Cells</small></div>
-         <div class="sub">월 ${fmt(roi.volMonth)}PLT · ${roi.storeDays}일 보관${roi.targetDriver==='volume'?' · ✓ 적용':''}</div>
+         <div class="l">권장 규모 ${tapHint}</div>
+         <div class="v2">
+           <div class="r${roi.targetDriver==='stock'?' on':''}"><b>${roi.targetFromStock?fmt(roi.targetFromStock):'—'}</b><span>재고 ${d.stock?fmt(d.stock)+'×1.2':'미입력'}</span></div>
+           <div class="r${roi.targetDriver==='volume'?' on':''}"><b>${roi.targetFromVolume?fmt(roi.targetFromVolume):'—'}</b><span>물동량 · ${roi.storeDays}일</span></div>
+         </div>
        </div>`;
 
   /* ── [v2] 공간 부족 경고 — 권장 규모가 현 재고보다 작아지는 경우 ── */
@@ -2669,7 +2797,7 @@ function renderResult(){
     return `<div class="sc${r.v==='no'?' dim':''}" onclick="showScopeModal('${sp.k}')">
       <div class="sc-h"><span class="sc-t">${sp.t}</span>
         <span class="sc-v ${V.cls}">${V.label}</span><span class="sc-arr">›</span></div>
-      <div class="sc-w">${r.why}</div>
+      <div class="sc-w">${r.why}${r.capex?` <b style="color:var(--accent-2)">· 개략 ${won(r.capex.totalMan)}원${r.capexAlt?` ~ ${won(r.capexAlt.totalMan)}원`:''}</b>`:''}</div>
     </div>`;
   }).join("");
 
@@ -2701,14 +2829,18 @@ function renderResult(){
     <div class="card">
       <div class="h mono">개략 규모 추정<span class="ln"></span></div>
       <div class="stats">
-        <div class="stat calc-tap" onclick="showCalcModal()" style="cursor:pointer;grid-column:1/-1">
+        <div class="stat calc-tap" onclick="showCalcModal()" style="cursor:pointer">
           <div class="l">공간 최대 수용 <span style="font-size:9px;color:var(--accent);font-family:'IBM Plex Mono',monospace;display:block;margin-top:2px">탭 → 계산 근거 ▼</span></div>
           <div class="v">${fmt(est.cells)}<small>Cells</small></div>
           <div class="sub">${d.area||0}평 · ${est.tiers}단 가득 채울 시</div>
         </div>
         ${targetTiles}
-        <div class="stat"><div class="l">일 취급량</div><div class="v">${fmt(tp.perDay)}<small>PL</small></div><div class="sub">${tp.split?`입고 ${fmt(d.inDay)} + 출고 ${fmt(d.outDay)}`:`월 ${fmt(roi.volMonth)} ÷ ${tp.workDays}일`}</div></div>
-        <div class="stat hl"><div class="l">시간당 취급</div><div class="v">${fmt(tp.perHr)}<small>PL/h</small></div><div class="sub">${tp.opHours}시간 가동 · 입 ${tp.inHr} + 출 ${tp.outHr}</div></div>
+        <div class="stat slim">
+          <div class="l">취급량</div>
+          <div class="v">${fmt(tp.perDay)}<small>PL/일</small></div><span class="sep">·</span>
+          <div class="v" style="color:var(--accent-2)">${fmt(tp.perHr)}<small>PL/h</small></div>
+          <div class="sub">${tp.split?`입 ${fmt(d.inDay)} + 출 ${fmt(d.outDay)}`:`월 ${fmt(roi.volMonth)} ÷ ${tp.workDays}일`} · ${tp.opHours}h</div>
+        </div>
       </div>
       <div class="note">'공간 최대 수용'은 면적·층고를 가득 채울 때의 한도입니다. '권장 구축 규모'는 ① 현 재고(재고×1.2)와 ② 월 물동량(×보관일수)을 각각 환산한 값으로, 재고 입력 시 재고 기준을, 없으면 물동량 기준을 재무계산에 적용합니다(✓ 표시). 둘 다 면적 한도 내 개략값이며 Bay×(앞+뒤Deep)×Tier 설계·시뮬레이션으로 확정합니다.</div>
     </div>
@@ -2727,7 +2859,8 @@ function renderResult(){
         <h4>${sys.name}</h4>
         <div class="why">${matchReason(d,sysKey)}</div>
       </div>
-      <div class="body">${pts}
+      <button class="more" onclick="const b=this.nextElementSibling;b.classList.toggle('show');this.textContent=b.classList.contains('show')?'접기 ▲':'특징 · 공식 영상 더보기 ▼'">특징 · 공식 영상 더보기 ▼</button>
+      <div class="body fold">${pts}
         <div class="rlinks" style="margin-top:10px">
           <a href="${soluVideo.url}" target="_blank" rel="noopener" class="rlink yt">▶ ${soluVideo.t} 공식 영상</a>
         </div>
@@ -2746,11 +2879,7 @@ function renderResult(){
             <button class="sim-btn" id="simConcept" onclick="SIM3D.toggleConcept()">📐 개념 설명</button>
             <button class="sim-btn" id="simPlay" onclick="SIM3D.togglePlay()">▶ 데모 재생</button>
             <button class="sim-btn" onclick="SIM3D.fitView()">⟳ 시점 초기화</button>
-            <button class="sim-btn" onclick="SIM3D.preset('top')">🛰 조감</button>
-            <button class="sim-btn" onclick="SIM3D.preset('aisle')">🛤 통로 안</button>
-            <button class="sim-btn" onclick="SIM3D.preset('lift')">🏗 리프트 앞</button>
             <button class="sim-btn" id="simCine" onclick="SIM3D.toggleCinema()">🎬 영상 모드</button>
-            <button class="sim-btn" id="simSpeed" onclick="SIM3D.cycleSpeed()">속도 1×</button>
             <button class="sim-btn" id="simFsBtn" onclick="SIM3D.toggleFull()">⛶ 전체화면</button>
           </div>
           <div class="sim-scope" id="simScope"></div>
@@ -2821,12 +2950,6 @@ function renderResult(){
           <div class="note">이 화면의 수치는 <b>1차 개념 검토 결과</b>입니다. 설비 대수와 처리량 보증, 확정 견적은 위 자료를 받아 상세 시뮬레이션을 거친 뒤 제시합니다.</div>
         </div>
       </div>
-    </div>
-
-    <div class="card">
-      <div class="h mono">유사 구축 레퍼런스<span class="ln"></span></div>
-      ${refCards}
-      <div class="note">TSPG 공급실적 중 입력 조건(온도대·규모·높이)과 유사한 사례입니다. ▶ 버튼으로 현장 영상·블로그를 미팅에서 바로 보여주세요.</div>
     </div>
 
     <div class="result-actions">
@@ -5553,6 +5676,22 @@ document.getElementById('objModal').addEventListener('click', function(e){
 });
 
 /* ----- [v2] 제안 가능 영역 → 판정 근거 모달 ----- */
+/* 스코프 모달용 항목별 투자비 표 — 자동창고 CAPEX 카드와 같은 구성 */
+function capexMini(cx){
+  const rows = cx.lines.map(l=>`<div class="li"><span class="k">${l.n} <small style="color:var(--muted)">${l.s||''} · ${fmt(l.q)}${l.u}</small></span><span class="v">${won(Math.round(l.amt/10000))}원</span></div>`).join("");
+  const oh = cx.overheadLines.map(o=>`<div class="li"><span class="k">${o.n} ${(o.r*100).toFixed(0)}%</span><span class="v">${won(Math.round(o.amt/10000))}원</span></div>`).join("");
+  const basis = (cx.basis||[]).map(([a,b,c])=>`<div class="li"><span class="k">${a} <small style="color:${c==='실측'?'var(--green)':'#E8B21F'}">[${c}]</small></span><span class="v" style="font-weight:400;font-size:11.5px;text-align:right;max-width:58%">${b}</span></div>`).join("");
+  return `<div class="capex-group" style="margin-top:14px">
+      <div class="cg-title">${cx.modelLabel} <span class="cg-sub">개략 투자비 · VAT 별도</span></div>
+      ${rows}${oh}
+      <div class="li total"><span class="k">합계</span><span class="v"><b>${won(cx.totalMan)}원</b></span></div>
+    </div>
+    <div class="capex-group" style="margin-top:10px">
+      <div class="cg-title">산출 근거 <span class="cg-sub">[실측] 견적 3건 · [추정] TSPG 견적으로 보정 필요</span></div>
+      ${basis}
+      <div class="li"><span class="k">견적 제외</span><span class="v" style="font-weight:400;font-size:11.5px;text-align:right;max-width:58%">${(cx.excluded||[]).join(' · ')}</span></div>
+    </div>`;
+}
 function showScopeModal(k){
   const sp=SCOPES.find(x=>x.k===k), sc=window.sc_data;
   if(!sp||!sc||!sc[k]) return;
@@ -5565,6 +5704,8 @@ function showScopeModal(k){
     <div style="margin-top:14px">
       ${r.spec.map(([a,b])=>`<div class="li"><span class="k">${a}</span><span class="v">${b}</span></div>`).join("")}
     </div>
+    ${r.capex ? capexMini(r.capex) : ""}
+    ${r.capexAlt ? capexMini(r.capexAlt) : ""}
     ${r.note?`<div class="note" style="margin-top:12px">${r.note}</div>`:""}
     <button class="cm-close-btn" onclick="document.getElementById('objModal').classList.remove('show')">닫기</button>`;
   document.getElementById('objModal').classList.add('show');
