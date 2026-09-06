@@ -5,12 +5,13 @@
      activate에서 자기 접두사(eng-v2-)로 시작하는 캐시만 정리한다 —
      전체를 지우면 루트 앱의 오프라인 캐시까지 날아간다. */
 const PREFIX = "eng2-lms-";
-const CACHE  = PREFIX + "0903.1232";
+const CACHE  = PREFIX + "0906.sim6";
 const APP_HTML = "index.html";
 
 /* 공용 자원은 상위 경로(../)를 그대로 참조한다. 스코프 밖 URL도 캐시는 가능하다. */
 const ASSETS = [
   APP_HTML,
+  "./simulation.js?v=0906.5", "./simulation.css?v=0906.6",
   "manifest.webmanifest",
   "./icon-192.png",
   "./icon-512.png",

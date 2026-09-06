@@ -490,6 +490,7 @@ body.fs-lock{overflow:hidden}
   .app{box-shadow:0 0 80px rgba(0,0,0,.4)}
 }
 </style>
+<link rel="stylesheet" href="./simulation.css?v=0906.6">
 </head>
 <body>
 <div class="app">
@@ -498,7 +499,7 @@ body.fs-lock{overflow:hidden}
   <div class="topbar">
     <div class="brand">
       <span class="logo mono"><b>TSPG</b> · LOGISALL ENG</span>
-      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">CONCEPT PROPOSAL · v2 · b0903.1232</span>
+      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">CONCEPT PROPOSAL · v2 · b0906.sim6</span>
     </div>
     <div class="prog" id="prog"></div>
   </div>
@@ -3732,7 +3733,7 @@ const GL3D = {
     // 파렛트 점유율 = 현 재고 / 구축 규모
     const fillRate = d.stock>0 ? Math.min(1, d.stock/Math.max(1,target)) : 0.85;
     return { d, sysKey, qty, cellW, cellD, cellH, real, lod, exact, layout:L,
-             occ:Math.max(.45, fillRate),
+             occ:fillRate,
              sBay:bayM, sDF:dF, sDB:dB, sTier, aisles, cellsShown,
              // moduleGap은 랙-랙 시공 여유만. 통로(aisleW)와 비슷한 폭을 주면
              // 화면에서 통로처럼 보여 "통로 N열" 캡션과 눈에 보이는 틈 개수가 어긋난다.
@@ -3993,16 +3994,16 @@ const GL3D = {
     // 화물 2종 — 필름 포장(백색, 약간 광택) / 골판지 박스
     const boxM =this.mat({color:mood.cargo, roughness:.36, metalness:.05, clearcoat:.35, clearcoatRoughness:.5});
     const cardM=this.mat({color:0xC8A671, roughness:.9, metalness:0, envMapIntensity:.2});
-    const cellsShown=sBay*(sDF+sDB)*sTier;
+    const cellsShown=aisles*sBay*(sDF+sDB)*sTier;
     const fillN=Math.round(cellsShown*D.occ);            // 축약 없이 점유 셀 전부
     const pallets=new T.InstancedMesh(palG,palM,Math.max(1,fillN));
     const boxes  =new T.InstancedMesh(boxG,boxM,Math.max(1,fillN));
     const cards  =new T.InstancedMesh(boxG,cardM,Math.max(1,fillN));
-    let fi=0, bi2=0, ci2=0;
+    let fi=0, bi2=0, ci2=0, slot=0;
     outer:
     for(let t=0;t<sTier;t++) for(const b of blocks) for(let jd=0;jd<b.deep;jd++) for(let i=0;i<sBay;i++){
       if(fi>=fillN) break outer;
-      if((i*7+jd*3+t*5)%6===5) continue;                 // 빈 셀 산포
+      if(Math.floor(++slot*fillN/cellsShown)===Math.floor((slot-1)*fillN/cellsShown)) continue;                 // 빈 셀 산포
       const x=i*cellW+cellW/2, z=b.z0+jd*cellD+cellD/2, y=t*cellH;
       m4.makeTranslation(x, y+0.055, z); pallets.setMatrixAt(fi,m4);
       m4.makeTranslation(x, y+0.11+cellH*0.31, z);
@@ -4012,6 +4013,7 @@ const GL3D = {
     pallets.count=fi; boxes.count=Math.max(0,bi2); cards.count=Math.max(0,ci2);
     boxes.castShadow=shadow&&fi<=2500; cards.castShadow=boxes.castShadow;
     G.add(pallets,boxes,cards); this.track(pallets); this.track(boxes); this.track(cards);
+    this.storageMeshes=[pallets,boxes,cards]; this.storageCount=fi;
     this.lodFar=[];                                        // 멀리서 숨길 잔 부재 목록
 
     /* ---- 4방향 트랙 그리드 ----
@@ -4590,8 +4592,8 @@ const GL3D = {
     this.anchors={
       convStart:{x:liftX, y:0.72, z:aisleY+aisleW/2-convLen-1.0},
       convEnd:  {x:liftX, y:0.72, z:aisleY+aisleW/2},
-      liftTopY: Math.max(cellH, rackH-cellH)+0.72,
-      railFromX: 0.8, railToX: rackW*0.7,
+      liftTopY: Math.max(0, rackH-cellH)+0.72,
+      railFromX: 0.8, railToX: (Math.min(sBay-1,Math.floor(sBay*0.7))+0.5)*cellW,
       railZ: aisleY+aisleW/2,
       dropZ: aisleY-cellD*0.5, cellH
     };
@@ -5017,12 +5019,12 @@ const GL3D = {
   /* ---------- 데모 애니메이션 ---------- */
   togglePlay(){
     if(this.playing){ this.stop(); return; }
-    this.playing=true; this.lastNow=performance.now(); this.animT=0;
+    this.playing=true; this.lastNow=performance.now();
     const btn=document.getElementById("simPlay");
     if(btn){ btn.classList.add("on"); btn.textContent="⏸ 정지"; }
     const loop=now=>{
       if(!this.playing) return;
-      const dt=(now-this.lastNow)/1000*(this.speed||1);
+      const dt=Math.min(0.1,(now-this.lastNow)/1000)*(this.speed||1);
       this.lastNow=now;
       if(this.concept){
         this.animT=(this.animT+dt)%this.CLOOP;
@@ -6126,5 +6128,6 @@ if("serviceWorker" in navigator){
   });
 }
 </script>
+<script src="./simulation.js?v=0906.5"></script>
 </body>
 </html>
