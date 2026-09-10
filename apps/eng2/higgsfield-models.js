@@ -1,6 +1,7 @@
 import * as T from './vendor/three.module.min.js';
 import { GLTFLoader } from './vendor/GLTFLoader.js';
 import { mergeGeometries } from './vendor/BufferGeometryUtils.js';
+import { composeWarehouse } from './higgsfield-scene.js?v=0911.4';
 
 // Extract reusable equipment, never the source scene's fixed warehouse layout.
 // GLB is already Y-up. Bake child transforms relative to each semantic root.
@@ -104,5 +105,6 @@ export function applyLibrary(e,library){
     mesh.computeBoundingSphere();e.world.add(mesh);e.track(mesh);meshes.push(mesh);
   }
   old.forEach(n=>e.world.remove(n));e.storageMeshes=meshes;
+  composeWarehouse(e);
   e.higgsfieldApplied=true;
 }
