@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>데모 데이터 만들기 — 주변 업체</title>
+<style>
+:root{--ink:#111827;--sub:#6b7280;--line:#e5e7eb;--navy:#0c447c;--bg:#eef0f4;--warn:#b45309;--warnbg:#fffbeb}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,'Malgun Gothic',sans-serif;background:var(--bg);color:var(--ink);line-height:1.6;padding:20px}
+.wrap{max-width:900px;margin:0 auto}
+h1{font-size:20px;font-weight:800;letter-spacing:-.02em}
+.lead{font-size:13px;color:var(--sub);margin:6px 0 16px}
+.card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:12px}
+.card h2{font-size:14px;font-weight:800;margin-bottom:10px}
+label{display:block;font-size:12px;font-weight:700;color:var(--sub);margin:10px 0 4px}
+input,select{width:100%;border:1.5px solid var(--line);border-radius:8px;padding:10px;font-size:14px;font-family:inherit}
+.row{display:flex;gap:10px;flex-wrap:wrap}.row>*{flex:1;min-width:150px}
+button{font-family:inherit;font-size:14px;font-weight:700;border:none;border-radius:8px;padding:11px 18px;cursor:pointer}
+.pri{background:var(--navy);color:#fff}.sec{background:#fff;border:1.5px solid var(--line);color:var(--ink)}
+button:disabled{opacity:.45;cursor:default}
+.note{font-size:12px;color:var(--warn);background:var(--warnbg);border:1px solid #fde68a;border-radius:8px;padding:10px 12px;margin-bottom:12px}
+table{width:100%;border-collapse:collapse;font-size:12px;margin-top:10px}
+th,td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px}
+th{color:var(--sub);font-weight:700;background:#f9fafb}
+.tw{overflow-x:auto}
+.st{font-size:13px;margin-top:10px}
+.st b{color:var(--navy)}
+pre{font-size:11px;background:#f9fafb;border:1px solid var(--line);border-radius:8px;padding:10px;overflow:auto;max-height:220px;white-space:pre-wrap}
+.ok{color:#15803d}.err{color:#b91c1c}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>데모 데이터 만들기</h1>
+  <div class="lead">원본을 복호화 → 민감정보를 가공 → <b>데모용 평문 파일</b> 두 개를 내려받습니다.</div>
+
+  <div class="note">
+    이 페이지는 <b>인터넷으로 아무것도 보내지 않습니다.</b> 복호화·가공이 전부 이 브라우저 안에서 끝나고,
+    비밀번호는 어디에도 저장되지 않습니다. 내려받은 파일에는 원본 업체명·사업자번호·연락처가 들어 있지 않습니다.
+  </div>
+
+  <div class="card">
+    <h2>1. 원본 열기</h2>
+    <label>비밀번호</label>
+    <input type="password" id="pw" placeholder="주변 업체 앱과 같은 비밀번호" autocomplete="off">
+    <div class="row" style="margin-top:12px">
+      <div><label>샘플 업체 수 (0 = 전체)</label><input type="number" id="limit" value="40" min="0"></div>
+      <div><label>업체당 일지 최대 건수 (0 = 전체)</label><input type="number" id="logMax" value="3" min="0"></div>
+      <div><label>좌표 흔들기 (m)</label><input type="number" id="jitter" value="150" min="0"></div>
+    </div>
+    <div style="margin-top:14px"><button class="pri" id="go">가공하기</button></div>
+    <div class="st" id="status"></div>
+  </div>
+
+  <div class="card" id="pvCard" style="display:none">
+    <h2>2. 가공 결과 확인</h2>
+    <div class="st" id="summary"></div>
+    <div class="tw"><table id="pv"></table></div>
+    <h2 style="margin-top:16px">업무일지 표본</h2>
+    <pre id="pvLog"></pre>
+    <div class="row" style="margin-top:14px">
+      <button class="pri" id="dl1">nearby-extra.demo.js 내려받기</button>
+      <button class="sec" id="dl2">nearby-log.demo.js 내려받기</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>가공 규칙</h2>
+    <table>
+      <tr><th>항목</th><th>처리</th><th>예</th></tr>
+      <tr><td>업체명</td><td>앞 1자 + 가운데 별표 + 끝 1자</td><td>대한냉동물류 → 대****류</td></tr>
+      <tr><td>업체코드</td><td>순번으로 새로 발급 (원본 코드 폐기)</td><td>→ R001</td></tr>
+      <tr><td>사업자번호 · 전화 · 이메일</td><td>삭제</td><td>—</td></tr>
+      <tr><td>담당자 이름</td><td>성만 남김</td><td>김철수 → 김○○</td></tr>
+      <tr><td>주소</td><td>읍·면·동까지만</td><td>양산시 물금읍</td></tr>
+      <tr><td>연매출 · 미수금</td><td>유효숫자 2자리로 반올림 (십만·백만·천만 단위)</td><td>18,730,000천원 → 190억</td></tr>
+      <tr><td>좌표</td><td>업체마다 일정한 방향으로 지정 거리만큼 이동</td><td>약 150m</td></tr>
+      <tr><td>일지 본문</td><td>전화번호·금액·업체명·사람이름 패턴 마스킹</td><td>010-****-****</td></tr>
+    </table>
+  </div>
+</div>
+
+<script src="../nearby-extra.js"></script>
+<script src="../nearby-log.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+let OUT = null;
+
+/* ── 복호화 (앱과 같은 방식) ── */
+async function dec(blob, pw){
+  const raw = Uint8Array.from(atob(blob), c => c.charCodeAt(0));
+  const bk = await crypto.subtle.importKey("raw", new TextEncoder().encode(pw), "PBKDF2", false, ["deriveKey"]);
+  const k = await crypto.subtle.deriveKey({name:"PBKDF2", salt: raw.slice(0,16), iterations:100000, hash:"SHA-256"},
+    bk, {name:"AES-GCM", length:256}, false, ["decrypt"]);
+  const buf = await crypto.subtle.decrypt({name:"AES-GCM", iv: raw.slice(16,28)}, k, raw.slice(28));
+  return JSON.parse(new TextDecoder().decode(buf));
+}
+
+/* ── 가공 규칙 ── */
+const maskName = s => {
+  s = String(s||"").trim(); if(!s) return "";
+  if(s.length <= 2) return s[0] + "*";
+  return s[0] + "*".repeat(s.length-2) + s[s.length-1];
+};
+const maskPerson = s => {
+  s = String(s||"").trim(); if(!s) return "";
+  return s[0] + "○".repeat(Math.max(1, s.length-1));
+};
+/* 읍·면·동·리까지만 남기고 도로명·번지·건물명은 버린다.
+   '대구'처럼 시도 이름이 구/시로 끝나는 경우가 있어 정규식 하나로 자르지 않고
+   어절 단위로 훑는다. 숫자가 든 어절(번지·동호수)은 만나는 즉시 멈춘다. */
+const maskAddr = s => {
+  const parts = String(s||"").trim().split(/\s+/).filter(Boolean);
+  const keep = [];
+  for(const w of parts){
+    if(/\d/.test(w)) break;                       // 123-4, 3층, A동
+    keep.push(w);
+    if(/(읍|면|동|리)$/.test(w) && keep.length > 1) break;
+    if(keep.length >= 3) break;
+  }
+  return keep.join(" ");
+};
+/* 유효숫자 2자리 반올림 — 값 크기에 따라 십만·백만·천만 단위로 뭉개진다 */
+const roundSig = (v, sig=2) => {
+  const n = Number(v); if(!isFinite(n) || n === 0) return n||0;
+  const d = Math.floor(Math.log10(Math.abs(n))) - (sig-1);
+  const f = Math.pow(10, d);
+  return Math.round(n/f) * f;
+};
+/* 업체코드를 씨앗으로 항상 같은 방향·거리만큼 옮긴다 */
+const hash = s => { let h=2166136261; for(const c of String(s)) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } return (h>>>0)/4294967295; };
+function jitterXY(lat, lng, seed, meters){
+  if(!meters || !isFinite(lat) || !isFinite(lng)) return [lat, lng];
+  const ang = hash(seed) * Math.PI * 2, dist = (0.4 + hash(seed+"r") * 0.6) * meters;
+  const dLat = (dist * Math.cos(ang)) / 111320;
+  const dLng = (dist * Math.sin(ang)) / (111320 * Math.cos(lat * Math.PI/180));
+  return [+(lat+dLat).toFixed(6), +(lng+dLng).toFixed(6)];
+}
+/* 일지 본문: 전화·금액·이름·업체명을 지운다 */
+function maskText(t, nameMap){
+  let s = String(t||"");
+  for(const [orig, masked] of nameMap) if(orig && orig.length>=2) s = s.split(orig).join(masked);
+  s = s.replace(/01[016-9][-\s.]?\d{3,4}[-\s.]?\d{4}/g, "010-****-****");
+  s = s.replace(/0\d{1,2}[-\s.]?\d{3,4}[-\s.]?\d{4}/g, "0**-***-****");
+  s = s.replace(/\d{3}-\d{2}-\d{5}/g, "***-**-*****");
+  s = s.replace(/[\w.+-]+@[\w-]+\.[\w.]+/g, "****@****");
+  s = s.replace(/(\d[\d,]{2,})\s*(원|천원|만원|억)/g, (m0, num, unit) =>
+      roundSig(Number(String(num).replace(/,/g,""))).toLocaleString() + unit);
+  s = s.replace(/([가-힣]{2,3})\s*(대표|사장|부장|차장|과장|팀장|소장|이사|주임|님)/g,
+      (m0, nm, tt) => maskPerson(nm) + " " + tt);
+  return s;
+}
+
+const PREFIX = { deal:"D", debt:"B", rival:"R" };
+
+function build(data, logs, opt){
+  const nameMap = [], codeMap = new Map(), out = { deal:[], debt:[], rival:[] };
+  ["deal","debt","rival"].forEach(kind => {
+    let list = (data && data[kind]) || [];
+    if(opt.limit > 0) list = list.slice(0, opt.limit);
+    list.forEach((o, i) => {
+      if(!o || !o.name) return;
+      const code = PREFIX[kind] + String(i+1).padStart(3,"0");
+      if(o.code) codeMap.set(String(o.code), code);
+      const nm = maskName(o.name);
+      nameMap.push([String(o.name), nm]);
+      const [lat, lng] = jitterXY(Number(o.lat), Number(o.lng), code, opt.jitter);
+      const r = { code, name: nm, kind };
+      if(o.branch) r.branch = o.branch;
+      if(o.cat2)   r.cat2 = o.cat2;
+      if(o.biz)    r.biz = o.biz;
+      if(o.biz2)   r.biz2 = o.biz2;
+      if(o.fields) r.fields = o.fields;
+      if(o.kpp)    r.kpp = o.kpp;
+      if(o.grade)  r.grade = o.grade;
+      if(o.addr)   r.addr = maskAddr(o.addr);
+      if(o.person) r.person = maskPerson(o.person);
+      if(o.dperson)r.dperson = maskPerson(o.dperson);
+      if(o.contact)r.contact = maskPerson(o.contact);
+      if(o.cdept)  r.cdept = o.cdept;
+      if(o.sales)  r.sales = roundSig(o.sales);
+      if(o.amount) r.amount = roundSig(o.amount);
+      if(o.visits != null) r.visits = o.visits;
+      if(o.lastVisit) r.lastVisit = o.lastVisit;
+      if(isFinite(lat) && isFinite(lng)) { r.lat = lat; r.lng = lng; }
+      out[kind].push(r);
+      /* 사업자번호·전화·휴대폰·이메일은 아예 옮기지 않는다 */
+    });
+  });
+  const outLog = {};
+  let logCount = 0;
+  Object.keys(logs || {}).forEach(oldCode => {
+    const newCode = codeMap.get(String(oldCode));
+    if(!newCode) return;                       // 표본에 없는 업체의 일지는 버린다
+    let arr = (logs[oldCode] || []).slice();
+    if(opt.logMax > 0) arr = arr.slice(0, opt.logMax);
+    outLog[newCode] = arr.map(e => ({
+      d: e.d || "", w: maskPerson(e.w || ""), t: e.t || "", x: maskText(e.x, nameMap)
+    }));
+    logCount += outLog[newCode].length;
+  });
+  return { out, outLog, logCount };
+}
+
+$("go").onclick = async () => {
+  const pw = $("pw").value;
+  if(!pw){ $("status").innerHTML = '<span class="err">비밀번호를 넣어 주세요.</span>'; return; }
+  $("status").textContent = "복호화 중…";
+  try{
+    const data = await dec(window.NEARBY_EXTRA_ENC, pw);
+    let logs = {};
+    try { logs = await dec(window.NEARBY_LOG_ENC, pw); } catch(e) { logs = {}; }
+    const opt = { limit:+$("limit").value||0, logMax:+$("logMax").value||0, jitter:+$("jitter").value||0 };
+    const { out, outLog, logCount } = build(data, logs, opt);
+    OUT = { out, outLog };
+    const all = [...out.deal, ...out.debt, ...out.rival];
+    $("summary").innerHTML =
+      `계약처 <b>${out.deal.length}</b> · 미수금 <b>${out.debt.length}</b> · 경쟁사 <b>${out.rival.length}</b>` +
+      ` — 합계 <b>${all.length}</b>곳 · 업무일지 <b>${logCount}</b>건`;
+    const cols = ["code","kind","name","addr","branch","person","contact","sales","amount","visits","lat","lng"];
+    $("pv").innerHTML = "<tr>" + cols.map(c=>`<th>${c}</th>`).join("") + "</tr>" +
+      all.slice(0,15).map(r=>"<tr>"+cols.map(c=>`<td>${r[c]==null?"":String(r[c])}</td>`).join("")+"</tr>").join("");
+    const k = Object.keys(outLog)[0];
+    $("pvLog").textContent = k ? (k + "\n" + JSON.stringify(outLog[k], null, 1)) : "(일지 없음)";
+    $("pvCard").style.display = "";
+    $("status").innerHTML = '<span class="ok">가공 완료. 아래에서 확인하고 두 파일을 내려받으세요.</span>';
+  }catch(e){
+    $("status").innerHTML = '<span class="err">복호화 실패 — 비밀번호를 확인해 주세요.</span>';
+  }
+};
+
+function save(fname, text){
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([text], {type:"text/javascript"}));
+  a.download = fname; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+}
+$("dl1").onclick = () => OUT && save("nearby-extra.demo.js",
+  "/* 데모용 가공 데이터 — 원본 업체명·사업자번호·연락처 없음 */\nwindow.NEARBY_EXTRA_DEMO = " + JSON.stringify(OUT.out) + ";\n");
+$("dl2").onclick = () => OUT && save("nearby-log.demo.js",
+  "/* 데모용 가공 업무일지 */\nwindow.NEARBY_LOG_DEMO = " + JSON.stringify(OUT.outLog) + ";\n");
+</script>
+</body>
+</html>

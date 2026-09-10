@@ -1,0 +1,887 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#123c7a">
+<title>[데모] KPP 주변 업체</title>
+<style>
+/* ═══════════ 입고미회수앱과 같은 구성 — 카드모드 / 지도모드 ═══════════ */
+*{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; margin:0; padding:0; }
+html,body{ height:100%; }
+body{
+  background:#eef0f4; color:#222; font-size:15px; line-height:1.5;
+  font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic","맑은 고딕",sans-serif;
+  display:flex; flex-direction:column; height:100vh; height:100dvh; overflow:hidden;
+}
+button,input,select{ font-family:inherit; }
+button{ border:none; background:none; cursor:pointer; }
+
+/* ── 헤더 ── */
+.hd{ background:linear-gradient(135deg,#0a2d5e 0%,#123c7a 55%,#17509b 100%); color:#fff; flex:none;
+  padding:calc(env(safe-area-inset-top) + 11px) 14px 11px; display:flex; align-items:center; gap:10px; }
+.hd .logo{ width:36px; height:36px; flex:none; border-radius:10px; background:#fff; color:#123c7a;
+  display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:900; letter-spacing:-.5px; }
+.hd .t1{ font-size:16.5px; font-weight:800; letter-spacing:-.2px; }
+.hd .t2{ font-size:11.5px; opacity:.72; margin-top:1px; }
+.hd .back{ margin-left:auto; color:#fff; font-size:13px; font-weight:700; opacity:.85;
+  border:1px solid rgba(255,255,255,.35); border-radius:999px; padding:5px 12px; }
+
+/* ── 본문 ── */
+.main{ flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:12px 12px 24px; }
+
+/* ── 잠금 ── */
+.lock{ background:linear-gradient(135deg,#17233b 0%,#2d3748 100%); border-radius:12px; padding:16px; }
+.lock b{ color:#fff; font-size:15px; }
+.lock p{ font-size:12.5px; color:rgba(255,255,255,.72); line-height:1.6; margin:6px 0 12px; }
+.lock input{ width:100%; height:44px; border:1px solid #cbd5e1; border-radius:9px; padding:0 12px;
+  font-size:15px; margin-bottom:9px; }
+.lock .err{ font-size:12px; color:#fca5a5; font-weight:700; margin-bottom:8px; display:none; }
+.lock button{ width:100%; height:46px; border-radius:9px; background:#17509b; color:#fff;
+  font-size:15px; font-weight:800; }
+
+/* ── 조작부 ── */
+.bar{ display:flex; gap:7px; margin-bottom:9px; }
+.bar .q{ flex:1; min-width:0; height:46px; border:1px solid #d9dee6; border-radius:11px;
+  padding:0 13px; font-size:14.5px; background:#fff; }
+.bar .go{ width:52px; flex:none; border-radius:11px; background:#123c7a; color:#fff; font-size:19px; font-weight:800; }
+.locbtn{ width:100%; height:48px; border-radius:11px; background:#123c7a; color:#fff;
+  font-size:15.5px; font-weight:800; margin-bottom:10px; }
+.locbtn:active{ opacity:.85; }
+
+.ctl{ background:#fff; border:1px solid #e3e8ef; border-radius:12px; padding:10px 11px; margin-bottom:11px; }
+.ctl .row{ display:flex; align-items:center; flex-wrap:wrap; gap:6px; }
+.ctl .row + .row{ margin-top:8px; }
+.ctl .lb{ font-size:13.5px; font-weight:800; color:#333; flex:none; }
+.chip{ display:inline-flex; align-items:center; gap:5px; padding:6px 11px; border:1px solid #d9dee6;
+  border-radius:999px; background:#fff; font-size:12.5px; font-weight:700; color:#4b5563; cursor:pointer; }
+.chip.on{ background:#123c7a; border-color:#123c7a; color:#fff; }
+.chip .kd{ width:9px; height:9px; border-radius:50%; flex:none; }
+#radius{ width:72px; height:40px; text-align:center; font-size:17px; font-weight:800; color:#222;
+  background:#f1f7ff; border:2px solid #333; border-radius:8px; }
+.mapbtn{ margin-left:auto; height:40px; padding:0 16px; border-radius:9px; background:#1b5e20; color:#fff;
+  font-size:14px; font-weight:800; }
+.cnt{ font-size:12.5px; font-weight:800; color:#17509b; margin-bottom:9px; }
+.cnt span{ color:#8a929c; font-weight:600; }
+
+/* ── 카드 (입고미회수앱 구성) ── */
+.card{ background:#fff; border-radius:8px; padding:10px 12px; margin-bottom:12px;
+  box-shadow:0 1px 3px rgba(0,0,0,.08); border-top:3px solid #1a237e; }
+.card .top{ display:flex; justify-content:space-between; align-items:flex-start; gap:8px; }
+.card .left-col{ flex:1; min-width:0; }
+.card .nm-row{ display:flex; align-items:baseline; flex-wrap:wrap; gap:4px; margin-bottom:5px; }
+.card .kdot{ width:9px; height:9px; border-radius:50%; flex:none; align-self:center; }
+.card .dist{ font-size:18px; font-weight:700; color:#1976d2; }
+.card .name{ font-size:15px; font-weight:600; word-break:keep-all; overflow-wrap:break-word; }
+.card .addr-short{ font-size:12px; color:#666; }
+.card .staff-row{ display:flex; justify-content:space-between; align-items:center; gap:6px; }
+.card .meta{ flex:1; min-width:0; font-size:12px; color:#555; line-height:1.3; }
+.card .nums{ display:flex; align-items:center; gap:3px; flex-shrink:0; }
+.card .year{ font-size:10px; padding:1px 5px; border-radius:10px; background:#eee; color:#555; }
+.card .year.y25{ background:#fff3e0; color:#e65100; }
+.card .year.yg{ background:#e3f2fd; color:#1565c0; }
+.card .year.yc{ background:#f3e5f5; color:#6a1b9a; }
+.card .year.yn{ background:#e8f5e9; color:#2e7d32; }
+.card .year.yyj{ background:#e0f2f1; color:#00695c; }
+.card .inb-date{ font-size:14px; color:#e53935; font-weight:700; white-space:nowrap; }
+.card .amt{ font-size:13.5px; color:#e53935; font-weight:800; white-space:nowrap; }
+.card .sub3{ font-size:11.5px; color:#6b7280; margin-top:4px; line-height:1.5; }
+.card .btn-row{ display:flex; flex-wrap:wrap; gap:7px; border-top:1px solid #f0f0f0; padding-top:8px; margin-top:9px; }
+.card .tel-btn,.card .navi-btn{ flex:1; height:36px; border-radius:8px; background:#fff;
+  font-size:13px; font-weight:700; }
+.card .tel-btn{ border:2px solid #e53935; color:#e53935; }
+.card .tel-btn:active{ background:#e53935; color:#fff; }
+.card .navi-btn{ border:2px solid #1976d2; color:#1976d2; }
+.card .mail-btn{ flex:1; height:36px; border-radius:8px; background:#fff; border:2px solid #6b7280;
+  color:#6b7280; font-size:13px; font-weight:700; display:flex; align-items:center;
+  justify-content:center; text-decoration:none; }
+.card .navi-btn:active{ background:#1976d2; color:#fff; }
+.card .noloc{ font-size:11.5px; color:#b0b6bd; text-align:center; padding-top:8px;
+  border-top:1px solid #f0f0f0; margin-top:9px; }
+
+/* 주변 신규 발굴 — 네이버 지도로 넘긴다 */
+.disc{ background:#fff; border:1px solid #e3e8ef; border-radius:12px; padding:16px 15px 15px; }
+.disc .dh{ font-size:14.5px; font-weight:800; color:#123c7a; margin-bottom:5px; }
+.disc p{ font-size:12.5px; color:#6b7280; line-height:1.7; margin-bottom:13px; }
+.disc .kws{ display:flex; flex-direction:column; gap:8px; }
+.disc .kw{ display:flex; align-items:center; gap:9px; height:50px; padding:0 14px;
+  border:1.5px solid #03c75a; border-radius:11px; background:#fff; color:#03c75a;
+  font-size:14.5px; font-weight:800; text-decoration:none; }
+.disc .kw:active{ background:#03c75a; color:#fff; }
+.disc .kw .ic{ font-size:17px; }
+.disc .kw .go{ margin-left:auto; font-size:12px; font-weight:700; opacity:.75; }
+.disc .foot{ font-size:11.5px; color:#9aa4b2; line-height:1.65; margin-top:12px; }
+
+.empty{ text-align:center; color:#9aa4b2; font-size:13.5px; padding:44px 20px; line-height:1.8; }
+.more{ width:100%; height:46px; border-radius:10px; border:1px solid #d9dee6; background:#fff;
+  color:#17509b; font-size:14px; font-weight:800; margin-bottom:12px; }
+
+/* ── 지도모드 (전체화면) ── */
+/* ── 업무일지 ── */
+#logSheet{ position:fixed; inset:0; z-index:120; background:#f4f6f9; display:none; flex-direction:column; }
+#logSheet.on{ display:flex; }
+.lg-top{ flex:none; background:#123c7a; color:#fff; padding:12px 14px 13px;
+  box-shadow:0 2px 8px rgba(0,0,0,.18); }
+.lg-top .row1{ display:flex; align-items:center; gap:10px; }
+.lg-x{ flex:none; height:34px; padding:0 13px; border-radius:999px; background:rgba(255,255,255,.16);
+  color:#fff; font-size:14px; font-weight:700; }
+.lg-nm{ font-size:16.5px; font-weight:800; letter-spacing:-.02em; overflow:hidden;
+  text-overflow:ellipsis; white-space:nowrap; }
+.lg-sub{ margin-top:6px; font-size:12px; color:#c9d8f0; }
+.lg-body{ flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:12px 12px 40px; }
+.lg-i{ background:#fff; border-radius:12px; padding:11px 13px 12px; margin-bottom:10px;
+  box-shadow:0 1px 4px rgba(0,0,0,.07); }
+.lg-h{ display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:7px; }
+.lg-d{ font-size:14px; font-weight:800; color:#123c7a; }
+.lg-tg{ font-size:11px; font-weight:800; padding:2px 7px; border-radius:5px;
+  background:#e8f0fe; color:#1558b0; }
+.lg-w{ font-size:11.5px; color:#777; margin-left:auto; }
+.lg-x2{ font-size:13px; line-height:1.75; color:#333; white-space:pre-wrap; word-break:break-word;
+  max-height:7.2em; overflow:hidden; position:relative; }
+.lg-x2.op{ max-height:none; }
+.lg-mo{ margin-top:6px; height:28px; padding:0 11px; border-radius:7px; background:#eef2f8;
+  color:#1558b0; font-size:12px; font-weight:800; }
+.lg-none{ text-align:center; color:#888; font-size:13.5px; padding:50px 20px; line-height:1.8; }
+/* 버튼이 넷이면 좁아지니 일지는 아랫줄을 통째로 쓴다 */
+.card .log-btn{ flex:1 0 100%; height:36px; border-radius:8px; background:#fff; border:2px solid #6a3fb5;
+  color:#6a3fb5; font-size:13.5px; font-weight:800; }
+.card .log-btn:active{ background:#6a3fb5; color:#fff; }
+#mapInfo .mi-b .log{ border:2px solid #6a3fb5; color:#6a3fb5; }
+
+#mapSheet{ position:fixed; inset:0; z-index:100; background:#eef0f4; display:none; }
+#mapSheet.on{ display:block; }
+#mapCanvas{ width:100%; height:100%; }
+#mapMsg{ position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:#fff;
+  padding:14px 18px; border-radius:10px; font-size:14px; color:#333; box-shadow:0 2px 10px rgba(0,0,0,.2);
+  display:none; z-index:5; text-align:center; max-width:80vw; }
+#mapTopBar{ position:absolute; top:calc(env(safe-area-inset-top) + 10px); left:10px; right:10px; z-index:6;
+  display:flex; gap:8px; align-items:flex-start; justify-content:space-between; }
+#mapTopBar .col{ display:flex; flex-direction:column; gap:8px; }
+#mapTopBar .col.r{ align-items:flex-end; }
+.mtb{ height:40px; display:inline-flex; align-items:center; justify-content:center; background:#fff;
+  border:1.5px solid #d0d0d0; border-radius:12px; padding:0 14px; font-size:14px; font-weight:800;
+  box-shadow:0 2px 8px rgba(0,0,0,.18); white-space:nowrap; color:#333; }
+.mtb.close{ border-radius:999px; padding:0 18px; color:#1976d2; font-size:15px; }
+#mapZoomCtrl{ display:flex; align-items:center; height:40px; background:#fff; border:1.5px solid #d0d0d0;
+  border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,.18); overflow:hidden; }
+#mapZoomCtrl button{ width:40px; height:100%; background:#f1f7ff; color:#1976d2;
+  font-size:23px; font-weight:900; line-height:1; }
+#mapScaleVal{ min-width:58px; text-align:center; font-size:15px; font-weight:800; color:#222; }
+#mapLegend{ position:absolute; bottom:calc(env(safe-area-inset-bottom) + 10px); left:10px; z-index:6;
+  background:rgba(255,255,255,.94); border:1.5px solid #d0d0d0; border-radius:12px; padding:6px 10px;
+  font-size:12px; font-weight:700; color:#333; box-shadow:0 2px 8px rgba(0,0,0,.18);
+  display:flex; gap:11px; flex-wrap:wrap; }
+#mapInfo{ display:none; position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+  width:292px; max-width:92vw; background:#fff; border-radius:12px; box-shadow:0 6px 26px rgba(0,0,0,.35);
+  z-index:50; padding:13px 14px; }
+#mapInfo .mi-h{ display:flex; align-items:flex-start; gap:8px; margin-bottom:7px; }
+#mapInfo .mi-n{ flex:1; font-size:15.5px; font-weight:800; line-height:1.35; word-break:keep-all; }
+#mapInfo .mi-x{ font-size:17px; color:#9aa4b2; line-height:1; padding:2px 3px; }
+#mapInfo .mi-r{ font-size:12.5px; color:#555; line-height:1.6; }
+#mapInfo .mi-r b{ color:#e53935; }
+#mapInfo .mi-b{ display:flex; gap:7px; margin-top:11px; }
+#mapInfo .mi-b button{ flex:1; height:38px; border-radius:8px; font-size:13px; font-weight:700; background:#fff; }
+#mapInfo .mi-b .tel{ border:2px solid #e53935; color:#e53935; }
+#mapInfo .mi-b .navi{ border:2px solid #1976d2; color:#1976d2; }
+
+
+.toast{ position:fixed; left:50%; bottom:34px; transform:translateX(-50%); background:rgba(20,33,61,.94);
+  color:#fff; font-size:13.5px; font-weight:700; padding:11px 18px; border-radius:999px; z-index:200;
+  opacity:0; pointer-events:none; transition:opacity .2s; max-width:86vw; text-align:center; }
+.toast.on{ opacity:1; }
+#demoBar{position:sticky;top:0;z-index:200;background:#fef3c7;color:#92400e;border-bottom:1px solid #fde68a;
+  font-size:11.5px;font-weight:700;text-align:center;padding:7px 12px;line-height:1.45}
+</style>
+</head>
+<body>
+<div id="demoBar">데모 데이터 — 업체명·연매출·주소·좌표를 가공한 표본입니다. 실제 업체 정보가 아닙니다.</div>
+
+<header class="hd">
+  <div class="logo">KPP</div>
+  <div>
+    <div class="t1">📍 주변 업체</div>
+    <div class="t2" id="hdSub">현재 위치 기준 거리순</div>
+  </div>
+  <a class="back" href="../../대시보드.html">‹ 대시보드</a>
+</header>
+
+<main class="main" id="main">
+  <div id="lockBox"></div>
+  <div id="app" style="display:none;">
+    <div class="bar">
+      <input class="q" id="q" placeholder="지역 검색 — 예: 양산, 창원, 구미">
+      <button class="go" id="qGo">→</button>
+    </div>
+    <button class="locbtn" id="btnLocate">📍 현재 위치로 찾기</button>
+
+    <div class="ctl">
+      <div class="row" id="catRow"></div>
+      <div class="row">
+        <span class="lb">반경</span>
+        <input type="number" id="radius" value="3" min="0.5" step="0.5">
+        <span class="lb">km</span>
+        <button class="mapbtn" id="btnMap">🗺 지도모드</button>
+      </div>
+    </div>
+
+    <div class="cnt" id="cnt"></div>
+    <div id="list"></div>
+  </div>
+</main>
+
+<!-- ── 지도모드 ── -->
+<div id="mapSheet">
+  <div style="position:relative;width:100%;height:100%;">
+    <div id="mapCanvas"></div>
+    <div id="mapMsg"></div>
+    <div id="mapTopBar">
+      <div class="col"><button class="mtb" id="mapRadius">반경 3km</button></div>
+      <div class="col r">
+        <button class="mtb close" id="mapClose">✕ 닫기</button>
+        <div id="mapZoomCtrl">
+          <button id="mapZoomOut">−</button>
+          <span id="mapScaleVal">1km</span>
+          <button id="mapZoomIn">+</button>
+        </div>
+      </div>
+    </div>
+    <div id="mapLegend"></div>
+    <div id="mapInfo"></div>
+  </div>
+</div>
+
+
+<div id="logSheet">
+  <div class="lg-top">
+    <div class="row1"><button class="lg-x" id="lgX">✕ 닫기</button><div class="lg-nm" id="lgName"></div></div>
+    <div class="lg-sub" id="lgSub"></div>
+  </div>
+  <div class="lg-body" id="lgBody"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- 계약처·미수금·경쟁사 명단 (암호문) -->
+<script src="../../nearby-extra.demo.js"></script>
+<!-- 계약처 업무일지 (암호문) -->
+<script src="../../nearby-log.demo.js"></script>
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c =>
+  ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+/* 카카오 JS 키 — 도메인 제한으로 보호(lms0517.github.io · ipgomi-app.github.io).
+   등록되지 않은 곳에서는 SDK 로드가 실패하고 안내만 뜬다. */
+const KAKAO_JS_KEY = "5588680e2268293ece13b0575ea1fde7";
+
+/* ═══════ 데이터 ═══════
+   계약처·미수금·경쟁사 세 명단이 nearby-extra.js 에 암호문으로 들어 있다.
+   base64(salt16 + iv12 + 암호문), PBKDF2-SHA256 10만회 → AES-256-GCM.
+   비밀번호는 이 기기에만 남는다.                                        */
+const PW_KEY = "bmm_near_pw";
+let RECS = [];
+const hasEnc = () => typeof window.NEARBY_EXTRA_ENC === "string" && window.NEARBY_EXTRA_ENC.length > 100;
+
+async function decryptData(password) {
+  const raw = Uint8Array.from(atob(window.NEARBY_EXTRA_ENC), c => c.charCodeAt(0));
+  const salt = raw.slice(0, 16), iv = raw.slice(16, 28), ct = raw.slice(28);
+  const bk = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveKey"]);
+  const k = await crypto.subtle.deriveKey({ name: "PBKDF2", salt, iterations: 100000, hash: "SHA-256" },
+    bk, { name: "AES-GCM", length: 256 }, false, ["decrypt"]);
+  const buf = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, k, ct);
+  return JSON.parse(new TextDecoder().decode(buf));
+}
+
+/* ═══════ 업무일지 ═══════
+   { "업체코드": [ {d:날짜, w:작성자, t:구분, x:본문}, … ] }
+   명단과 같은 비밀번호·같은 방식으로 잠겨 있다.
+   일지가 없어도 앱은 그대로 돌아가야 하므로 실패는 조용히 넘긴다.       */
+let LOGS = {};
+const hasLog = () => typeof window.NEARBY_LOG_ENC === "string" && window.NEARBY_LOG_ENC.length > 100;
+async function decryptLogs(password) {
+  if (!hasLog()) return {};
+  try {
+    const raw = Uint8Array.from(atob(window.NEARBY_LOG_ENC), c => c.charCodeAt(0));
+    const bk = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveKey"]);
+    const k = await crypto.subtle.deriveKey({ name: "PBKDF2", salt: raw.slice(0, 16), iterations: 100000, hash: "SHA-256" },
+      bk, { name: "AES-GCM", length: 256 }, false, ["decrypt"]);
+    const buf = await crypto.subtle.decrypt({ name: "AES-GCM", iv: raw.slice(16, 28) }, k, raw.slice(28));
+    return JSON.parse(new TextDecoder().decode(buf));
+  } catch (e) { return {}; }
+}
+/* 일지는 업체코드로 붙는다 — 코드가 있는 계약처·미수금만 해당된다 */
+function logsOf(r) {
+  const a = (r && r.code && LOGS[String(r.code)]) || [];
+  return a.slice().sort((x, y) => String(y.d || "").localeCompare(String(x.d || "")));
+}
+/* 본문 첫머리의 일자·업체코드·업체명은 위 제목줄과 겹친다 — 지우고 보여 준다 */
+function logBody(x) {
+  return String(x || "").split("\n")
+    .filter((ln, i) => !(i < 6 && /^\s*(일자|방문일자|업체코드|업체명|방문업체)\s*:/.test(ln)))
+    .join("\n").trim();
+}
+function logHtml(e, i) {
+  const d = e.d ? String(e.d).replace(/-/g, ".") : "날짜 없음";
+  const body = logBody(e.x);
+  const long = body.length > 150;
+  return `<div class="lg-i">
+    <div class="lg-h"><span class="lg-d">${esc(d)}</span>
+      ${e.t ? `<span class="lg-tg">${esc(e.t)}</span>` : ""}
+      ${e.w ? `<span class="lg-w">${esc(e.w)}</span>` : ""}</div>
+    <div class="lg-x2${long ? "" : " op"}" id="lgx${i}">${esc(body)}</div>
+    ${long ? `<button class="lg-mo" data-i="${i}">▾ 더 보기</button>` : ""}
+  </div>`;
+}
+function openLog(r) {
+  const list = logsOf(r);
+  $("lgName").textContent = r.name || "";
+  $("lgSub").textContent = (r.code ? "코드 " + r.code + " · " : "") + `업무일지 ${list.length}건`;
+  $("lgBody").innerHTML = list.length
+    ? list.map(logHtml).join("")
+    : '<div class="lg-none">등록된 업무일지가 없습니다.</div>';
+  $("lgBody").scrollTop = 0;
+  $("lgBody").querySelectorAll(".lg-mo").forEach(b => {
+    b.onclick = () => {
+      const t = $("lgx" + b.dataset.i);
+      const op = t.classList.toggle("op");
+      b.textContent = op ? "▴ 접기" : "▾ 더 보기";
+    };
+  });
+  $("logSheet").classList.add("on");
+}
+function closeLog() { $("logSheet").classList.remove("on"); }
+
+/* ═══════ 시·군 중심좌표 — 좌표 없는 업체의 근사 위치, 지역검색 1차 조회 ═══════ */
+const REGION = {
+  "양산": [35.335, 129.037], "부산": [35.180, 129.076], "김해": [35.229, 128.889],
+  "울산": [35.538, 129.311], "창원": [35.228, 128.681], "마산": [35.207, 128.572],
+  "진해": [35.133, 128.702], "밀양": [35.504, 128.747], "진주": [35.180, 128.108],
+  "통영": [34.854, 128.433], "거제": [34.881, 128.621], "사천": [35.004, 128.064],
+  "함안": [35.272, 128.406], "창녕": [35.544, 128.492], "합천": [35.567, 128.166],
+  "고성": [34.973, 128.322], "남해": [34.838, 127.893], "하동": [35.067, 127.751],
+  "산청": [35.415, 127.874], "함양": [35.520, 127.725], "거창": [35.687, 127.910],
+  "의령": [35.322, 128.262], "대구": [35.871, 128.601], "경산": [35.825, 128.741],
+  "구미": [36.120, 128.344], "김천": [36.140, 128.114], "칠곡": [35.996, 128.402],
+  "성주": [35.919, 128.282], "고령": [35.726, 128.263], "영천": [35.973, 128.939],
+  "경주": [35.856, 129.225], "포항": [36.019, 129.343], "안동": [36.568, 128.729],
+  "영주": [36.806, 128.624], "상주": [36.411, 128.159], "문경": [36.587, 128.187],
+  "의성": [36.353, 128.697], "청도": [35.647, 128.734], "울진": [36.993, 129.400],
+  "예천": [36.658, 128.453], "영덕": [36.415, 129.366], "청송": [36.436, 129.057],
+  "군위": [36.243, 128.573], "봉화": [36.893, 128.732], "영양": [36.667, 129.112],
+  "서울": [37.567, 126.978], "인천": [37.456, 126.705], "수원": [37.264, 127.029],
+  "평택": [36.992, 127.113], "안산": [37.322, 126.831], "화성": [37.199, 126.831],
+  "이천": [37.272, 127.435], "김포": [37.615, 126.716], "파주": [37.760, 126.780],
+  "용인": [37.241, 127.178], "성남": [37.420, 127.127], "고양": [37.658, 126.832],
+  "부천": [37.504, 126.766], "시흥": [37.380, 126.803], "안성": [37.008, 127.280],
+  "천안": [36.815, 127.114], "아산": [36.790, 127.002], "당진": [36.890, 126.646],
+  "청주": [36.642, 127.489], "대전": [36.350, 127.385], "세종": [36.480, 127.289],
+  "충주": [36.991, 127.926], "음성": [36.940, 127.690], "진천": [36.855, 127.436],
+  "논산": [36.187, 127.099], "서산": [36.785, 126.450], "홍성": [36.601, 126.661],
+  "전주": [35.824, 127.148], "익산": [35.948, 126.958], "군산": [35.968, 126.737],
+  "정읍": [35.570, 126.856], "김제": [35.804, 126.881], "완주": [35.905, 127.162],
+  "광주": [35.160, 126.851], "여수": [34.760, 127.662], "순천": [34.951, 127.487],
+  "목포": [34.812, 126.392], "나주": [35.016, 126.711], "광양": [34.941, 127.696],
+  "강릉": [37.752, 128.876], "원주": [37.342, 127.920], "춘천": [37.881, 127.730],
+  "동해": [37.525, 129.114], "삼척": [37.450, 129.165], "제주": [33.499, 126.531],
+  "서귀포": [33.254, 126.560]
+};
+const REGION_KEYS = Object.keys(REGION).sort((a, b) => b.length - a.length);
+function findRegion(text) {
+  if (!text) return null;
+  for (const k of REGION_KEYS) if (text.indexOf(k) >= 0) return { name: k, lat: REGION[k][0], lng: REGION[k][1] };
+  return null;
+}
+function distKm(a, b, c, d) {
+  const R = 6371, rad = x => x * Math.PI / 180;
+  const dLat = rad(c - a), dLng = rad(d - b);
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(rad(a)) * Math.cos(rad(c)) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+
+/* ═══════ 분류 ═══════ */
+const KIND = {
+  deal:  { label: "계약처",    color: "#1d4ed8", edge: "#fff", ink: "#fff" },
+  debt:  { label: "미수금업체", color: "#ffd400", edge: "#333", ink: "#333" },  /* 노랑 — 흰 바탕에 묻히니 테두리를 어둡게 */
+  rival: { label: "경쟁사",    color: "#dc2626", edge: "#fff", ink: "#fff" }
+};
+const KIND_ORDER = ["deal", "debt", "rival"];
+/* 신규는 우리 데이터에 없는 업체를 찾는 자리다 — 세는 대상이 아니라 발굴 화면으로 넘긴다 */
+const NEW_KW = [["제조공장", "🏭"], ["물류센터", "🏢"], ["창고", "📦"]];
+function naverUrl(kw) {
+  const a = state.anchor;
+  if (!a) return "https://map.naver.com/p/search/" + encodeURIComponent(kw);
+  if (a.label && a.label !== "현재 위치")
+    return "https://map.naver.com/p/search/" + encodeURIComponent(a.label + " " + kw);
+  /* 지명이 없으면 좌표로 중심을 잡아 넘긴다 */
+  return "https://map.naver.com/p/search/" + encodeURIComponent(kw) +
+    `?c=${a.lng.toFixed(6)},${a.lat.toFixed(6)},14,0,0,0,dh`;
+}
+function kindColor(k) { return (KIND[k] || KIND.deal).color; }
+function kindEdge(k) { return (KIND[k] || KIND.deal).edge; }
+
+/* ═══════ 상태 ═══════ */
+const LS = { radius: "kppnear_radius", cats: "kppnear_cats" };
+const state = {
+  anchor: null,          /* {lat,lng,label} */
+  radiusKm: +(localStorage.getItem(LS.radius) || 3),
+  cats: [],              /* 고른 분류 — 빈 배열이면 전체. 복수선택 가능 */
+  newMode: false,        /* '신규'는 걸러내기가 아니라 다른 화면이라 따로 둔다 */
+  shown: 60,
+  list: []
+};
+/* 지난번에 고른 분류를 기억한다 */
+try {
+  const v = JSON.parse(localStorage.getItem(LS.cats) || "[]");
+  if (Array.isArray(v)) state.cats = v.filter(k => KIND[k]);
+} catch (e) { /* 저장값이 깨졌으면 전체로 시작한다 */ }
+/* 고른 분류만 남긴다 — 하나도 안 고르면 전체가 대상이다 */
+function catPass(r) { return !state.cats.length || state.cats.includes(r.kind); }
+
+function toast(msg) {
+  const t = $("toast"); t.textContent = msg; t.classList.add("on");
+  clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove("on"), 2200);
+}
+
+/* ═══════ 잠금 ═══════ */
+function renderLock() {
+  const box = $("lockBox");
+  if (!hasEnc()) {
+    box.innerHTML = '<div class="empty">명단 파일이 아직 없습니다.<br>tools/rival-import.html 로 만든<br><b>nearby-extra.js</b> 가 저장소 최상위에 있어야 합니다.</div>';
+    return;
+  }
+  box.innerHTML = `<div class="lock">
+    <b>🔒 업체 데이터 잠금해제</b>
+    <p>명단을 잠글 때 쓴 <b>데이터 비밀번호</b>입니다.<br>한 번만 넣으면 이 기기에 저장되어 다음부터 바로 열립니다.</p>
+    <input type="password" id="pw" placeholder="데이터 비밀번호">
+    <div class="err" id="pwErr"></div>
+    <button id="pwGo">🔓 불러오기</button>
+  </div>`;
+  const run = async () => {
+    const pw = $("pw").value.trim();
+    if (!pw) { $("pwErr").textContent = "비밀번호를 입력하세요"; $("pwErr").style.display = "block"; return; }
+    $("pwGo").textContent = "푸는 중…"; $("pwErr").style.display = "none";
+    try {
+      RECS = buildRecords(await decryptData(pw));
+      LOGS = await decryptLogs(pw);
+      localStorage.setItem(PW_KEY, pw);
+      start();
+    } catch (e) {
+      $("pwErr").textContent = "비밀번호가 맞지 않습니다";
+      $("pwErr").style.display = "block";
+      $("pwGo").textContent = "🔓 불러오기";
+    }
+  };
+  $("pwGo").onclick = run;
+  $("pw").onkeydown = e => { if (e.key === "Enter") run(); };
+}
+
+/* 좌표가 없으면 주소의 시·군 중심으로 근사한다 */
+function placeXY(o, x) {
+  if (x.lat && x.lng) { o.lat = +x.lat; o.lng = +x.lng; o.approx = false; return o; }
+  const h = findRegion(x.addr || "");
+  if (h) { o.lat = h.lat; o.lng = h.lng; o.approx = true; }
+  else { o.lat = null; o.lng = null; o.approx = false; }
+  return o;
+}
+/* 세 명단을 한 목록으로 편다 */
+function buildRecords(x) {
+  const out = [];
+  [["deal", x && x.deal], ["debt", x && x.debt], ["rival", x && x.rival]].forEach(([kind, list]) => {
+    (list || []).forEach((o, i) => {
+      if (!o || !o.name) return;
+      out.push(placeXY(Object.assign({}, o, { id: kind + "|" + (o.code || i), kind }), o));
+    });
+  });
+  return out;
+}
+
+/* ═══════ 시작 ═══════ */
+function start() {
+  $("lockBox").innerHTML = "";
+  $("app").style.display = "";
+  $("radius").value = state.radiusKm;
+  renderCatRow();
+  if (!state.anchor) locate(true);
+  else render();
+}
+
+function kindCounts() {
+  const c = { all: RECS.length, deal: 0, debt: 0, rival: 0 };
+  RECS.forEach(r => c[r.kind]++);
+  return c;
+}
+function renderCatRow() {
+  const n = kindCounts();
+  const allOn = !state.cats.length && !state.newMode;
+  $("catRow").innerHTML = '<span class="lb">분류</span>' +
+    `<button class="chip ${allOn ? "on" : ""}" data-c="">전체 ${n.all.toLocaleString()}</button>` +
+    KIND_ORDER.map(k => `<button class="chip ${!state.newMode && state.cats.includes(k) ? "on" : ""}" data-c="${k}">
+      <span class="kd" style="background:${KIND[k].color};border:1px solid ${KIND[k].edge === "#fff" ? "transparent" : "#333"}"></span>${KIND[k].label} ${n[k].toLocaleString()}</button>`).join("") +
+    `<button class="chip ${state.newMode ? "on" : ""}" data-c="new">
+      <span class="kd" style="background:#03c75a"></span>신규</button>`;
+  /* 분류는 여러 개를 눌러 겹쳐 볼 수 있다. '전체'와 '신규'만 혼자 선다 */
+  $("catRow").querySelectorAll(".chip").forEach(b => b.onclick = () => {
+    const c = b.dataset.c;
+    if (c === "") { state.cats = []; state.newMode = false; }
+    else if (c === "new") { state.cats = []; state.newMode = !state.newMode; }
+    else {
+      state.newMode = false;
+      const i = state.cats.indexOf(c);
+      if (i >= 0) state.cats.splice(i, 1); else state.cats.push(c);
+    }
+    localStorage.setItem(LS.cats, JSON.stringify(state.cats));
+    state.shown = 60;
+    renderCatRow(); render();
+    if (mapOn) { drawMarkers(true); renderLegend(); }
+  });
+}
+
+/* ═══════ 위치 ═══════ */
+function locate(silent) {
+  if (!navigator.geolocation) { if (!silent) toast("이 브라우저는 위치 기능을 지원하지 않습니다"); render(); return; }
+  $("hdSub").textContent = "현재 위치 확인 중…";
+  navigator.geolocation.getCurrentPosition(
+    p => { state.anchor = { lat: p.coords.latitude, lng: p.coords.longitude, label: "현재 위치" }; render(); },
+    () => { $("hdSub").textContent = "위치를 못 잡았습니다 — 지역을 검색하세요"; render(); },
+    { enableHighAccuracy: true, timeout: 8000, maximumAge: 30000 }
+  );
+}
+function searchRegion(q) {
+  q = (q || "").trim();
+  if (!q) return;
+  const h = findRegion(q);
+  if (h) { state.anchor = { lat: h.lat, lng: h.lng, label: h.name }; state.shown = 60; render(); return; }
+  /* 표에 없으면 카카오 지오코딩으로 넘긴다 */
+  geocode(q).then(g => {
+    if (!g) { toast("그 위치를 찾지 못했습니다"); return; }
+    state.anchor = { lat: g.lat, lng: g.lng, label: g.label || q }; state.shown = 60; render();
+  });
+}
+function geocode(q) {
+  return loadKakao().then(() => new Promise(res => {
+    const gc = new kakao.maps.services.Geocoder();
+    gc.addressSearch(q, (r, st) => {
+      if (st === kakao.maps.services.Status.OK && r[0]) return res({ lat: +r[0].y, lng: +r[0].x, label: r[0].address_name });
+      const ps = new kakao.maps.services.Places();
+      ps.keywordSearch(q, (r2, s2) => {
+        if (s2 === kakao.maps.services.Status.OK && r2[0]) return res({ lat: +r2[0].y, lng: +r2[0].x, label: r2[0].place_name });
+        res(null);
+      });
+    });
+  })).catch(() => null);
+}
+
+/* ═══════ 목록 ═══════ */
+function compute() {
+  if (state.newMode) return [];
+  const pool = RECS.filter(catPass);
+  const a = state.anchor;
+  if (!a) return pool.slice(0, 0);
+  const withD = pool.filter(r => r.lat && r.lng)
+    .map(r => Object.assign({}, r, { dist: distKm(a.lat, a.lng, r.lat, r.lng) }))
+    .filter(r => state.radiusKm == null || r.dist <= state.radiusKm);
+  withD.sort((x, y) => x.dist - y.dist);
+  return withD;
+}
+/* 분류마다 보여 줄 것이 다르다 — 두 번째 줄(meta·nums)과 세 번째 줄을 나눠 만든다 */
+function cardBody(r) {
+  const md = s => String(s || "").slice(5).replace("-", ".");
+  if (r.kind === "rival") {
+    return {
+      meta: [r.branch, r.person].filter(Boolean).join(" · ") || "-",
+      nums: (r.code ? `<span class="year">코드 ${esc(r.code)}</span>` : "") +
+            (r.biz ? `<span class="year yg">${esc(r.biz)}</span>` : "") +
+            (r.cat2 ? `<span class="year">${esc(r.cat2)}</span>` : "") +
+            (r.sales ? `<span class="amt">연 ${esc(Number(r.sales).toLocaleString())}천원</span>` : ""),
+      sub3: [r.fields, r.lastVisit ? `최종방문 ${md(r.lastVisit)}${r.visits ? ` (${esc(r.visits)}회)` : ""}` : ""]
+              .filter(Boolean).join(" · ")
+    };
+  }
+  if (r.kind === "debt") {
+    return {
+      meta: [r.branch, r.dperson || r.person].filter(Boolean).join(" · ") || "-",
+      nums: (r.grade ? `<span class="year yc">${esc(r.grade)}</span>` : "") +
+            (r.amount ? `<span class="amt">미수 ${esc(r.amount)}원</span>` : ""),
+      sub3: ""
+    };
+  }
+  return {
+    meta: r.contact ? "업체담당자 : " + r.contact : "-",
+    nums: (r.code ? `<span class="year">코드 ${esc(r.code)}</span>` : "") +
+          (r.person ? `<span class="year yg">KPP ${esc(r.person)}</span>` : ""),
+    sub3: ""
+  };
+}
+function cardHtml(r) {
+  const d = r.dist != null ? r.dist.toFixed(2) + " km" : "";
+  const b = cardBody(r);
+  const tel = String(r.tel || r.personTel || "").replace(/\D/g, "");
+  const nlog = logsOf(r).length;
+  return `<div class="card" data-id="${esc(r.id)}">
+    <div class="top">
+      <div class="left-col">
+        <div class="nm-row">
+          <span class="kdot" style="background:${kindColor(r.kind)};border:1px solid ${kindEdge(r.kind) === "#fff" ? "transparent" : "#333"}"></span>
+          <div class="dist">${d}</div>
+          <div class="name">${esc(r.name)}</div>
+          <span class="addr-short">${esc(r.addrShort || r.addr || "")}${r.approx ? " (시·군 중심)" : ""}</span>
+        </div>
+        <div class="staff-row">
+          <div class="meta">${esc(b.meta)}</div>
+          <div class="nums">${b.nums}</div>
+        </div>
+        ${b.sub3 ? `<div class="sub3">${esc(b.sub3)}</div>` : ""}
+      </div>
+    </div>
+    ${(tel || r.email || (r.lat && r.lng) || nlog) ? `<div class="btn-row">
+      ${tel ? `<button class="tel-btn" data-tel="${esc(tel)}">📞 전화</button>` : ""}
+      ${r.email ? `<a class="mail-btn" href="mailto:${esc(String(r.email).split(",")[0].trim())}">✉️ 메일</a>` : ""}
+      ${(r.lat && r.lng) ? `<button class="navi-btn">🧭 길찾기</button>` : ""}
+      ${nlog ? `<button class="log-btn">📋 업무일지 ${nlog}건</button>` : ""}
+    </div>` : `<div class="noloc">전화·좌표가 등록되지 않은 업체입니다</div>`}
+  </div>`;
+}
+function render() {
+  const list = compute();
+  state.list = list;
+  const a = state.anchor;
+  $("btnMap").style.display = state.newMode ? "none" : "";
+  if (state.newMode) {
+    $("hdSub").textContent = a ? `${a.label} 주변 신규 발굴` : "지역을 잡아 주세요";
+    $("cnt").innerHTML = "";
+    $("list").innerHTML = !a
+      ? '<div class="empty">📍 현재 위치로 찾기를 누르거나<br>지역을 검색해 주세요.</div>'
+      : `<div class="disc">
+          <div class="dh">📍 ${esc(a.label)} 주변 신규 발굴</div>
+          <p>우리 데이터에 없는 업체를 찾는 자리입니다.<br>누르면 네이버 지도에서 그 주변 업종이 검색됩니다.</p>
+          <div class="kws">${NEW_KW.map(([k, ic]) =>
+            `<a class="kw" href="${esc(naverUrl(k))}" target="_blank" rel="noopener">
+               <span class="ic">${ic}</span>${esc(k)}<span class="go">네이버 지도 ›</span></a>`).join("")}</div>
+          <div class="foot">찾은 업체는 업무일지에 적어 두면 다음부터 이 목록에 함께 뜹니다.</div>
+        </div>`;
+    return;
+  }
+  $("hdSub").textContent = a ? `${a.label} 기준 · 반경 ${state.radiusKm}km` : "위치를 잡아 주세요";
+  $("cnt").innerHTML = a
+    ? `${esc(a.label)} 기준 · 반경 ${state.radiusKm}km 안 <b>${list.length.toLocaleString()}곳</b>` +
+      ` <span>/ ${state.cats.length ? state.cats.map(k => KIND[k].label).join("·") : "전체"} ${RECS.filter(catPass).length.toLocaleString()}곳</span>`
+    : "";
+  if (!a) { $("list").innerHTML = '<div class="empty">📍 현재 위치로 찾기를 누르거나<br>지역을 검색해 주세요.</div>'; return; }
+  if (!list.length) { $("list").innerHTML = '<div class="empty">반경 안에 업체가 없습니다.<br>반경을 넓혀 보세요.</div>'; return; }
+  const page = list.slice(0, state.shown);
+  $("list").innerHTML = page.map(cardHtml).join("") +
+    (list.length > state.shown ? `<button class="more" id="more">더 보기 (${(list.length - state.shown).toLocaleString()}곳 남음)</button>` : "");
+  if ($("more")) $("more").onclick = () => { state.shown += 60; render(); };
+  bindCards();
+  if (mapOn) drawMarkers(false);
+}
+function recById(id) { return state.list.find(r => r.id === id) || RECS.find(r => r.id === id); }
+function bindCards() {
+  $("list").querySelectorAll(".card").forEach(el => {
+    const r = recById(el.dataset.id); if (!r) return;
+    const t = el.querySelector(".tel-btn");
+    if (t) t.onclick = () => { location.href = "tel:" + t.dataset.tel; };
+    const n = el.querySelector(".navi-btn");
+    if (n) n.onclick = () => window.open(naviUrl(r), "_blank", "noopener");
+    const g = el.querySelector(".log-btn");
+    if (g) g.onclick = () => openLog(r);
+  });
+}
+function naviUrl(r) {
+  const nm = encodeURIComponent(r.name || "목적지");
+  if (state.anchor) return `https://map.kakao.com/link/from/출발,${state.anchor.lat},${state.anchor.lng}/to/${nm},${r.lat},${r.lng}`;
+  return `https://map.kakao.com/link/to/${nm},${r.lat},${r.lng}`;
+}
+
+/* ═══════ 지도모드 ═══════ */
+let kakaoLoading = null, kmap = null, clusterer = null, markers = [], meMarker = null, mapOn = false;
+function loadKakao() {
+  if (window.kakao && window.kakao.maps && window.kakao.maps.Map) return Promise.resolve();
+  if (kakaoLoading) return kakaoLoading;
+  kakaoLoading = new Promise((res, rej) => {
+    const s = document.createElement("script");
+    s.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${KAKAO_JS_KEY}&autoload=false&libraries=clusterer,services`;
+    s.onload = () => {
+      if (!window.kakao || !kakao.maps) { rej(new Error("blocked")); return; }
+      kakao.maps.load(res);
+    };
+    s.onerror = () => rej(new Error("sdk"));
+    document.head.appendChild(s);
+    setTimeout(() => rej(new Error("timeout")), 12000);
+  });
+  /* 실패한 약속을 캐시에 남기면 다시 시도해도 계속 실패한다 */
+  kakaoLoading.catch(() => { kakaoLoading = null; });
+  return kakaoLoading;
+}
+/* 왜 안 되는지 화면에서 바로 알 수 있게 적어 준다 */
+function mapFail(why) {
+  const m = $("mapMsg");
+  m.style.display = "block";
+  m.innerHTML = `<div style="font-weight:800;margin-bottom:7px">지도를 불러오지 못했습니다</div>
+    <div style="font-size:12.5px;color:#555;line-height:1.7">${esc(why)}<br>
+      현재 주소 <b style="color:#123c7a">${esc(location.origin)}</b><br>
+      카카오 개발자센터 → 내 애플리케이션 → 앱 설정 → 플랫폼 → Web 에<br>이 주소가 등록돼야 지도가 열립니다.</div>
+    <button id="mapRetry" style="margin-top:11px;height:38px;padding:0 18px;border-radius:9px;
+      background:#123c7a;color:#fff;font-size:13.5px;font-weight:800">다시 시도</button>`;
+  const r = $("mapRetry");
+  if (r) r.onclick = () => { m.style.display = "none"; kmap = null; openMap(); };
+}
+/* 경쟁사 연매출은 시트에 천원 단위로 들어온다 — 마커에는 억으로 줄여 적는다 */
+function salesEok(v) {
+  const n = parseFloat(String(v || "").replace(/,/g, ""));
+  return isFinite(n) ? (n / 100000).toFixed(1) : "";
+}
+/* 분류마다 색이 다른 동그란 마커. 경쟁사는 안에 연매출(억)을 적는다. */
+function dotImage(kind, txt) {
+  const k = KIND[kind] || KIND.deal;
+  const w = txt && txt.length > 3 ? 36 : 30;   /* 숫자가 없어도 경쟁사와 같은 크기로 */
+  const r = w / 2 - 2.5;
+  const label = txt
+    ? `<text x="${w / 2}" y="${w / 2}" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" font-size="${txt.length <= 3 ? 11.5 : 10.5}" font-weight="bold" fill="${k.ink}">${txt}</text>`
+    : "";
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${w}"><circle cx="${w / 2}" cy="${w / 2}" r="${r}" fill="${k.color}" stroke="${k.edge}" stroke-width="2.5"/>${label}</svg>`;
+  return new kakao.maps.MarkerImage("data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svg))), new kakao.maps.Size(w, w), { offset: new kakao.maps.Point(w / 2, w / 2) });
+}
+function flagImage() {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="44" viewBox="0 0 36 44"><line x1="8" y1="3" x2="8" y2="42" stroke="#1565c0" stroke-width="4" stroke-linecap="round"/><path d="M8 4 L32 11 L8 19 Z" fill="#1976d2" stroke="#e53935" stroke-width="1.5"/><circle cx="8" cy="42" r="3" fill="#1565c0"/></svg>`;
+  return new kakao.maps.MarkerImage("data:image/svg+xml;base64," + btoa(svg), new kakao.maps.Size(31, 37), { offset: new kakao.maps.Point(7, 36) });
+}
+const LEVEL_SCALE = { 1: "20m", 2: "30m", 3: "50m", 4: "100m", 5: "250m", 6: "500m",
+  7: "1km", 8: "2km", 9: "4km", 10: "8km", 11: "16km", 12: "32km", 13: "64km", 14: "128km" };
+function syncScale() { if (kmap) $("mapScaleVal").textContent = LEVEL_SCALE[kmap.getLevel()] || ""; }
+
+function renderLegend() {
+  const n = {}; mapItems().forEach(r => n[r.kind] = (n[r.kind] || 0) + 1);
+  /* 고른 분류만 범례에 세운다 */
+  const show = KIND_ORDER.filter(k => !state.cats.length || state.cats.includes(k));
+  $("mapLegend").innerHTML = show.map(k =>
+    `<span style="display:inline-flex;align-items:center;gap:4px;"><span style="width:12px;height:12px;border-radius:50%;background:${KIND[k].color};border:1.5px solid ${KIND[k].edge === "#fff" ? "#bbb" : "#333"};"></span>${KIND[k].label} ${n[k] || 0}</span>`).join("") +
+    (show.includes("rival") ? '<span style="color:#555;">경쟁사 숫자 = 연매출(억)</span>' : "") +
+    '<span style="color:#1976d2;">⚑ 기준 위치</span>';
+}
+function clearMarkers() {
+  if (clusterer) clusterer.clear();
+  markers.forEach(m => m.setMap(null)); markers = [];
+}
+/* 지도에 올릴 것 — 카드모드에서 고른 분류를 그대로 따른다.
+   아무것도 안 고르면 계약처·미수금·경쟁사가 한 화면에 같이 뜬다.
+   반경은 그대로 지킨다.                                              */
+function mapItems() {
+  const a = state.anchor;
+  if (!a) return [];
+  return RECS.filter(r => r.lat && r.lng && catPass(r))
+    .map(r => Object.assign({}, r, { dist: distKm(a.lat, a.lng, r.lat, r.lng) }))
+    .filter(r => state.radiusKm == null || r.dist <= state.radiusKm);
+}
+function drawMarkers(fit) {
+  if (!kmap) return;
+  clearMarkers();
+  const items = mapItems();
+  const bounds = new kakao.maps.LatLngBounds();
+  items.forEach(r => {
+    const pos = new kakao.maps.LatLng(r.lat, r.lng);
+    const m = new kakao.maps.Marker({ position: pos, image: dotImage(r.kind, r.kind === "rival" ? salesEok(r.sales) : "") });
+    kakao.maps.event.addListener(m, "click", () => openInfo(r));
+    markers.push(m); bounds.extend(pos);
+  });
+  clusterer.addMarkers(markers);
+  if (meMarker) { meMarker.setMap(null); meMarker = null; }
+  if (state.anchor) {
+    const mp = new kakao.maps.LatLng(state.anchor.lat, state.anchor.lng);
+    meMarker = new kakao.maps.Marker({ position: mp, image: flagImage(), zIndex: 10 });
+    meMarker.setMap(kmap); bounds.extend(mp);
+  }
+  $("mapMsg").style.display = items.length ? "none" : "block";
+  $("mapMsg").textContent = "반경 안에 업체가 없습니다";
+  if (fit && (items.length || state.anchor)) {
+    setTimeout(() => { kmap.relayout(); kmap.setBounds(bounds); syncScale(); }, 60);
+  }
+  renderLegend();
+  $("mapRadius").textContent = "반경 " + state.radiusKm + "km";
+}
+function openInfo(r) {
+  const b = cardBody(r);
+  const tel = String(r.tel || r.personTel || "").replace(/\D/g, "");
+  const nlog = logsOf(r).length;
+  $("mapInfo").innerHTML = `
+    <div class="mi-h"><div class="mi-n">${esc(r.name)}</div><button class="mi-x" id="miX">✕</button></div>
+    <div class="mi-r">${KIND[r.kind].label}${b.meta && b.meta !== "-" ? " · " + esc(b.meta) : ""}</div>
+    ${b.nums ? `<div class="mi-r">${b.nums}</div>` : ""}
+    ${b.sub3 ? `<div class="mi-r">${esc(b.sub3)}</div>` : ""}
+    ${r.addr ? `<div class="mi-r">${esc(r.addr)}${r.approx ? " (시·군 중심)" : ""}</div>` : ""}
+    ${r.code ? `<div class="mi-r">코드 ${esc(r.code)}</div>` : ""}
+    <div class="mi-b">
+      ${tel ? `<button class="tel" id="miTel">📞 전화</button>` : ""}
+      <button class="navi" id="miNavi">🧭 길찾기</button>
+      ${nlog ? `<button class="log" id="miLog">📋 일지 ${nlog}건</button>` : ""}
+    </div>`;
+  $("mapInfo").style.display = "block";
+  $("miX").onclick = () => { $("mapInfo").style.display = "none"; };
+  if ($("miTel")) $("miTel").onclick = () => { location.href = "tel:" + tel; };
+  $("miNavi").onclick = () => window.open(naviUrl(r), "_blank", "noopener");
+  if ($("miLog")) $("miLog").onclick = () => openLog(r);
+}
+async function openMap() {
+  $("mapSheet").classList.add("on"); mapOn = true;
+  $("mapInfo").style.display = "none";
+  $("mapRadius").textContent = "반경 " + state.radiusKm + "km";
+  renderLegend();
+  $("mapMsg").style.display = "none";
+  try { await loadKakao(); }
+  catch (e) {
+    mapFail(e.message === "timeout" ? "카카오 서버 응답이 없습니다 (네트워크 확인)"
+      : "카카오 지도 스크립트가 차단되었습니다.");
+    return;
+  }
+  try {
+    if (!kmap) {
+      const c = state.anchor || { lat: 35.335, lng: 129.037 };
+      kmap = new kakao.maps.Map($("mapCanvas"), { center: new kakao.maps.LatLng(c.lat, c.lng), level: 7 });
+      clusterer = new kakao.maps.MarkerClusterer({ map: kmap, averageCenter: true, minLevel: 7, gridSize: 60 });
+      kakao.maps.event.addListener(kmap, "zoom_changed", syncScale);
+    }
+  } catch (e) { kmap = null; mapFail("지도를 만들지 못했습니다 — " + e.message); return; }
+  drawMarkers(true);
+  syncScale();
+  /* 키가 이 주소에 등록돼 있지 않으면 스크립트는 받아지지만 타일이 안 온다 */
+  setTimeout(() => {
+    if (mapOn && kmap && !$("mapCanvas").querySelector("img")) mapFail("이 주소가 카카오 앱에 등록돼 있지 않습니다.");
+  }, 3500);
+}
+function closeMap() { $("mapSheet").classList.remove("on"); mapOn = false; }
+
+
+/* ═══════ 이벤트 ═══════ */
+$("btnLocate").onclick = () => locate(false);
+$("qGo").onclick = () => searchRegion($("q").value);
+$("q").onkeydown = e => { if (e.key === "Enter") searchRegion($("q").value); };
+$("radius").onchange = () => {
+  const v = parseFloat($("radius").value);
+  state.radiusKm = isNaN(v) || v <= 0 ? 3 : v;
+  $("radius").value = state.radiusKm;
+  localStorage.setItem(LS.radius, state.radiusKm);
+  state.shown = 60; render();
+};
+$("btnMap").onclick = openMap;
+$("mapClose").onclick = closeMap;
+$("lgX").onclick = closeLog;
+$("mapRadius").onclick = () => { closeMap(); $("radius").focus(); $("radius").select(); };
+$("mapZoomIn").onclick = () => { if (kmap) { kmap.setLevel(Math.max(1, kmap.getLevel() - 1)); syncScale(); } };
+$("mapZoomOut").onclick = () => { if (kmap) { kmap.setLevel(Math.min(14, kmap.getLevel() + 1)); syncScale(); } };
+
+/* ═══════ 시작 ═══════ */
+(function boot() {
+  /* 데모판 — 암호가 없다. 가공된 평문 데이터를 그대로 읽는다. */
+  const data = window.NEARBY_EXTRA_DEMO;
+  if (!data) {
+    $("lockBox").innerHTML = '<div class="empty">데모 데이터가 없습니다.<br>tools/demo-mask.html 로 만든<br><b>nearby-extra.demo.js</b> 가 저장소 최상위에 있어야 합니다.</div>';
+    return;
+  }
+  RECS = buildRecords(data);
+  LOGS = window.NEARBY_LOG_DEMO || {};
+  start();
+})();
+</script>
+</body>
+</html>
