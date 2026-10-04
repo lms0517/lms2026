@@ -64,6 +64,9 @@ body{
   overflow-x:hidden;
 }
 .mono{font-family:'IBM Plex Mono',monospace}
+/* 글자를 눌러도 크롬 '탭하여 검색'·길게 눌러 선택 메뉴가 뜨지 않게 — 입력칸만 선택 허용 */
+body{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
+input,textarea,select,[contenteditable]{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
 
 /* shell */
 .app{max-width:560px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;position:relative}
@@ -513,7 +516,7 @@ body.fs-lock{overflow:hidden}
   <div class="topbar">
     <div class="brand">
       <span class="logo mono"><b>TSPG</b> · LOGISALL ENG</span>
-      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1005.2</span>
+      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1005.4</span>
     </div>
     <div class="prog" id="prog"></div>
   </div>
@@ -711,14 +714,6 @@ body.fs-lock{overflow:hidden}
       </div>
       <div class="hint" style="margin-bottom:18px">평균 보관일수 = 입고~출고 평균 체류일. 재고·물동량 기반 '권장 규모' 참고치 산출에 사용(미입력 시 15일로 계산).</div>
 
-      <div class="field">
-        <label>구축 셀규모</label>
-        <div class="suffix">
-          <input type="number" id="f_cells" placeholder="비우면 면적이 허용하는 최대" inputmode="numeric" step="100">
-          <span class="u mono">Cells</span>
-        </div>
-        <div class="hint">넣은 값이 곧 구축 규모입니다 — 3D 배치·투자비·인력 계산이 이 수로 잡힙니다. 비우면 창고 면적·층고·파렛트 규격으로 셀 수 있는 <b>최대</b>로 잡습니다. 면적 한도를 넘게 넣으면 한도로 내려 잡습니다.</div>
-      </div>
 
     </section>
 
@@ -2379,7 +2374,7 @@ function collect(){
   d.inRatio=(ip>0&&ip<100)?ip:50;
   d.palletW=Number($("#f_palletW").value)||0;
   d.palletL=Number($("#f_palletL").value)||0;
-  d.cells=Number($("#f_cells")?$("#f_cells").value:0)||0;
+  d.cells=0;   // v3: 구축 셀규모 입력 삭제 — 항상 면적이 허용하는 최대로 계산
   d.palletKg=+$("#f_palletKg").value||0;
   d.palletH=+$("#f_palletH").value||0;
   d.stock=+$("#f_stock").value||0;
@@ -2907,7 +2902,7 @@ function renderResult(){
         <br>아래 투자비는 <b>실제 구축 ${fmt(roi.targetCells)} Cells 기준</b>${
           roi.targetDriver==='input'
             ? ` — 입력한 셀규모${roi.cellsOver?` <span style="color:#E8B21F">${fmt(roi.cellsInput)}셀은 면적 한도(${fmt(roi.areaCapacity)}셀)를 넘어 한도로 잡았습니다</span>`:''}`
-            : ` — 셀규모를 비워 <b>면적이 허용하는 최대</b>로 잡았습니다`
+            : ` — <b>면적이 허용하는 최대</b>로 잡았습니다`
         }이며 필요량 전량을 수용하는 금액이 아닙니다.
       </div>
     </div>` : "";
@@ -4978,7 +4973,7 @@ const GL3D = {
                          : ` — 면적 ${fmt(d.area)}평은 최대 ${fmt(roi.areaCapacity)}셀까지 수용(여유 ${fmt(Math.max(0,roi.areaCapacity-roi.targetCells))}셀)`)
         + (roi.targetFromStock||roi.targetFromVolume ? `. 참고: 재고 기준 ${roi.targetFromStock?fmt(roi.targetFromStock):'—'}셀 · 물동량 기준 ${roi.targetFromVolume?fmt(roi.targetFromVolume):'—'}셀` : ``);
     if(roi.targetDriver==='area')
-      return `<span style="${S}">규모 결정: 셀규모를 비워 면적 ${fmt(d.area)}평이 허용하는 최대</span>`
+      return `<span style="${S}">규모 결정: 면적 ${fmt(d.area)}평이 허용하는 최대</span>`
         + ` — 층고 ${d.height||'?'}m → ${roi.layout?roi.layout.tier:'?'}단 · 셀 ${roi.layout?roi.layout.cellW+'×'+roi.layout.cellD:'?'}m 기준`
         + (roi.targetFromStock||roi.targetFromVolume ? `. 참고: 재고 기준 ${roi.targetFromStock?fmt(roi.targetFromStock):'—'}셀 · 물동량 기준 ${roi.targetFromVolume?fmt(roi.targetFromVolume):'—'}셀` : ``);
     if(roi.targetDriver==='stock')
@@ -5670,7 +5665,7 @@ function reqText(){
 
 /* 같은 조건으로 다시 여는 짧은 링크 — QR 에 담을 수 있게 입력값만 넣는다 */
 const REQ_KEYS=[["t","temp"],["b","build"],["a","area"],["h","height"],["v","volume"],["r","inRatio"],
-  ["w","palletW"],["l","palletL"],["ph","palletH"],["kg","palletKg"],["s","stock"],["sd","storeDays"],["c","cells"]];
+  ["w","palletW"],["l","palletL"],["ph","palletH"],["kg","palletKg"],["s","stock"],["sd","storeDays"]];
 function reqLink(){
   const d=window.d_data||STATE.data;
   const q=REQ_KEYS.filter(([k,f])=>d[f]!==undefined&&d[f]!==""&&d[f]!==0&&!(f==="inRatio"&&d[f]===50))
@@ -5687,7 +5682,7 @@ function applyReqLink(){
   setv("f_build",m.b); setv("f_area",m.a); setv("f_height",m.h); setv("f_volume",m.v);
   if(m.r){ setv("f_inPct",m.r); setv("f_outPct",100-(+m.r)); }
   setv("f_palletW",m.w); setv("f_palletL",m.l); setv("f_palletH",m.ph); setv("f_palletKg",m.kg);
-  setv("f_stock",m.s); setv("f_storeDays",m.sd); setv("f_cells",m.c);
+  setv("f_stock",m.s); setv("f_storeDays",m.sd);
   flowLiveCalc(); collect(); renderResult(); showStep(STATE.total-1);
   if(location.hash==="#req") setTimeout(openReqSheet,400);
 }
