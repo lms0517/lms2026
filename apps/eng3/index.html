@@ -511,7 +511,7 @@ body.fs-lock{overflow:hidden}
   <div class="topbar">
     <div class="brand">
       <span class="logo mono"><b>TSPG</b> · LOGISALL ENG</span>
-      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1004.8</span>
+      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1004.9</span>
     </div>
     <div class="prog" id="prog"></div>
   </div>
@@ -3028,7 +3028,7 @@ function renderResult(){
       <div class="stat hl roi-tab" id="capexKpi" onclick="toggleCapex()" style="cursor:pointer">
         <div class="l">총 개략 투자비 (VAT 별도) <span class="tab-hint">탭하면 항목별 ▼</span></div>
         <div class="v">${won(roi.capexMan)}<small>원</small></div>
-        <div class="sub">${cx.modelLabel} 기준${cx.perCell?` · ${fmt(roi.targetCells)}셀 · 셀당 ${fmt(cx.perCell)}원`:""} (관리비·이윤 포함)</div>
+        <div class="sub">${cx.modelLabel} 기준${cx.perCell?` · ${fmt(roi.targetCells)}셀 · 셀당 ${fmt(cx.perCell)}원`:""}</div>
       </div>
 
       <div id="panelCapex" class="roi-panel">
