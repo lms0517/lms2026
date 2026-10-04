@@ -50,9 +50,6 @@
       const ready=this.engine===GL3D&&GL3D.higgsfieldApplied;
       if(badge&&this.engine===GL3D){badge.textContent=ready?'Higgsfield 장면 · 입력값 반영':'기본 3D · 모델 로딩 실패';badge.dataset.model=ready?'higgsfield':'fallback';}
       if(ready){
-        const heading=document.querySelector('.sim-heading strong');if(heading)heading.textContent='Higgsfield 자동창고 3D';
-        const small=document.querySelector('.sim-heading small');if(small)small.innerHTML='예시의 랙·바닥·설비 표현을 입력 규모로 재구성했습니다. <a href="./higgsfield-reference.html" target="_blank" rel="noopener">힉스필드 원본 예시 보기 ↗</a>';
-        if(document.getElementById('simDimensions')?.getAttribute('aria-pressed')==='true')SIMDETAIL.toggle('dimensions');
         const note=document.getElementById('simNote');if(note)note.innerHTML=note.innerHTML.replace(' · 서 있는 작업자(키 1.7m)가 크기 기준입니다.',' · 랙과 화물은 입력 규격에 맞춘 크기입니다.');
         GL3D.render();
       }

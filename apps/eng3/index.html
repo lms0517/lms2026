@@ -163,6 +163,13 @@ a.btn{text-decoration:none}
 .card{background:var(--grad-panel);border:1px solid var(--line);border-radius:var(--radius);padding:17px;margin-bottom:14px;box-shadow:var(--sh-md),var(--hl)}
 .card>.h{display:flex;align-items:center;gap:8px;font-size:11px;font-family:'IBM Plex Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin-bottom:13px}
 .card>.h .ln{flex:1;height:1px;background:var(--line)}
+.pal-size{display:flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel);box-shadow:var(--inset);padding:0 12px;transition:.15s}
+.pal-size:focus-within{border-color:var(--accent);background:var(--panel-2);box-shadow:0 0 0 3px rgba(12,68,124,.12)}
+.pal-size input{flex:1;min-width:0;border:none!important;background:transparent!important;box-shadow:none!important;padding:13px 2px!important;text-align:center}
+.pal-size input:focus{outline:none}
+.pal-size .x{color:var(--muted);font-weight:700}
+.pal-size .u{color:var(--muted);font-size:12px}
+.flow-row select{width:100%}
 .duo{padding:12px}
 .duo-heads{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .duo-h{display:flex;align-items:center;gap:7px;width:100%;font-family:inherit;text-align:left;cursor:pointer;
@@ -484,7 +491,7 @@ body.fs-lock{overflow:hidden}
   .app{box-shadow:0 0 60px rgba(12,68,124,.10)}
 }
 </style>
-<link rel="stylesheet" href="./simulation.css?v=0906.6">
+<link rel="stylesheet" href="./simulation.css?v=3.0.3">
 </head>
 <body>
 <div class="app">
@@ -493,7 +500,7 @@ body.fs-lock{overflow:hidden}
   <div class="topbar">
     <div class="brand">
       <span class="logo mono"><b>TSPG</b> · LOGISALL ENG</span>
-      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1004.2</span>
+      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1004.3</span>
     </div>
     <div class="prog" id="prog"></div>
   </div>
@@ -637,47 +644,34 @@ body.fs-lock{overflow:hidden}
           <input type="number" id="f_height" placeholder="예: 8" inputmode="decimal">
         </div>
       </div>
-      <div class="row2">
+      <div class="row2 flow-row" style="margin-bottom:6px">
         <div class="field">
-          <label>하루 입고량 <span class="req">*</span></label>
+          <label>월 물동량 <span class="req">*</span></label>
           <div class="suffix">
-            <input type="number" id="f_inDay" placeholder="예: 250" inputmode="numeric">
-            <span class="u mono">PL/일</span>
+            <input type="number" id="f_volume" placeholder="예: 10000" inputmode="numeric">
+            <span class="u mono">PLT/월</span>
           </div>
         </div>
         <div class="field">
-          <label>하루 출고량 <span class="req">*</span></label>
-          <div class="suffix">
-            <input type="number" id="f_outDay" placeholder="예: 200" inputmode="numeric">
-            <span class="u mono">PL/일</span>
-          </div>
+          <label>입·출고 비율 <span style="font-weight:400;color:var(--muted);font-size:11px">선택</span></label>
+          <select id="f_ioRatio">
+            <option value="50" selected>입 50 : 출 50</option>
+            <option value="60">입 60 : 출 40</option>
+            <option value="70">입 70 : 출 30</option>
+            <option value="40">입 40 : 출 60</option>
+            <option value="30">입 30 : 출 70</option>
+          </select>
         </div>
       </div>
-      <div class="hint" id="flowLive" style="margin-bottom:14px">운영 기준 <b>주 6일 · 1일 8시간</b>. 시간당 취급량 = (입고 + 출고) ÷ 8 → 설비 대수 산정의 기준입니다.</div>
+      <div class="hint" id="flowLive" style="margin-bottom:18px">입·출고 합산 월간 파렛트 수. 운영 기준 <b>주 6일(월 26일) · 1일 8시간</b> → 시간당 취급량이 설비 대수 산정의 기준입니다.</div>
 
-      <div class="field" style="margin-bottom:18px">
-        <label>월 물동량 <span style="font-weight:400;color:var(--muted);font-size:12px">— 하루 입·출고를 모를 때만</span></label>
-        <div class="suffix">
-          <input type="number" id="f_volume" placeholder="예: 10000" inputmode="numeric">
-          <span class="u mono">PLT/월</span>
-        </div>
-        <div class="hint" style="margin-top:8px">입·출고 합산 월간 파렛트 수. 위에 하루 입·출고를 넣으면 이 값은 무시되고 (입고+출고)×26일로 환산합니다.</div>
-      </div>
-
-      <div class="row2" style="margin-bottom:12px">
-        <div class="field">
-          <label>파렛트 가로</label>
-          <div class="suffix">
-            <input type="number" id="f_palletW" placeholder="예: 1100" inputmode="numeric" step="10">
-            <span class="u mono">mm</span>
-          </div>
-        </div>
-        <div class="field">
-          <label>파렛트 세로</label>
-          <div class="suffix">
-            <input type="number" id="f_palletL" placeholder="예: 1100" inputmode="numeric" step="10">
-            <span class="u mono">mm</span>
-          </div>
+      <div class="field" style="margin-bottom:12px">
+        <label>파렛트 규격</label>
+        <div class="pal-size">
+          <input type="number" id="f_palletW" placeholder="가로 1100" inputmode="numeric" step="10" aria-label="파렛트 가로(mm)">
+          <span class="x">×</span>
+          <input type="number" id="f_palletL" placeholder="세로 1100" inputmode="numeric" step="10" aria-label="파렛트 세로(mm)">
+          <span class="u mono">mm</span>
         </div>
       </div>
       <div class="row2">
@@ -947,10 +941,10 @@ const DETAIL_REQ = [
 
 /* 초동 확인 질문 — f 는 이동할 입력 필드 id (null = 구두 확인) */
 const INTAKE = [
-  {q:"파렛트 규격은 어떻게 되나요? 가로·세로·적재 최대높이",  f:"f_palletW"},
+  {q:"파렛트 규격(가로×세로)과 적재 최대높이는?",            f:"f_palletW"},
   {q:"화물 포함 파렛트 1매 최대중량은?",                    f:"f_palletKg"},
   {q:"동시에 보관하는 최대 파렛트 수는?",                    f:"f_stock"},
-  {q:"하루 입고량과 출고량은 각각 몇 파렛트인가요?",          f:"f_inDay"},
+  {q:"월 물동량(입·출고 합산)은 몇 파렛트인가요? 입·출고 비율은?", f:"f_volume"},
   {q:"설치 가능한 면적과 유효 층고는?",                      f:"f_area"},
   {q:"창고 온도대와 신축·기존 여부는?",                      f:"f_temp"},
   {q:"평면도(DWG 또는 PDF)를 받을 수 있을까요?",             f:null},
@@ -1310,7 +1304,7 @@ const STATE = {
   data:{ temp:"ambient", build:"new",
          area:0, height:0, volume:0, palletH:0, stock:0, storeDays:0, staff:0,
          /* v2 신규 — 일 입고/출고 분리(주력) · 파렛트 제원 */
-         inDay:0, outDay:0, palletW:0, palletL:0, palletKg:0,
+         inDay:0, outDay:0, inRatio:50, palletW:0, palletL:0, palletKg:0,
          /* 구축 셀규모 — 0이면 면적이 허용하는 최대 */
          cells:0 }
 };
@@ -1978,11 +1972,13 @@ const Engine = {
                          : Math.round((d.volume||0) / DM);
     const perHr  = Math.round(perDay / H);
     // 입·출고를 나눠 넣지 않았으면 절반씩으로 가정(리프트·스테이션 방향 참고용)
-    const inHr   = +( (split ? inDay  : perDay/2) / H ).toFixed(1);
-    const outHr  = +( (split ? outDay : perDay/2) / H ).toFixed(1);
+    // 일 입출고를 나눠 넣지 않았으면 입·출고 비율(기본 50:50)로 나눈다
+    const r      = (d.inRatio>0 && d.inRatio<100) ? d.inRatio/100 : 0.5;
+    const inHr   = +( (split ? inDay  : perDay*r)     / H ).toFixed(1);
+    const outHr  = +( (split ? outDay : perDay*(1-r)) / H ).toFixed(1);
     // 보관수요 환산에 쓰는 월 물동량 — 일 입출고를 넣었으면 그 값을 월로 환산
     const volMonth = split ? perDay * DM : (d.volume||0);
-    return { perDay, perHr, inHr, outHr, split, volMonth, opHours:H, workDays:DM };
+    return { perDay, perHr, inHr, outHr, split, volMonth, opHours:H, workDays:DM, inRatio:Math.round(r*100) };
   },
   // 시스템 매칭 (핸드북 매트릭스)
   /* 시스템 매칭 — 측정 가능한 입력만으로 판정한다.
@@ -2150,7 +2146,7 @@ const Engine = {
       const units = Math.max(1, Math.ceil(hr / CAPEX.AGF.pltPerUnitHr));
       let v, why, note = "";
       if(!hr){
-        v = "ask"; why = "하루 입·출고량이 있어야 필요 대수를 낼 수 있습니다.";
+        v = "ask"; why = "월 물동량이 있어야 필요 대수를 낼 수 있습니다.";
       } else if(d.build === "existing"){
         v = "fit";
         why = "기존 건물이라 컨베이어 고정 설치가 어렵습니다. 무인이송은 바닥 공사 없이 도입해 단계적으로 대수를 늘릴 수 있습니다.";
@@ -2172,7 +2168,7 @@ const Engine = {
     (()=>{
       let v, why, note = "";
       if(!hr){
-        v = "ask"; why = "하루 입·출고량이 있어야 적용 구간을 판단할 수 있습니다.";
+        v = "ask"; why = "월 물동량이 있어야 적용 구간을 판단할 수 있습니다.";
       } else if(hr >= 30 && d.build !== "existing"){
         v = "fit";  why = `시간당 ${fmt(hr)} PLT의 연속 흐름이고 신축이라 경로를 고정할 수 있습니다. 컨베이어가 가장 저렴하고 안정적입니다.`;
       } else if(hr >= 30){
@@ -2203,7 +2199,7 @@ const Engine = {
       let v, why;
       const note = "차량·트레일러 규격이 표준화돼 있는지, 도크 높이와 레벨러 상태가 어떤지 확인해야 판정이 확정됩니다. 불특정 외부 차량이 수시로 들어오면 적용성이 크게 떨어집니다.";
       if(!trucks){
-        v = "ask"; why = "하루 입·출고량이 있어야 차량 대수를 추정할 수 있습니다.";
+        v = "ask"; why = "월 물동량이 있어야 차량 대수를 추정할 수 있습니다.";
       } else if(trucks >= 12){
         v = "cond"; why = `하루 약 ${trucks}대 규모입니다. 상하차가 병목이라면 자동화 효과가 크지만, 전용 차량 운영이 전제입니다.`;
       } else {
@@ -2371,9 +2367,10 @@ function collect(){
   d.build=$("#f_build").value;
   d.area=+$("#f_area").value||0;
   d.height=+$("#f_height").value||0;
-  d.inDay=+$("#f_inDay").value||0;
-  d.outDay=+$("#f_outDay").value||0;
-  d.volume=+$("#f_volume").value||0;       // 일 입출고 미입력 시 폴백
+  /* v3: 월 물동량 한 칸 + 입·출고 비율(선택). 일 입출고 칸은 없앴다. */
+  d.inDay=0; d.outDay=0;
+  d.volume=+$("#f_volume").value||0;
+  d.inRatio=+$("#f_ioRatio").value||50;
   d.palletW=Number($("#f_palletW").value)||0;
   d.palletL=Number($("#f_palletL").value)||0;
   d.cells=Number($("#f_cells")?$("#f_cells").value:0)||0;
@@ -2957,7 +2954,7 @@ function renderResult(){
           <div class="l">취급량</div>
           <div class="v">${fmt(tp.perDay)}<small>PL/일</small></div><span class="sep">·</span>
           <div class="v" style="color:var(--accent-2)">${fmt(tp.perHr)}<small>PL/h</small></div>
-          <div class="sub">${tp.split?`입 ${fmt(d.inDay)} + 출 ${fmt(d.outDay)}`:`월 ${fmt(roi.volMonth)} ÷ ${tp.workDays}일`} · ${tp.opHours}h</div>
+          <div class="sub">월 ${fmt(roi.volMonth)} ÷ ${tp.workDays}일 · 입${tp.inRatio}:출${100-tp.inRatio} · ${tp.opHours}h</div>
         </div>
       </div>
       <div class="note">'공간 최대 수용'은 면적·층고를 가득 채울 때의 한도입니다. '권장 구축 규모'는 ① 현 재고(재고×1.2)와 ② 월 물동량(×보관일수)을 각각 환산한 값으로, 재고 입력 시 재고 기준을, 없으면 물동량 기준을 재무계산에 적용합니다(✓ 표시). 둘 다 면적 한도 내 개략값이며 Bay×(앞+뒤Deep)×Tier 설계·시뮬레이션으로 확정합니다.</div>
@@ -2966,9 +2963,11 @@ function renderResult(){
     ${cappedWarn}
 
     <div class="card">
-      <div class="h mono">제안 가능 범위<span class="ln"></span></div>
+      <div class="h mono obj-toggle" onclick="toggleCardPanel(this)" style="cursor:pointer">제안 가능 범위<span class="ln"></span><span class="obj-caret mono">▼</span></div>
+      <div class="roi-panel tall"><div class="roi-panel-inner">
       <div class="scope-list">${scopeRows}</div>
       <div class="note">각 항목을 누르면 판정 근거와 개략 구성을 봅니다. <b>'확인 필요'</b>는 판단할 정보가 아직 없다는 뜻이며, 무엇을 받아야 하는지 함께 적어 두었습니다. 아래 3D는 이 판정과 연동됩니다 — <b>부적합 영역은 화면에도 나오지 않습니다.</b></div>
+      </div></div>
     </div>
 
     <div class="solu">
@@ -3131,7 +3130,7 @@ function copySummary(d,est,tp,sys,roi){
      init/reset/togglePlay/stop/fitView, renderResult가 reset 호출)
    ============================================================ */
 const SIM2D = {
-  inited:false, speed:1, cv:null, ctx:null, off:null, offCtx:null,
+  inited:false, cv:null, ctx:null, off:null, offCtx:null,
   yaw:-0.52, scale:1, panX:0, panY:0, dpr:1, W:0, H:0,
   scene:null, playing:false, raf:0, t0:0, io:null,
 
@@ -3500,7 +3499,7 @@ const SIM2D = {
     if(btn){ btn.classList.add("on"); btn.textContent="⏸ 정지"; }
     const loop=now=>{
       if(!this.playing) return;
-      this.drawFrame(((now-this.t0)/1000*(this.speed||1))%8);   // 8초 루프
+      this.drawFrame(((now-this.t0)/1000)%8);   // 8초 루프
       this.raf=requestAnimationFrame(loop);
     };
     this.raf=requestAnimationFrame(loop);
@@ -3548,7 +3547,7 @@ const SIM2D = {
    [SIM3D-GL] three.js WebGL 렌더러 — 실사풍 자동창고
    ============================================================ */
 const GL3D = {
-  THREE:null, inited:false, speed:1, cinema:false, concept:false, freeCam:null,
+  THREE:null, inited:false, cinema:false, concept:false, freeCam:null,
   renderer:null, scene:null, camera:null, canvas:null,
   target:null, sph:{theta:-0.6, phi:1.02, r:40}, vel:{t:0,p:0},
   raf:0, playing:false, animT:0, lastNow:0, needsRender:false, io:null,
@@ -4878,7 +4877,7 @@ const GL3D = {
     if(btn){ btn.classList.add("on"); btn.textContent="⏸ 정지"; }
     const loop=now=>{
       if(!this.playing) return;
-      const dt=Math.min(0.1,(now-this.lastNow)/1000)*(this.speed||1);
+      const dt=Math.min(0.1,(now-this.lastNow)/1000);
       this.lastNow=now;
       if(this.concept){
         this.animT=(this.animT+dt)%this.CLOOP;
@@ -5332,16 +5331,6 @@ const SIM3D = {
     if(b){ b.textContent="🎬 영상 모드"; b.classList.remove("on"); }
   },
 
-  /* 재생 속도 0.5× → 1× → 2× 순환 (설명용 저속 / 개요용 고속) */
-  cycleSpeed(){
-    const SP=[0.5,1,2];
-    const cur=(this.engine&&this.engine.speed)||1;
-    const next=SP[(SP.indexOf(cur)+1)%SP.length];
-    if(this.engine) this.engine.speed=next;
-    const b=document.getElementById("simSpeed");
-    if(b){ b.textContent="속도 "+next+"×"; b.classList.toggle("on", next!==1); }
-  },
-
   /* ---------- 전체화면 ---------- */
   full:false,
   resize(){
@@ -5640,20 +5629,19 @@ $("#f_temp").addEventListener("click",e=>{
   $$("#f_temp .chip").forEach(x=>x.classList.remove("on"));
   c.classList.add("on"); STATE.data.temp=c.dataset.v;
 });
-/* 하루 입·출고 → 시간당 취급량 실시간 표시 */
+/* 월 물동량 + 입·출고 비율 → 일·시간당 취급량 실시간 표시 */
 function flowLiveCalc(){
-  const i=+$("#f_inDay").value||0, o=+$("#f_outDay").value||0, el=$("#flowLive");
+  const v=+$("#f_volume").value||0, r=(+$("#f_ioRatio").value||50)/100, el=$("#flowLive");
   if(!el) return;
-  if(i+o<=0){
-    el.innerHTML='운영 기준 <b>주 6일 · 1일 8시간</b>. 시간당 취급량 = (입고 + 출고) ÷ 8 → 설비 대수 산정의 기준입니다.';
+  if(v<=0){
+    el.innerHTML='입·출고 합산 월간 파렛트 수. 운영 기준 <b>주 6일(월 26일) · 1일 8시간</b> → 시간당 취급량이 설비 대수 산정의 기준입니다.';
     return;
   }
-  const day=i+o, hr=Math.round(day/CONFIG.OP_HOURS);
+  const day=Math.round(v/CONFIG.WORK_DAYS_MONTH), hr=Math.round(day/CONFIG.OP_HOURS);
   el.innerHTML=`일 취급 <b>${fmt(day)} PL</b> → 시간당 <b>${fmt(hr)} PL/h</b> `
-             + `(입고 ${(i/CONFIG.OP_HOURS).toFixed(1)} + 출고 ${(o/CONFIG.OP_HOURS).toFixed(1)}) · `
-             + `월 환산 ${fmt(day*CONFIG.WORK_DAYS_MONTH)} PLT`;
+             + `(입고 ${(day*r/CONFIG.OP_HOURS).toFixed(1)} + 출고 ${(day*(1-r)/CONFIG.OP_HOURS).toFixed(1)})`;
 }
-["f_inDay","f_outDay"].forEach(id=>$("#"+id).addEventListener("input",flowLiveCalc));
+["f_volume","f_ioRatio"].forEach(id=>{ const e=$("#"+id); e.addEventListener("input",flowLiveCalc); e.addEventListener("change",flowLiveCalc); });
 
 /* 초동 질문 목록 — 누르면 해당 입력칸으로 이동·포커스 */
 function focusField(id){
@@ -5982,7 +5970,7 @@ if("serviceWorker" in navigator){
   });
 }
 </script>
-<script src="./simulation.js?v=0906.5"></script>
-<script src="./higgsfield.js?v=0911.4"></script>
+<script src="./simulation.js?v=3.0.3"></script>
+<script src="./higgsfield.js?v=3.0.3"></script>
 </body>
 </html>
