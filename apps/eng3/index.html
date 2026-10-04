@@ -223,6 +223,8 @@ a.btn{text-decoration:none}
 .stat .v2 .r.on b{color:var(--accent-2)}
 /* 추천 시스템 카드 — 아랫부분 더보기 */
 .scope-list .solu{margin:0 0 4px}
+.req-toggle{display:flex;align-items:center;gap:6px;margin:16px 0 8px;cursor:pointer}
+.req-toggle .obj-caret{margin-left:auto}
 .solu .body.fold{display:none}
 .solu .body.fold.show{display:block}
 .solu .more{display:block;width:100%;padding:11px;background:none;border:none;border-top:1px solid var(--line);color:var(--accent);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
@@ -507,7 +509,7 @@ body.fs-lock{overflow:hidden}
   .app{box-shadow:0 0 60px rgba(12,68,124,.10)}
 }
 </style>
-<link rel="stylesheet" href="./simulation.css?v=3.0.5">
+<link rel="stylesheet" href="./simulation.css?v=3.0.7">
 </head>
 <body>
 <div class="app">
@@ -516,7 +518,7 @@ body.fs-lock{overflow:hidden}
   <div class="topbar">
     <div class="brand">
       <span class="logo mono"><b>TSPG</b> · LOGISALL ENG</span>
-      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1005.5</span>
+      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1005.6</span>
     </div>
     <div class="prog" id="prog"></div>
   </div>
@@ -1974,8 +1976,9 @@ const Engine = {
     // 입·출고를 나눠 넣지 않았으면 절반씩으로 가정(리프트·스테이션 방향 참고용)
     // 일 입출고를 나눠 넣지 않았으면 입·출고 비율(기본 50:50)로 나눈다
     const r      = (d.inRatio>0 && d.inRatio<100) ? d.inRatio/100 : 0.5;
-    const inHr   = +( (split ? inDay  : perDay*r)     / H ).toFixed(1);
-    const outHr  = +( (split ? outDay : perDay*(1-r)) / H ).toFixed(1);
+    // 시간당 취급(perHr)을 비율로 나눈다 — 입+출이 표시되는 시간당 취급과 정확히 같게
+    const inHr   = split ? +(inDay/H).toFixed(1) : +(perHr*r).toFixed(1);
+    const outHr  = split ? +(outDay/H).toFixed(1) : +(perHr - inHr).toFixed(1);
     // 보관수요 환산에 쓰는 월 물동량 — 일 입출고를 넣었으면 그 값을 월로 환산
     const volMonth = split ? perDay * DM : (d.volume||0);
     return { perDay, perHr, inHr, outHr, split, volMonth, opHours:H, workDays:DM, inRatio:Math.round(r*100) };
@@ -3050,13 +3053,15 @@ function renderResult(){
 
     <div class="card">
       <div class="h mono obj-toggle" onclick="toggleCardPanel(this)" style="cursor:pointer">솔루션 1차 제안 / 상세 제안<span class="ln"></span><span class="obj-caret mono">▼</span></div>
-      <div class="roi-panel">
+      <div class="roi-panel tall">
         <div class="roi-panel-inner">
           <div class="cg-title" style="margin-bottom:8px">지금 이 화면으로 드릴 수 있는 것 <span class="cg-sub">1차 개념 제안</span></div>
           ${["자동화 적용 가능 여부","설비 종류와 기본 구성","개략 보관량 · 적재 단수 · 시간당 취급량","개념 레이아웃과 3D 배치"]
               .map(t=>`<div class="ipt"><span class="ck">✓</span><span>${t}</span></div>`).join("")}
-          <div class="cg-title" style="margin:16px 0 8px">확정 견적에 추가로 필요한 자료 <span class="cg-sub">상세 제안 · ${DETAIL_REQ.length}항목</span></div>
+          <div class="cg-title obj-toggle req-toggle" onclick="toggleCardPanel(this)">확정 견적에 추가로 필요한 자료 <span class="cg-sub">상세 제안 · ${DETAIL_REQ.length}항목</span><span class="obj-caret mono">▼</span></div>
+          <div class="roi-panel"><div class="roi-panel-inner">
           ${DETAIL_REQ.map(([t,w],i)=>`<div class="stage"><div class="sg-n">${String(i+1).padStart(2,"0")}</div><div><div class="sg-t">${t}</div><div class="sg-d">${w}</div></div></div>`).join("")}
+          </div></div>
           <div class="result-actions" style="margin-top:10px">
             <button class="btn soft wide" style="flex:1 1 100%" onclick="openReqSheet()">📋 솔루션 1차 확인 및 필요자료 요청</button>
           </div>
@@ -5420,8 +5425,9 @@ function flowLiveCalc(){
     return;
   }
   const day=Math.round(v/CONFIG.WORK_DAYS_MONTH), hr=Math.round(day/CONFIG.OP_HOURS);
+  const ih=+(hr*r).toFixed(1), oh=+(hr-ih).toFixed(1), pc=Math.round(r*100);
   el.innerHTML=`일 취급 <b>${fmt(day)} PL</b> → 시간당 <b>${fmt(hr)} PL/h</b> `
-             + `(입고 ${(day*r/CONFIG.OP_HOURS).toFixed(1)} + 출고 ${(day*(1-r)/CONFIG.OP_HOURS).toFixed(1)})`;
+             + `= 입고 ${ih} PL/h (${pc}%) + 출고 ${oh} PL/h (${100-pc}%)`;
 }
 /* 입·출고 비율 — 한쪽을 고치면 다른 쪽이 100 에서 뺀 값으로 따라간다 */
 function syncPct(from){
@@ -5833,7 +5839,7 @@ if("serviceWorker" in navigator){
   });
 }
 </script>
-<script src="./simulation.js?v=3.0.6"></script>
-<script src="./higgsfield.js?v=3.0.4"></script>
+<script src="./simulation.js?v=3.0.7"></script>
+<script src="./higgsfield.js?v=3.0.7"></script>
 </body>
 </html>

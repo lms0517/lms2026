@@ -9,7 +9,8 @@
   GL3D.fitView=function(){
     if(!this.higgsfieldScene)return fit.call(this);
     this.center.copy(this.homeCenter);this.sph.theta=-2.43;this.sph.phi=1.06;
-    this.sph.r=this.fitRadius(this.bbox,this.sph.theta,this.sph.phi,this.camera.aspect);
+    // 바닥 판 가장자리까지 넣으면 랙이 작게 보인다 — 랙이 화면을 꽉 채우도록 0.78 배로 당긴다
+    this.sph.r=this.fitRadius(this.bbox,this.sph.theta,this.sph.phi,this.camera.aspect)*0.78;
     this.vel.t=this.vel.p=0;this.render();
   };
   GL3D.applyCam=function(){cam.call(this);if(this.higgsfieldScene&&this.scene?.fog){this.scene.fog.near=this.camera.far*.85;this.scene.fog.far=this.camera.far;}};

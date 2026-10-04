@@ -15,10 +15,10 @@
     const L=window.roi_data.layout,d=window.d_data||STATE.data,tp=Engine.throughput(d);
     const occupied=d.stock>0?Math.min(L.cellsBuilt,Math.round(d.stock)):Math.round(L.cellsBuilt*.85);
     inner.insertAdjacentHTML('afterbegin',`<div class="sim-kpis">
-      <div class="sim-kpi"><span>구축 규모 · 계산 결과 연동</span><b>${fmt(L.cellsBuilt)} 셀</b><small>${L.aisles}통로 · ${L.bay}Bay · ${L.tier}단</small></div>
-      <div class="sim-kpi"><span>랙 외곽 치수</span><b>${L.rackW.toFixed(1)} × ${(L.footD-6).toFixed(1)} m</b><small>랙 높이 ${L.rackH.toFixed(1)}m · 입력 층고 ${d.height}m</small></div>
-      <div class="sim-kpi"><span>${d.stock>0?'현재 보관 화물':'보관 화물 · 재고 미입력(85% 예시)'}</span><b>${fmt(occupied)} 매</b><small>${(occupied/L.cellsBuilt*100).toFixed(1)}% 점유${d.stock>L.cellsBuilt?' · 공간 초과 '+fmt(d.stock-L.cellsBuilt)+'매':''}</small></div>
-      <div class="sim-kpi"><span>시간당 필요 처리량 · 입력 기준</span><b>${fmt(tp.perHr)} PLT/h</b><small>입 ${tp.inHr} · 출 ${tp.outHr} (입${tp.inRatio}:출${100-tp.inRatio}) · ${tp.opHours}시간 운영</small></div></div>`);
+      <div class="sim-kpi"><span>구축 규모</span><b>${fmt(L.cellsBuilt)} 셀</b><small>${L.aisles}통로 · ${L.bay}Bay · ${L.tier}단</small></div>
+      <div class="sim-kpi"><span>랙 외곽 치수</span><b>${L.rackW.toFixed(1)} × ${(L.footD-6).toFixed(1)} m</b><small>랙 높이 ${L.rackH.toFixed(1)}m · 층고 ${d.height}m</small></div>
+      <div class="sim-kpi"><span>${d.stock>0?'현재 보관 화물':'보관 화물 (85% 예시)'}</span><b>${fmt(occupied)} 매</b><small>${(occupied/L.cellsBuilt*100).toFixed(1)}% 점유${d.stock>L.cellsBuilt?' · 공간 초과 '+fmt(d.stock-L.cellsBuilt)+'매':''}</small></div>
+      <div class="sim-kpi"><span>시간당 처리량</span><b>${fmt(tp.perHr)} PLT/h</b><small>입 ${tp.inHr} · 출 ${tp.outHr} (${tp.inRatio}:${100-tp.inRatio})</small></div></div>`);
     const wrap=inner.querySelector('.sim-wrap');
     wrap.insertAdjacentHTML('beforeend','<div class="sim-live" id="simLive"><b>배치 준비 중</b><span>입력한 규모로 장면을 생성합니다.</span></div>');
     const controls=document.createElement('div');controls.className='sim-controls';
