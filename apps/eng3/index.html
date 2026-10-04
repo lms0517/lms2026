@@ -169,7 +169,21 @@ a.btn{text-decoration:none}
 .pal-size input:focus{outline:none}
 .pal-size .x{color:var(--muted);font-weight:700}
 .pal-size .u{color:var(--muted);font-size:12px}
-.flow-row select{width:100%}
+.pal-row{display:grid;grid-template-columns:1.55fr 1fr 1fr;gap:8px;margin-bottom:6px}
+.pal-row label small{font-weight:400;color:var(--muted);font-size:11px;margin-left:2px}
+.pal-row input{padding-left:10px;padding-right:8px;text-align:center}
+.pal-row .pal-size{padding:0 6px;gap:2px}
+.io-ratio{display:flex;align-items:center;gap:4px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel);box-shadow:var(--inset);padding:0 10px;transition:.15s}
+.io-ratio:focus-within{border-color:var(--accent);background:var(--panel-2);box-shadow:0 0 0 3px rgba(12,68,124,.12)}
+.io-ratio input{flex:1;min-width:0;border:none!important;background:transparent!important;box-shadow:none!important;padding:13px 2px!important;text-align:center}
+.io-ratio input:focus{outline:none}
+.io-ratio .t{color:var(--ink-soft);font-size:13px;font-weight:600}
+.io-ratio .c,.io-ratio .u{color:var(--muted);font-weight:700}
+.io-ratio .u{font-size:12px}
+.pal-row input::-webkit-inner-spin-button,.pal-row input::-webkit-outer-spin-button,
+.io-ratio input::-webkit-inner-spin-button,.io-ratio input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.pal-row input,.io-ratio input{-moz-appearance:textfield;appearance:textfield}
+
 .duo{padding:12px}
 .duo-heads{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .duo-h{display:flex;align-items:center;gap:7px;width:100%;font-family:inherit;text-align:left;cursor:pointer;
@@ -496,7 +510,7 @@ body.fs-lock{overflow:hidden}
   <div class="topbar">
     <div class="brand">
       <span class="logo mono"><b>TSPG</b> · LOGISALL ENG</span>
-      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1004.4</span>
+      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1004.5</span>
     </div>
     <div class="prog" id="prog"></div>
   </div>
@@ -649,41 +663,33 @@ body.fs-lock{overflow:hidden}
           </div>
         </div>
         <div class="field">
-          <label>입·출고 비율 <span style="font-weight:400;color:var(--muted);font-size:11px">선택</span></label>
-          <select id="f_ioRatio">
-            <option value="50" selected>입 50 : 출 50</option>
-            <option value="60">입 60 : 출 40</option>
-            <option value="70">입 70 : 출 30</option>
-            <option value="40">입 40 : 출 60</option>
-            <option value="30">입 30 : 출 70</option>
-          </select>
+          <label>입·출고 비율 <span style="font-weight:400;color:var(--muted);font-size:11px">기본 50:50</span></label>
+          <div class="io-ratio">
+            <span class="t">입</span><input type="number" id="f_inPct" value="50" min="0" max="100" inputmode="numeric" aria-label="입고 비율(%)">
+            <span class="c">:</span>
+            <span class="t">출</span><input type="number" id="f_outPct" value="50" min="0" max="100" inputmode="numeric" aria-label="출고 비율(%)">
+            <span class="u mono">%</span>
+          </div>
         </div>
       </div>
       <div class="hint" id="flowLive" style="margin-bottom:18px">입·출고 합산 월간 파렛트 수. 운영 기준 <b>주 6일(월 26일) · 1일 8시간</b> → 시간당 취급량이 설비 대수 산정의 기준입니다.</div>
 
-      <div class="field" style="margin-bottom:12px">
-        <label>파렛트 규격</label>
-        <div class="pal-size">
-          <input type="number" id="f_palletW" placeholder="가로 1100" inputmode="numeric" step="10" aria-label="파렛트 가로(mm)">
-          <span class="x">×</span>
-          <input type="number" id="f_palletL" placeholder="세로 1100" inputmode="numeric" step="10" aria-label="파렛트 세로(mm)">
-          <span class="u mono">mm</span>
-        </div>
-      </div>
-      <div class="row2">
+      <div class="pal-row">
         <div class="field">
-          <label>적재 최대높이</label>
-          <div class="suffix">
-            <input type="number" id="f_palletH" placeholder="예: 1.8" inputmode="decimal" step="0.1">
-            <span class="u mono">m</span>
+          <label>파렛트 규격 <small>mm</small></label>
+          <div class="pal-size">
+            <input type="number" id="f_palletW" placeholder="1100" inputmode="numeric" step="10" aria-label="파렛트 가로(mm)">
+            <span class="x">×</span>
+            <input type="number" id="f_palletL" placeholder="1100" inputmode="numeric" step="10" aria-label="파렛트 세로(mm)">
           </div>
         </div>
         <div class="field">
-          <label>파렛트당 최대중량</label>
-          <div class="suffix">
-            <input type="number" id="f_palletKg" placeholder="예: 1000" inputmode="numeric">
-            <span class="u mono">kg</span>
-          </div>
+          <label>적재높이 <small>m</small></label>
+          <input type="number" id="f_palletH" placeholder="1.8" inputmode="decimal" step="0.1">
+        </div>
+        <div class="field">
+          <label>최대중량 <small>kg</small></label>
+          <input type="number" id="f_palletKg" placeholder="1000" inputmode="numeric">
         </div>
       </div>
       <div class="hint" style="margin-bottom:18px">화물을 포함한 파렛트 1매 기준. 적재높이는 단수 계산(미입력 시 1.8m), 중량은 셔틀 적재능력(1.5t) 대비 판정에 사용합니다.</div>
@@ -2366,7 +2372,8 @@ function collect(){
   /* v3: 월 물동량 한 칸 + 입·출고 비율(선택). 일 입출고 칸은 없앴다. */
   d.inDay=0; d.outDay=0;
   d.volume=+$("#f_volume").value||0;
-  d.inRatio=+$("#f_ioRatio").value||50;
+  const ip=Number($("#f_inPct").value);
+  d.inRatio=(ip>0&&ip<100)?ip:50;
   d.palletW=Number($("#f_palletW").value)||0;
   d.palletL=Number($("#f_palletL").value)||0;
   d.cells=Number($("#f_cells")?$("#f_cells").value:0)||0;
@@ -5412,7 +5419,7 @@ $("#f_temp").addEventListener("click",e=>{
 });
 /* 월 물동량 + 입·출고 비율 → 일·시간당 취급량 실시간 표시 */
 function flowLiveCalc(){
-  const v=+$("#f_volume").value||0, r=(+$("#f_ioRatio").value||50)/100, el=$("#flowLive");
+  const ip=Number($("#f_inPct").value), v=+$("#f_volume").value||0, r=((ip>0&&ip<100)?ip:50)/100, el=$("#flowLive");
   if(!el) return;
   if(v<=0){
     el.innerHTML='입·출고 합산 월간 파렛트 수. 운영 기준 <b>주 6일(월 26일) · 1일 8시간</b> → 시간당 취급량이 설비 대수 산정의 기준입니다.';
@@ -5422,7 +5429,19 @@ function flowLiveCalc(){
   el.innerHTML=`일 취급 <b>${fmt(day)} PL</b> → 시간당 <b>${fmt(hr)} PL/h</b> `
              + `(입고 ${(day*r/CONFIG.OP_HOURS).toFixed(1)} + 출고 ${(day*(1-r)/CONFIG.OP_HOURS).toFixed(1)})`;
 }
-["f_volume","f_ioRatio"].forEach(id=>{ const e=$("#"+id); e.addEventListener("input",flowLiveCalc); e.addEventListener("change",flowLiveCalc); });
+/* 입·출고 비율 — 한쪽을 고치면 다른 쪽이 100 에서 뺀 값으로 따라간다 */
+function syncPct(from){
+  const a=$(from==="in"?"#f_inPct":"#f_outPct"), o=$(from==="in"?"#f_outPct":"#f_inPct");
+  let v=Math.round(Number(a.value));
+  if(a.value===""||!isFinite(v)) return;
+  v=Math.max(0,Math.min(100,v));
+  if(String(v)!==a.value) a.value=v;
+  o.value=100-v;
+  flowLiveCalc();
+}
+$("#f_inPct").addEventListener("input",()=>syncPct("in"));
+$("#f_outPct").addEventListener("input",()=>syncPct("out"));
+$("#f_volume").addEventListener("input",flowLiveCalc);
 
 /* 초동 질문 목록 — 누르면 해당 입력칸으로 이동·포커스 */
 function focusField(id){
