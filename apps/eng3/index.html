@@ -516,7 +516,7 @@ body.fs-lock{overflow:hidden}
   <div class="topbar">
     <div class="brand">
       <span class="logo mono"><b>TSPG</b> · LOGISALL ENG</span>
-      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1005.4</span>
+      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1005.5</span>
     </div>
     <div class="prog" id="prog"></div>
   </div>
@@ -2089,7 +2089,8 @@ const Engine = {
       tp, volMonth:vol,
       conventionalPyeong: Math.round(conventionalM2/CONFIG.PYEONG_M2),
       autoPyeong:         Math.round(autoM2/CONFIG.PYEONG_M2),
-      stockUsed: stock
+      stockUsed: stock,
+      demandFromStock, demandFromVolume    // 면적 한도로 자르지 않은 필요 규모(참고)
     };
   },
 
@@ -2872,12 +2873,10 @@ function renderResult(){
 
   // 권장 구축 규모: 재고 기반 / 물동량 기반 각각 표시 (재무계산 적용 기준은 ✓ + 강조)
   const tapHint = `<span style="font-size:9px;color:var(--accent-2);font-family:'IBM Plex Mono',monospace;display:block;margin-top:2px">탭 → 계산 근거 ▼</span>`;
-  const targetTiles = `<div class="stat two calc-tap" onclick="showTargetModal()" style="cursor:pointer">
-         <div class="l">권장 규모 ${tapHint}</div>
-         <div class="v2">
-           <div class="r${roi.targetDriver==='stock'?' on':''}"><b>${roi.targetFromStock?fmt(roi.targetFromStock):'—'}<small>셀</small></b><span>재고 기반 규모 ${d.stock?'('+fmt(d.stock)+'×1.2)':'(재고 미입력)'}</span></div>
-           <div class="r${roi.targetDriver==='volume'?' on':''}"><b>${roi.targetFromVolume?fmt(roi.targetFromVolume):'—'}<small>셀</small></b><span>물동량 기반 규모 (월 ${fmt(roi.volMonth)}×${roi.storeDays}일)</span></div>
-         </div>
+  const targetTiles = `<div class="stat hl calc-tap" onclick="showTargetModal()" style="cursor:pointer">
+         <div class="l">권장 구축 규모 ${tapHint}</div>
+         <div class="v">${fmt(roi.targetCells)}<small>Cells</small></div>
+         <div class="sub">${est.tiers}단 · 3D·투자비 기준<br>필요 · 재고 ${roi.demandFromStock?fmt(roi.demandFromStock):'—'} · 물동량 ${roi.demandFromVolume?fmt(roi.demandFromVolume):'—'}셀</div>
        </div>`;
 
   /* ── [v2] 공간 부족 경고 — 권장 규모가 현 재고보다 작아지는 경우 ── */
@@ -2970,7 +2969,7 @@ function renderResult(){
           <div class="sub">월 ${fmt(roi.volMonth)} ÷ ${tp.workDays}일 · 입${tp.inRatio}:출${100-tp.inRatio} · ${tp.opHours}h</div>
         </div>
       </div>
-      <div class="note">'공간 최대 수용'은 면적·층고를 가득 채울 때의 한도입니다. '권장 구축 규모'는 ① 현 재고(재고×1.2)와 ② 월 물동량(×보관일수)을 각각 환산한 값으로, 재고 입력 시 재고 기준을, 없으면 물동량 기준을 재무계산에 적용합니다(✓ 표시). 둘 다 면적 한도 내 개략값이며 Bay×(앞+뒤Deep)×Tier 설계·시뮬레이션으로 확정합니다.</div>
+      <div class="note">'공간 최대 수용'은 면적·층고를 가득 채울 때의 한도입니다. '권장 구축 규모'는 공간 최대 수용에서 입출고 스테이션·벽 이격 공간을 뺀 실제 구축 셀 수로, 3D 배치와 투자비가 이 수로 계산됩니다. 재고·물동량 기반 값은 필요 규모 참고치이며, 모두 개략값으로 Bay×(앞+뒤Deep)×Tier 설계·시뮬레이션으로 확정합니다.</div>
     </div>
 
     ${cappedWarn}
@@ -5742,15 +5741,12 @@ function showTargetModal(){
   const cap = Math.round(est.cells * br);
   const tc  = roi.targetCells;
 
-  // 어떤 값이 최종 결정에 쓰였는지 판단
-  let driver='';
-  if(dS && dS<=cap){
-    driver='현 재고 기반 (stock × 1.2)';
-  } else if(dV && dV<=cap){
-    driver='물동량 기반 (월 물동량 × 보관일수)';
-  } else {
-    driver='면적 기반 최대치 (est.cells × 랙 블록 비율)';
-  }
+  /* v3: 구축 규모는 항상 면적 한도(①). 재고(②)·물동량(③)은 필요 규모 참고치.
+     ①이 ②·③보다 작으면 공간 부족, 크면 여유를 알려 준다. */
+  const need = Math.max(dS, dV);
+  const driver = need===0 ? '면적 한도(①) — 재고·물동량 미입력'
+    : need > tc ? `면적 한도(①) — 필요 규모 ${fmt(need)}셀보다 ${fmt(need-tc)}셀 부족`
+    : `면적 한도(①) — 필요 규모 ${fmt(need)}셀 대비 ${fmt(tc-need)}셀 여유`;
 
   const box = document.getElementById('calcModalBox');
   box.innerHTML = `
@@ -5795,9 +5791,9 @@ function showTargetModal(){
     <div class="cs">
       <span class="cs-num">④</span>
       <div class="cs-body">
-        <div class="cs-expr">최종 결정 로직</div>
-        <div class="cs-desc">재고 기반(②) → 물동량 기반(③) → 면적 한도(①) 우선순위</div>
-        <div class="cs-desc" style="margin-top:2px">단, 항상 면적 한도(①) 이하로 제한 · 최소 100셀 보장</div>
+        <div class="cs-expr">최종 결정</div>
+        <div class="cs-desc">구축 규모 = 면적 한도(①)를 Bay 단위 격자로 배치한 셀 수 · 최소 100셀</div>
+        <div class="cs-desc" style="margin-top:2px">재고(②)·물동량(③)은 필요 규모 비교용 참고치</div>
         <div class="cs-desc" style="margin-top:4px;color:var(--accent-2)"><b>이번 계산: ${driver}</b></div>
       </div>
       <span class="cs-result">${fmt(tc)}셀</span>
@@ -5813,7 +5809,7 @@ function showTargetModal(){
       <div class="const-item"><span class="ck">랙 블록 비율</span><span class="cv">${br}</span><span class="cd">기하 계산 — 스테이션 존 ${CONFIG.STATION_ZONE_M}m · 이격 ${CONFIG.CLEARANCE_M}m · 기존 건물 ×${CONFIG.BUILD_LOSS.existing}</span></div>
       <div class="const-item"><span class="ck">평균 보관일수</span><span class="cv">${storeDays}일</span><span class="cd">${d.storeDays>0?'STEP1 입력값':'미입력 → 기본 '+CONFIG.DEFAULT_AVG_STORE_DAYS+'일'}</span></div>
     </div>
-    <div style="font-size:10.5px;color:var(--muted);margin-top:12px;line-height:1.6">재고를 직접 입력하면 ②번 기준이 적용되어 더 정확해집니다. 정밀 셀 계산 모드(Bay×Deep×Tier)를 켜면 입력값이 그대로 구축 규모로 반영됩니다.</div>
+    <div style="font-size:10.5px;color:var(--muted);margin-top:12px;line-height:1.6">재고·물동량을 넣으면 ②·③과 비교해 공간이 남는지 모자라는지 확인할 수 있습니다. 확정 규모는 Bay×Deep×Tier 상세 설계로 정합니다.</div>
     <button class="cm-close-btn" onclick="document.getElementById('calcModal').classList.remove('show')">닫기</button>
   `;
   document.getElementById('calcModal').classList.add('show');
