@@ -551,7 +551,7 @@ body.fs-lock{overflow:hidden}
   <div class="topbar">
     <div class="brand">
       <span class="logo mono"><b>TSPG</b> · LOGISALL ENG</span>
-      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1006.6</span>
+      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1006.7</span>
     </div>
     <div class="prog" id="prog"></div>
   </div>
@@ -2678,10 +2678,31 @@ function shareMenu(key){
     <button class="cm-close-btn" onclick="document.getElementById('objModal').classList.remove('show')">닫기</button>`;
   document.getElementById('objModal').classList.add('show');
 }
+/* QR 은 앱 주소 + ?doc=키 — 찍으면 앱이 열리면서 소개서 PDF 를 바로 내려받는다 */
+function docDlLink(key){ const u=new URL(location.href); u.search=""; u.hash=""; return u.href+"?doc="+key; }
+const DOC_DL_NAME = { logisall:"LOGISALL_Company_Intro_2026.pdf", tspg:"TSPG_Company_Intro.pdf" };   // 한글 파일명은 일부 브라우저가 버림
+function downloadDoc(key){
+  const doc=DOCS[key]; if(!doc) return;
+  const a=document.createElement("a"); a.href=new URL(doc.url, location.href).href; a.download=DOC_DL_NAME[key]||"Company_Intro.pdf";
+  document.body.appendChild(a); a.click(); a.remove();
+  toast(`${doc.label} 내려받는 중…`);
+}
+function applyDocLink(){
+  const key=new URLSearchParams(location.search).get("doc"); const doc=key&&DOCS[key]; if(!doc) return;
+  const box=document.getElementById('objModalBox');
+  box.innerHTML=`
+    <div class="cm-title">${doc.label}</div>
+    <div class="cm-sub mono">// 소개서 PDF 가 내려받아집니다 — 안 받아지면 아래 버튼을 누르세요</div>
+    <button class="btn primary" style="width:100%;margin-top:6px" onclick="downloadDoc('${key}')">📥 ${doc.label} 내려받기 (PDF)</button>
+    <button class="doc-btn view" style="width:100%;margin-top:8px;justify-content:center" onclick="document.getElementById('objModal').classList.remove('show');viewDoc('${key}')">앱에서 바로 보기</button>
+    <button class="cm-close-btn" onclick="document.getElementById('objModal').classList.remove('show')">닫기</button>`;
+  document.getElementById('objModal').classList.add('show');
+  try{ downloadDoc(key); }catch(_){}
+}
 function shareQR(key){
-  const url = docUrl(key), box = document.getElementById('shareQRBox'); if(!box) return;
+  const url = docDlLink(key), box = document.getElementById('shareQRBox'); if(!box) return;
   box.innerHTML = `<div class="share-qr"><canvas id="shareQRCv" width="220" height="220"></canvas>
-    <div class="u">${DOCS[key].title} · 카메라로 찍으면 바로 열립니다</div>
+    <div class="u">${DOCS[key].title} · 카메라로 찍으면 PDF 가 내려받아집니다</div>
     <button class="doc-btn view" onclick="copyText('${url}','소개서 링크가 복사되었습니다')">링크 복사</button></div>`;
   if(!drawQR(document.getElementById('shareQRCv'), url))
     box.innerHTML = `<div class="note">QR 을 만들지 못했습니다 — 링크를 복사해 보내세요.<br><small>${url}</small></div>`;
@@ -5944,6 +5965,7 @@ showStep(0);
 
 /* ----- PWA: 서비스워커 등록 (오프라인·홈화면 설치) ----- */
 window.addEventListener("load", applyReqLink);
+window.addEventListener("load", applyDocLink);
 
 if("serviceWorker" in navigator){
   window.addEventListener("load", ()=>{
