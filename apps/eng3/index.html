@@ -509,7 +509,7 @@ body.fs-lock{overflow:hidden}
   .app{box-shadow:0 0 60px rgba(12,68,124,.10)}
 }
 </style>
-<link rel="stylesheet" href="./simulation.css?v=3.0.7">
+<link rel="stylesheet" href="./simulation.css?v=3.0.8">
 </head>
 <body>
 <div class="app">
@@ -518,7 +518,7 @@ body.fs-lock{overflow:hidden}
   <div class="topbar">
     <div class="brand">
       <span class="logo mono"><b>TSPG</b> · LOGISALL ENG</span>
-      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1005.6</span>
+      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1005.7</span>
     </div>
     <div class="prog" id="prog"></div>
   </div>
@@ -3479,7 +3479,7 @@ const SIM2D = {
         else if(Math.abs(dy)>10) { ptrs.delete(e.pointerId); return; }
         else return;
       }
-      this.yaw+=dx*0.012; lx=e.clientX; ly=e.clientY;
+      this.yaw+=dx*0.005; lx=e.clientX; ly=e.clientY;
       this.renderStatic(); this.blit();
       e.preventDefault();
     },{passive:false});
@@ -4729,9 +4729,14 @@ const GL3D = {
         else if(Math.abs(dy)>10){ ptrs.delete(e.pointerId); return; }
         else return;
       }
-      this.sph.theta-=dx*0.0075;
-      this.sph.phi=Math.max(0.35,Math.min(1.35,this.sph.phi-dy*0.005));
-      this.vel.t=-dx*0.0075; this.vel.p=-dy*0.005;
+      // 손가락 1px ≈ 0.2° — 휴대폰에서 한 번 쓸어 반 바퀴 이상 돌지 않게
+      const ROT=0.0035, PIT=0.0025;
+      this.sph.theta-=dx*ROT;
+      this.sph.phi=Math.max(0.35,Math.min(1.35,this.sph.phi-dy*PIT));
+      // 손을 뗄 때의 관성은 마지막 몇 프레임의 평균 속도로 — 손떨림 한 프레임에 튀지 않게
+      const cap=v=>Math.max(-0.03,Math.min(0.03,v));
+      this.vel.t=cap(this.vel.t*0.6 + (-dx*ROT)*0.4);
+      this.vel.p=cap(this.vel.p*0.6 + (-dy*PIT)*0.4);
       lx=e.clientX; ly=e.clientY;
       this.render();
       e.preventDefault();
@@ -4748,7 +4753,7 @@ const GL3D = {
   inertia(){
     if(this.playing) return;                       // 애니메이션 루프가 카메라 갱신을 겸함
     const step=()=>{
-      this.vel.t*=0.92; this.vel.p*=0.92;
+      this.vel.t*=0.86; this.vel.p*=0.86;      // 짧고 부드럽게 멈춘다
       if(Math.abs(this.vel.t)<0.0004 && Math.abs(this.vel.p)<0.0004){ this.raf=0; return; }
       this.sph.theta+=this.vel.t;
       this.sph.phi=Math.max(0.35,Math.min(1.35,this.sph.phi+this.vel.p));
@@ -5031,7 +5036,7 @@ const GL3D = {
           : ``)+
         `<br>${this.driverNote()}`+
         `<br>바닥 격자 1칸 = 2m · 서 있는 작업자(키 1.7m)가 크기 기준입니다.`+
-        `<br>드래그 = 회전 · 위아래 드래그 = 시점 높이 · 핀치/휠 = 줌 · 더블탭 = 초기화 · ⛶ 전체화면. 개략 배치 개념도입니다.`;
+        `<br>좌우로 끌기 = 회전 · 위아래로 쓸기 = 페이지 스크롤 · 두 손가락/휠 = 줌 · 더블탭 = 초기화 · ⛶ 전체화면에서는 위아래로 시점 높이. 개략 배치 개념도입니다.`;
     }
   },
 
@@ -5839,7 +5844,7 @@ if("serviceWorker" in navigator){
   });
 }
 </script>
-<script src="./simulation.js?v=3.0.7"></script>
+<script src="./simulation.js?v=3.0.8"></script>
 <script src="./higgsfield.js?v=3.0.7"></script>
 </body>
 </html>

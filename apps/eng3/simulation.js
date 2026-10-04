@@ -27,6 +27,10 @@
       <div class="sim-tools sim-dir"><button id="simDirectionIn" aria-pressed="true">▶ 입고 시연</button><button id="simDirectionOut" aria-pressed="false">▶ 출고 시연</button></div>
       <div class="sim-sequence"><div class="sim-seq-head"><strong id="simSequenceTitle">화물 이동 과정 · 입고</strong><span>20초 반복 시연 · 실제 처리 시간과 무관</span></div><div class="sim-stages" id="simStages"></div><div class="sim-scrub"><input id="simTimeline" type="range" min="0" max="19.99" step="0.01" value="0" aria-label="공정 시연 위치"><output id="simTime">0.0 / 20s</output></div><p class="sim-explain" id="simExplain"></p></div>`;
     const bar=inner.querySelector('.sim-bar');controls.appendChild(bar);
+    // 영상 모드는 출고 시연 바로 위, 개념 설명은 그 왼쪽(입고 시연 위). 아래 줄은 시점 초기화 | 전체화면
+    const modes=document.createElement('div');modes.className='sim-tools sim-dir sim-modes';
+    ['simConcept','simCine'].forEach(id=>{const b=byId(id);if(b)modes.appendChild(b);});
+    controls.querySelector('.sim-dir').before(modes);
     controls.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>SIMDETAIL.view(b.dataset.view));
     byId('simDirectionIn').onclick=()=>SIMDETAIL.direction('in');
     byId('simDirectionOut').onclick=()=>SIMDETAIL.direction('out');

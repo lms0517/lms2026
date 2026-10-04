@@ -1,5 +1,6 @@
 #simPanel.show{max-height:none;overflow:visible}
-#simCanvas{height:470px;touch-action:none}
+#simCanvas{height:470px;touch-action:pan-y}
+#simFS #simCanvas{touch-action:none}
 .sim-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-bottom:10px}
 .sim-kpi{background:var(--bg-2);border:1px solid var(--line);border-radius:9px;padding:7px 10px;min-width:0}
 .sim-kpi span{display:block;color:var(--muted);font-size:10px;margin-bottom:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -34,3 +35,7 @@
 /* v3: 입고·출고 시연 두 버튼을 한 줄에 반씩 */
 .sim-dir{flex-wrap:nowrap}.sim-dir button{flex:1;font-size:12px;font-weight:700;min-height:38px}
 .sim-dir button.playing{background:var(--accent);border-color:var(--accent);color:#fff}
+/* v3: 모드 줄(개념 설명·영상 모드)과 아래 두 버튼 줄 */
+.sim-modes{margin:4px 0 0}.sim-modes .sim-btn{flex:1;min-height:38px;font-size:12px}
+.sim-modes + .sim-dir{margin-top:6px}
+.sim-controls .sim-bar{display:grid;grid-template-columns:1fr 1fr;gap:8px}
