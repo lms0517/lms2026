@@ -518,7 +518,7 @@ body.fs-lock{overflow:hidden}
   <div class="topbar">
     <div class="brand">
       <span class="logo mono"><b>TSPG</b> · LOGISALL ENG</span>
-      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1005.7</span>
+      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1005.9</span>
     </div>
     <div class="prog" id="prog"></div>
   </div>
@@ -4374,43 +4374,56 @@ const GL3D = {
   },
 
   /* ============ 시네마틱 카메라 ============
-     TSPG 공식 영상(youtu.be/DRaWEaTcmBI)의 샷 구성을 20초 루프에 맞춰 재현.
-     각 샷은 카메라 위치(p)와 주시점(t)을 보간하고, 경계는 0.5초 블렌드로 잇는다. */
-  CAM_BLEND: 0.5,
+     TSPG 4-Way Shuttle 공식 영상(youtu.be/k1Yhm2fbgD4) 장면 분석(27장면)의 샷 순서를
+     데모 20초 루프에 맞춰 재현. 영상 장면 번호를 각 샷 주석에 적었다.
+     각 샷은 카메라 위치(p)와 주시점(t)을 보간하고, 경계는 짧은 블렌드로 잇는다. */
+  CAM_BLEND: 0.35,
   camShots(){
     const D=this.D, A=this.anchors, ac=this.actors;
     const W=D.rackW, H=D.rackH, TD=this.center.z*2+2;
     const sh=(ac.shuttles&&ac.shuttles[0])||null;
-    const cage=ac.carriage;
+    const cage=ac.carriage, ap=ac.animPallet;
+    const cs=A.convStart, ce=A.convEnd, top=A.liftTopY;
     const L=(a,b,k)=>a+(b-a)*k;
     const E=k=>this.ease(k);
+    const sx=()=>sh?sh.position.x:A.railFromX;
     // 각 샷: {end, f(k)->{p:[x,y,z], t:[x,y,z]}}
     return [
-      // ① 0~5s 입고 와이드 — 컨베이어를 따라 우측 슬로우 팬
-      {end:5.0, f:k=>({
-        p:[L(A.convStart.x-13, A.convStart.x-9, E(k)), 6.5, L(A.convStart.z-9, A.convStart.z+2, E(k))],
-        t:[L(A.convStart.x, A.convEnd.x, E(k)), 1.4, L(A.convStart.z, A.convEnd.z-2, E(k))] })},
-      // ② 5~7.2s 턴테이블 줌인 (미디엄)
-      {end:7.2, f:k=>({
-        p:[A.convEnd.x-L(7.0,3.4,E(k)), L(4.2,2.4,E(k)), A.convEnd.z-L(6.0,3.0,E(k))],
-        t:[A.convEnd.x, 0.9, A.convEnd.z-1.5] })},
-      // ③ 7.2~11.4s 리프트 상승 틸트업 (사이드 앵글)
-      {end:11.4, f:k=>({
-        p:[A.convEnd.x-8.5, L(2.6, H*0.75, E(k)), A.convEnd.z-4.5],
-        t:[A.convEnd.x, cage?cage.position.y+0.5:L(1,H,k), A.convEnd.z] })},
-      // ④ 11.4~13.6s 통로 로우앵글 — 통로 끝에서 접근하는 셔틀을 정면으로
-      {end:13.6, f:k=>({
-        p:[W+L(7,4.5,E(k)), A.liftTopY+0.9, A.railZ],
-        t:[sh?sh.position.x:A.railFromX, A.liftTopY+0.1, A.railZ] })},
-      // ⑤ 13.6~17.2s 셔틀 뒤 트래킹 (드론/슬라이더)
-      {end:17.2, f:k=>{
-        const sx=sh?sh.position.x:L(A.railFromX,A.railToX,k);
-        return { p:[sx-4.2, A.liftTopY+1.9, A.railZ-5.2], t:[sx+1.2, A.liftTopY, A.railZ] }; }},
-      // ⑥ 17.2~20s 오버헤드 부감 → 줌아웃 스케일 리빌
-      {end:this.LOOP, f:k=>{
-        const kk=E(k);
-        return { p:[L(W*0.55, W*0.5-W*0.75, kk), L(H+9, H+Math.max(26,W*0.9), kk), L(TD*0.35, TD*1.05, kk)],
-                 t:[W*0.5, L(H*0.7, H*0.45, kk), TD*0.45] }; }}
+      // ① 0~1.8s 창고 전경 하이앵글 와이드 — 리프트 쪽으로 서서히 진입        (영상 #3)
+      {end:1.8, f:k=>({
+        p:[L(-W*1.05, -W*0.6, E(k)), L(H+28, H+16, E(k)), L(-TD*0.95, -TD*0.55, E(k))],
+        t:[L(W*0.42, ce.x+3, E(k)), L(H*0.35, H*0.4, E(k)), L(TD*0.42, ce.z+2, E(k))] })},
+      // ② 1.8~3.4s 지게차가 입고 컨베이어에 투입 — 미디엄                       (영상 #4)
+      {end:3.4, f:k=>({
+        p:[L(-14.5, -12.0, E(k)), 3.8, L(cs.z-9.0, cs.z-6.5, E(k))],
+        t:[cs.x-1.8, 1.0, cs.z+0.8] })},
+      // ③ 3.4~5.6s 컨베이어 로우앵글 고정 — 검수 포털을 지나 리프트로 향하는 파렛트 (영상 #5~7)
+      {end:5.6, f:k=>({
+        p:[cs.x-L(2.8, 2.2, E(k)), 2.1, cs.z-L(4.8, 3.8, E(k))],      // 컨베이어 왼쪽 뒤 — 랙 기둥에 가리지 않게
+        t:[ce.x+0.4, 0.9, ce.z] })},
+      // ④ 5.6~10.4s 리프트 상승 — 하이앵글 와이드에서 케이지를 따라 틸트업      (영상 #8~9)
+      {end:10.4, f:k=>({
+        p:[ce.x-L(13.5, 11.0, E(k)), L(H*0.6, H*1.05, E(k)), ce.z-L(11.5, 9.0, E(k))],
+        t:[ce.x, cage?cage.position.y+0.4:L(1,top,k), ce.z] })},
+      // ⑤ 10.4~11.6s 리프트 → 셔틀 이재 — 미디엄 고정                          (영상 #10)
+      {end:11.6, f:k=>({
+        p:[ce.x-4.8, top+2.6, ce.z-6.2],
+        t:[(ce.x+A.railFromX)/2+0.6, top, A.railZ] })},
+      // ⑥ 11.6~13.6s 셔틀 POV 트래킹 — 셔틀 뒤에서 통로를 따라간다             (영상 #11, #14)
+      {end:13.6, f:k=>{ const x=sx();
+        // 통로 안(x≥0.35)에서만 따라간다 — 더 뒤로 가면 리프트 기둥 속에 카메라가 들어간다
+        return { p:[Math.max(0.35, x-4.0), top+2.8, A.railZ], t:[x+8.0, top+0.2, A.railZ] }; }},
+      // ⑦ 13.6~15.6s 셔틀 로우앵글 클로즈업 — 다가오는 셔틀을 정면 낮게        (영상 #12)
+      {end:15.6, f:k=>{ const x=sx();
+        return { p:[A.railToX+L(5.0, 3.4, E(k)), top+0.6, A.railZ], t:[x, top+0.25, A.railZ] }; }},
+      // ⑧ 15.6~17.2s 딥레인 적입 — 랙 위 하이앵글로 셀 안쪽 이동을 내려다봄     (영상 #13)
+      {end:17.2, f:k=>({
+        p:[A.railToX-2.8, top+L(9.0, 7.0, E(k)), A.railZ-6.0],
+        t:[A.railToX, top, (A.railZ+A.dropZ)/2] })},
+      // ⑨ 17.2~20s 여러 층 셔틀 동시 가동 하이앵글 → 탑다운 스케일 리빌        (영상 #15~16, #26)
+      {end:this.LOOP, f:k=>{ const kk=E(k);
+        return { p:[L(W*0.15, W*0.5, kk), L(H+10, H+Math.max(30, W*1.05), kk), L(-TD*0.15, TD*0.5-0.6, kk)],
+                 t:[W*0.5, L(H*0.5, 0, kk), TD*0.5] }; }}
     ];
   },
   camTick(t){
@@ -5844,7 +5857,7 @@ if("serviceWorker" in navigator){
   });
 }
 </script>
-<script src="./simulation.js?v=3.0.8"></script>
+<script src="./simulation.js?v=3.0.9"></script>
 <script src="./higgsfield.js?v=3.0.7"></script>
 </body>
 </html>

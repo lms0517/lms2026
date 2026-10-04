@@ -66,7 +66,7 @@
     if(sh&&sceneTime>=this.PH.railEnd&&sceneTime<this.PH.depositEnd){sh.position.z=ap.position.z;sh.position.y=ap.position.y-.72;}
     else if(sh&&sceneTime>=this.PH.depositEnd){sh.position.z=this.anchors.dropZ+(this.anchors.railZ-this.anchors.dropZ)*this.sCurve((sceneTime-this.PH.depositEnd)/(this.LOOP-this.PH.depositEnd));}
     if(state.direction==='out')this.actors.convPallets.forEach(p=>p.visible=false);
-    if(this.detailMarker){this.detailMarker.position.copy(ap.position);this.detailMarker.visible=ap.visible&&!this.concept;this.detailMarker.rotation.y=t*.8;}
+    if(this.detailMarker){this.detailMarker.position.copy(ap.position);this.detailMarker.visible=ap.visible&&!this.concept&&!this.cinema;this.detailMarker.rotation.y=t*.8;}
     SIMDETAIL.update(t);
   };
   // Pause retains positions and simulation time, so scrubbing and resume are consistent.
@@ -82,6 +82,9 @@
   const enterFull=SIM3D.enterFull,exitFull=SIM3D.exitFull;
   SIM3D.enterFull=function(){if(this.full||!this.engine)return;const wrap=byId('simCanvas').parentNode,controls=document.querySelector('#simPanel .sim-controls');enterFull.call(this);if(!this.full)return;this._detailHome={wrap,parent:wrap.parentNode,next:wrap.nextSibling,controls,cp:controls.parentNode,cn:controls.nextSibling};wrap.appendChild(byId('simCanvas'));wrap.insertBefore(byId('simCanvas'),wrap.firstChild);byId('simFS').querySelector('.fs-cv').appendChild(wrap);controls.appendChild(byId('simFS').querySelector('.sim-bar'));byId('simFS').appendChild(controls);};
   SIM3D.exitFull=function(skip){if(!this.full)return;const h=this._detailHome;if(h){h.cp.insertBefore(h.controls,h.cn&&h.cn.parentNode===h.cp?h.cn:null);h.parent.insertBefore(h.wrap,h.next&&h.next.parentNode===h.parent?h.next:null);const bar=h.controls.querySelector('.sim-bar');if(bar)byId('simFS').appendChild(bar);this._detailHome=null;}exitFull.call(this,skip);};
+  // 영상 모드는 공식 영상처럼 화면 위 안내선(경로·치수)을 숨기고, 끄면 다시 켠다
+  const baseSetCinema=GL3D.setCinema;
+  GL3D.setCinema=function(on){baseSetCinema.call(this,on);[this.detailRoutes,this.detailDimensions].forEach(g=>{if(g)g.visible=!on;});if(this.detailMarker&&on)this.detailMarker.visible=false;if(this.renderer)this.render();};
   const baseConcept=SIM3D.toggleConcept,baseCinema=SIM3D.toggleCinema;
   SIM3D.toggleConcept=function(){if(GL3D.concept){baseConcept.call(this);SIMDETAIL.normal();GL3D.tick(0);return;}SIMDETAIL.normal();baseConcept.call(this);byId('simLive').style.display='none';};
   SIM3D.toggleCinema=function(){
