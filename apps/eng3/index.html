@@ -511,7 +511,7 @@ body.fs-lock{overflow:hidden}
   <div class="topbar">
     <div class="brand">
       <span class="logo mono"><b>TSPG</b> · LOGISALL ENG</span>
-      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1005</span>
+      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1005.1</span>
     </div>
     <div class="prog" id="prog"></div>
   </div>
@@ -2920,9 +2920,7 @@ function renderResult(){
     </div>${sp.k==='asrs'?'<!--SOLU-->':''}`;
   }).join("");
 
-  /* ── [v2] 개선 예상 — 금액 환산 없이 물량·면적·인원만 ── */
-  const nowStaff = roi.staff;
-  const tgtStaff = Math.max(1, Math.round(roi.staff - roi.reducibleFTE));
+  /* ── 개선 예상 — 보관량·적재 단수·시간당 취급만 (면적·인원 추정치는 근거가 약해 v3에서 제외) ── */
   /* 목표가 현재보다 나빠지면 개선으로 칠하지 않는다 —
      축소를 파란 '목표'로 보여주면 화면이 거짓말을 하게 된다. */
   const kpiRow = (k, now, tgt, worse) =>
@@ -2933,9 +2931,6 @@ function renderResult(){
   const improveRows =
       kpiRow("보관량 (PL)",      fmt(roi.stockUsed), fmt(roi.targetCells), roi.targetCells < roi.stockUsed)
     + kpiRow("적재 단수",         CONFIG.CONV_RACK_TIERS+"단", est.tiers+"단", est.tiers < CONFIG.CONV_RACK_TIERS)
-    + (roi.capped ? "" : kpiRow("보관 바닥면적 (평)", fmt(roi.conventionalPyeong), fmt(roi.autoPyeong),
-             roi.autoPyeong > roi.conventionalPyeong))
-    + kpiRow("작업 인원 (명)",     nowStaff+"명", tgtStaff+"명", tgtStaff >= nowStaff)
     + kpiRow("시간당 취급 (PL/h)", fmt(tp.perHr)+" 필요", fmt(capOk)+" 능력", capOk < tp.perHr);
 
   /* 추천 시스템 — 제안 가능 범위의 「자동창고」 행 바로 아래에 붙인다 */
@@ -2998,7 +2993,7 @@ function renderResult(){
           <div class="kpi2-head"><span>현재</span><span style="min-width:10px"></span><span>목표</span></div>
           ${improveRows}
           ${roi.capped?`<div class="note" style="border-color:#E8B21F;color:#E8B21F;margin-bottom:8px">현 공간 한계로 <b>보관량이 현재보다 줄어듭니다</b>. 이 표는 개선안이 아니라 <b>현 조건의 한계</b>를 보여줍니다. 면적·층고 확보가 선행돼야 합니다. (보관 바닥면적 비교는 성립하지 않아 생략)</div>`:""}
-          <div class="note">현재값은 일반 랙 ${CONFIG.CONV_RACK_TIERS}단 운영을 기준으로 환산한 비교치입니다. 작업 인원은 물동량·면적에서 추정한 값이며 실제 인원과 다를 수 있습니다. <b>절감 금액과 투자 회수기간은 임대료·인건비 가정에 크게 좌우되므로 이 화면에서는 제시하지 않습니다</b> — 상세 제안 단계에서 고객사 실제 단가로 산출합니다.</div>
+          <div class="note">현재값은 일반 랙 ${CONFIG.CONV_RACK_TIERS}단 운영을 기준으로 환산한 비교치입니다. <b>절감 금액과 투자 회수기간은 임대료·인건비 가정에 크게 좌우되므로 이 화면에서는 제시하지 않습니다</b> — 상세 제안 단계에서 고객사 실제 단가로 산출합니다.</div>
         </div>
       </div>
     </div>
