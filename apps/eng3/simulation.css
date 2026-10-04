@@ -38,7 +38,8 @@
 /* v3: 모드 줄(개념 설명·영상 모드)과 아래 두 버튼 줄 */
 .sim-modes{margin:4px 0 0}.sim-modes .sim-btn{flex:1;min-height:38px;font-size:12px}
 .sim-modes + .sim-dir{margin-top:6px}
-.sim-controls .sim-bar{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.sim-controls .sim-bar{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.sim-controls .sim-bar .sim-btn{min-width:0;padding-left:4px;padding-right:4px;white-space:nowrap}
 /* 시점 버튼 4개는 좁은 폭에서도 한 줄 */
 .sim-tools[aria-label="3D 시점"]{flex-wrap:nowrap}
 .sim-tools[aria-label="3D 시점"] button{flex:1;min-width:0;padding:8px 4px;white-space:nowrap}

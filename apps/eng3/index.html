@@ -323,6 +323,8 @@ a.btn{text-decoration:none}
 .share-opt span:last-child{font-size:10.5px;color:var(--muted);text-align:center;line-height:1.3}
 .share-opt:active{transform:scale(.97)}
 .share-qr{margin-top:14px;padding:16px;background:#fff;border-radius:14px;text-align:center}
+.yt-wrap{position:relative;width:100%;aspect-ratio:16/9;border-radius:var(--radius-sm);overflow:hidden;background:#000}
+.yt-wrap iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
 .req-pre{white-space:pre-wrap;word-break:keep-all;font-family:inherit;font-size:12px;line-height:1.6;color:var(--ink-soft);
   background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-sm);padding:12px 13px;max-height:42vh;overflow:auto;margin:0}
 .share-qr canvas{width:220px;height:220px;display:block;margin:0 auto}
@@ -509,7 +511,7 @@ body.fs-lock{overflow:hidden}
   .app{box-shadow:0 0 60px rgba(12,68,124,.10)}
 }
 </style>
-<link rel="stylesheet" href="./simulation.css?v=3.1.0">
+<link rel="stylesheet" href="./simulation.css?v=3.1.1">
 </head>
 <body>
 <div class="app">
@@ -518,7 +520,7 @@ body.fs-lock{overflow:hidden}
   <div class="topbar">
     <div class="brand">
       <span class="logo mono"><b>TSPG</b> · LOGISALL ENG</span>
-      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1006</span>
+      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1006.1</span>
     </div>
     <div class="prog" id="prog"></div>
   </div>
@@ -2814,6 +2816,7 @@ function renderResult(){
                  || VIDEOS.find(v=>v.cats.includes(soluCat) && !v.temps)
                  || VIDEOS.find(v=>v.cats.includes(soluCat))
                  || {url:CONFIG.YT_CHANNEL, t:"TSPG 채널"};
+  window.solu_video = soluVideo;      // 3D 아래 '공식 영상' 버튼이 같은 영상을 띄운다
 
   // 레퍼런스 매칭 (feature 4) — 추천 시스템(sysKey)까지 반영
   const refs=Engine.matchReferences(d, roi.targetCells, sysKey);
@@ -3010,6 +3013,7 @@ function renderResult(){
             <button class="sim-btn" onclick="SIM3D.fitView()">⟳ 시점 초기화</button>
             <button class="sim-btn" id="simCine" onclick="SIM3D.toggleCinema()">🎬 영상 모드</button>
             <button class="sim-btn" id="simFsBtn" onclick="SIM3D.toggleFull()">⛶ 전체화면</button>
+            <button class="sim-btn" id="simOfficial" onclick="openOfficialVideo()">▶ 공식 영상</button>
           </div>
           <div class="sim-legend" id="simLegend"></div>
           <div class="note" id="simNote"></div>
@@ -5616,7 +5620,9 @@ function showObjModal(i){
   document.getElementById('objModal').classList.add('show');
 }
 document.getElementById('objModal').addEventListener('click', function(e){
-  if(e.target===this) this.classList.remove('show');
+  if(e.target!==this) return;
+  if(this.querySelector('.yt-wrap')) closeOfficialVideo();   // 영상이면 플레이어까지 비워 소리를 끈다
+  else this.classList.remove('show');
 });
 
 /* ----- [v2] 제안 가능 영역 → 판정 근거 모달 ----- */
@@ -5656,6 +5662,33 @@ function showScopeModal(k){
 }
 
 const esc=v=>String(v==null?"":v).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+/* ----- 공식 영상 — 추천 시스템의 TSPG 유튜브 영상을 앱 안 플레이어로 (유튜브 임베드) ----- */
+function ytId(u){
+  const m=String(u||"").match(/(?:youtu\.be\/|[?&]v=|\/shorts\/|\/embed\/)([A-Za-z0-9_-]{11})/);
+  return m?m[1]:null;
+}
+function openOfficialVideo(){
+  const v=window.solu_video||{url:"https://youtu.be/k1Yhm2fbgD4",t:"4-Way Shuttle System"};
+  const id=ytId(v.url);
+  if(!id){ window.open(v.url,"_blank","noopener"); return; }   // 채널 링크 등은 새 창
+  const box=document.getElementById('objModalBox');
+  box.innerHTML=`
+    <div class="cm-title">${esc(v.t)} · 공식 영상</div>
+    <div class="cm-sub mono">// TSPG 공식 유튜브 — 인터넷 연결 시 재생</div>
+    <div class="yt-wrap"><iframe src="https://www.youtube-nocookie.com/embed/${id}?rel=0&playsinline=1&autoplay=1"
+      title="${esc(v.t)} 공식 영상" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen
+      referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
+    <a class="doc-btn view" style="display:block;text-align:center;margin-top:12px;text-decoration:none" href="https://youtu.be/${id}" target="_blank" rel="noopener">유튜브 앱에서 열기</a>
+    <button class="cm-close-btn" onclick="closeOfficialVideo()">닫기</button>`;
+  document.getElementById('objModal').classList.add('show');
+}
+/* 닫을 때 플레이어를 비워야 소리가 멈춘다 */
+function closeOfficialVideo(){
+  const m=document.getElementById('objModal');
+  m.classList.remove('show');
+  const f=document.querySelector('#objModalBox .yt-wrap'); if(f) document.getElementById('objModalBox').innerHTML="";
+}
+
 /* ----- 솔루션 1차 확인 및 필요자료 요청 (고객 전달용) ----- */
 function reqText(){
   const d=window.d_data, est=window.est_data, roi=window.roi_data, sc=window.sc_data;
@@ -5866,7 +5899,7 @@ if("serviceWorker" in navigator){
   });
 }
 </script>
-<script src="./simulation.js?v=3.1.0"></script>
+<script src="./simulation.js?v=3.1.1"></script>
 <script src="./higgsfield.js?v=3.1.0"></script>
 </body>
 </html>
