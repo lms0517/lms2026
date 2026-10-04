@@ -592,7 +592,7 @@ body.fs-lock{overflow:hidden}
   <div class="topbar">
     <div class="brand">
       <span class="logo mono"><b>TSPG</b> · LOGISALL ENG</span>
-      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1009.3</span>
+      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1009.4</span>
     </div>
     <div class="prog" id="prog"></div>
   </div>
@@ -1576,7 +1576,14 @@ const CAPEX = {
     const lifterQty  = Math.max(1, Math.min(4, Math.max(
                          Math.round(1 + 0.4826*Math.log(cells/536)),
                          Math.ceil(perHr/45))));
-    const lifterUnit = tier<=2 ? C.lifter2 : C.lifter3;
+    /* 리프트 사양은 '최상단 이재 높이'(= (단수-1) × 셀 높이 + 0.72m)로 정한다.
+       실적: 5.8m급(2단형) 50.6백만 / 6.65m급(3단형) 66.0백만 — 견적 B(4단·셀 2.05m)가 3×2.05+0.72 ≈ 6.87m 로 6.65m급에 해당.
+       6.65m 를 넘으면(5단 이상 등) 실적 범위 밖이라 높이에 비례해 단가를 올린다(추정). */
+    const liftH = ctx.rackH>0 ? +((ctx.rackH*(tier-1)/tier) + 0.72).toFixed(2) : 0;
+    const overLift = liftH > 6.9;                     // 6.65m급 허용 오차 포함
+    const lifterUnit = overLift ? Math.round(C.lifter3 * liftH / 6.65) : (tier<=2 ? C.lifter2 : C.lifter3);
+    const lifterSpec = overLift ? `설치높이 ${liftH.toFixed(1)}m급 (${tier}단)`
+                     : (tier<=2 ? "2단 (설치높이 5.8m급)" : "3단 (설치높이 6.65m급)");
     const convQty    = 4 * lifterQty;                 // 3건 평균 4/리프트 — 추정
     const convRackQty= lifterQty * tier;              // 3건 정확히 일치 — 실측
     const rackUnit   = Math.round(M.rackA * Math.pow(cells, -M.rackExp));
@@ -1588,7 +1595,7 @@ const CAPEX = {
     const lines=[
       L("기구설비", M.label.split(" ")[0]+" Shuttle 본체","기구&제어","Set",shuttleQty,M.shuttleUnit),
       L("기구설비","Shuttle 지상 제어반","Touch Panel 포함","Set",1,C.groundPanel),
-      L("기구설비","Lifter",(tier<=2?"2단 (설치높이 5.8m급)":"3단 (설치높이 6.65m급)"),"Set",lifterQty,lifterUnit),
+      L("기구설비","Lifter",lifterSpec,"Set",lifterQty,lifterUnit),
       L("기구설비","Conveyor","Chain Type","Set",convQty,C.conveyor),
       L("기구설비","Conveyor","Chain Type (Rack내 설치)","Set",convRackQty,C.conveyorInRack),
       L("기구설비","Size Checker","Over Size Check","Set",1,C.sizeChecker),
@@ -1621,8 +1628,9 @@ const CAPEX = {
             : "규모 기반 (실적 536셀 2대 / 4,256셀 3대 사이 보간)")
             +(Math.ceil(perHr/25)>M.shuttleQty(tier,cells) ? " · 시간당 "+fmt(perHr)+"PLT로 증대":""),
           key==="2way"?"실측":"보간"],
-        ["리프트 대수", lifterQty+"대 ("+(tier<=2?"2단형 5.8m급":"3단형 6.65m급")+") — 실적 536셀 1대 / 4,256셀 2대 기준"
+        ["리프트 대수", lifterQty+"대 ("+lifterSpec+") — 실적 536셀 1대 / 4,256셀 2대 기준"
             +(Math.ceil(perHr/45)>Math.round(1+0.4826*Math.log(cells/536)) ? " · 시간당 "+fmt(perHr)+"PLT로 증대":""), "보간"],
+        ...(overLift?[["리프트 단가", fmt(lifterUnit)+"원/대 — 최상단 이재 높이 "+liftH.toFixed(1)+"m 가 실적(6.65m급)을 넘어 높이 비례로 보정", "추정"]]:[]),
         ["Rack내 컨베이어", convRackQty+"대 = 리프트 "+lifterQty+" × "+tier+"단 (견적 3건 정확히 일치)", "실측"],
         ["입출고 컨베이어", convQty+"대 = 리프트당 4대 (견적 3건 평균)", "추정"],
         ["랙 단가", fmt(rackUnit)+"원/셀 — "+fmt(cells)+"셀 규모 반영 (536셀 423,500 / 4,256셀 168,300 곡선)", "실측"],
@@ -2001,7 +2009,7 @@ const Engine = {
     const energySaveMan = Math.round(savedPyeong * energyRate);
     // CAPEX = 항목별 산출 (실제 견적서 5건 역산 · 4way/2way/AGF 모델) — [CAPEX] 섹션 참조
     const perHr = tp.perHr;                  // 주5일·8시간 기준 시간당 취급량
-    const capex = CAPEX.estimate({ sysKey:Engine.matchSystem(d), cells:targetCells, tiers:est.tiers, perHr, temp:d.temp });
+    const capex = CAPEX.estimate({ sysKey:Engine.matchSystem(d), cells:targetCells, tiers:est.tiers, perHr, temp:d.temp, rackH:layout.rackH });
     const capexMan = capex.totalMan;
     const opexMan = Math.round(capexMan * CONFIG.OPEX_RATE);
     const benefitMan = laborSaveMan + spaceSaveMan + energySaveMan;
