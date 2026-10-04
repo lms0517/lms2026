@@ -67,6 +67,9 @@ body{
 /* 글자를 눌러도 크롬 '탭하여 검색'·길게 눌러 선택 메뉴가 뜨지 않게 — 입력칸만 선택 허용 */
 body{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;
   word-break:keep-all;overflow-wrap:anywhere}   /* 한글은 낱말 단위로 줄바꿈('스테이션 대/기' 방지), 칸이 모자랄 때만 강제 줄바꿈 */
+/* 마지막 줄에 낱말 하나만 남지 않게(외톨이 방지) — 제목·버튼은 줄 길이를 고르게 */
+body{text-wrap-style:pretty}
+h1,h2,h3,h4,.cm-title,button,.chip,.sc-t,.cg-title,.duo-h,.doc-tx,.k,.cs-desc{text-wrap-style:balance}
 input,textarea,select,[contenteditable]{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
 
 /* shell */
@@ -204,6 +207,10 @@ a.btn{text-decoration:none}
 .stat .l{font-size:11px;color:var(--muted);margin-bottom:5px}
 .stat .v{font-size:25px;font-weight:700;letter-spacing:-.02em;font-family:'IBM Plex Mono',monospace;color:var(--ink)}
 .stat .v small{font-size:13px;color:var(--ink-soft);font-weight:400;margin-left:2px}
+/* 숫자·단위는 글자 중간에서 끊지 않는다('4,317C ⏎ ells' 방지) — 모자라면 단위만 통째로 아랫줄 */
+.stat .v{overflow-wrap:normal}
+.stat .v small{display:inline-block}
+@media (max-width:440px){.stats{grid-template-columns:1fr 1fr}.stat .v{font-size:22px}.stat .v small{font-size:11.5px}}
 .stat.hl .v{color:var(--accent-2)}
 .stat.green .v{color:var(--green)}
 .stat .sub{font-size:10.5px;color:var(--muted);margin-top:3px}
@@ -214,6 +221,7 @@ a.btn{text-decoration:none}
 .stat.slim .v small{font-size:11px}
 .stat.slim .sep{color:var(--line);font-size:18px}
 .stat.slim .sub{margin:0 0 0 auto;text-align:right}
+@media (max-width:440px){.stat.slim{flex-wrap:wrap;row-gap:2px}.stat.slim .sub{flex:1 0 100%;margin:0;text-align:left}}
 /* 권장 규모 두 값을 한 칸에 — 숫자 줄 / 설명 줄로 쌓아 잘리지 않게 */
 .stat.two{padding:14px 12px}
 .stat .v2{display:flex;flex-direction:column;gap:9px}
@@ -358,6 +366,14 @@ a.btn{text-decoration:none}
 .calc-modal .cm-box{overflow-x:hidden}
 .req-pre{white-space:pre-wrap;word-break:keep-all;font-family:inherit;font-size:12px;line-height:1.6;color:var(--ink-soft);
   background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-sm);padding:12px 13px;max-height:42vh;overflow:auto;margin:0}
+.req-send{width:100%;margin-top:12px;justify-content:center}
+.req-send-box{display:none;margin-top:10px}
+.req-send-box.show{display:block}
+.req-send-box .share-opt.on{border-color:var(--accent,#0c447c);box-shadow:0 0 0 2px rgba(12,68,124,.15)}
+.req-sms{display:none;gap:8px;margin-top:10px}
+.req-sms.show{display:flex}
+.req-sms input{flex:1 1 auto;min-width:0;font-size:16px;padding:12px;border:1px solid var(--line);border-radius:var(--radius-sm);background:#fff;color:var(--ink)}
+.req-sms .btn{flex:0 0 auto;white-space:nowrap}
 .share-qr canvas{width:220px;height:220px;display:block;margin:0 auto}
 .share-qr .u{font-size:12px;color:#333;margin:10px 0 8px}
 .doc-btn.view{background:rgba(12,68,124,.10);color:var(--accent-2);border:1px solid rgba(12,68,124,.34)}
@@ -542,7 +558,7 @@ body.fs-lock{overflow:hidden}
   .app{box-shadow:0 0 60px rgba(12,68,124,.10)}
 }
 </style>
-<link rel="stylesheet" href="./simulation.css?v=3.1.4">
+<link rel="stylesheet" href="./simulation.css?v=3.1.5">
 </head>
 <body>
 <div class="app">
@@ -551,7 +567,7 @@ body.fs-lock{overflow:hidden}
   <div class="topbar">
     <div class="brand">
       <span class="logo mono"><b>TSPG</b> · LOGISALL ENG</span>
-      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1006.7</span>
+      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1007.1</span>
     </div>
     <div class="prog" id="prog"></div>
   </div>
@@ -2908,14 +2924,14 @@ function renderResult(){
     if(!ls.length) return "";
     return `<div class="capex-group" style="margin-top:14px">
       <div class="cg-title">${g}</div>
-      ${ls.map(l=>`<div class="li"><span class="k">${l.n}<br><span style="font-size:10px;opacity:.6">${l.s}</span></span><span class="v mono">${(l.u==="Lot"&&l.q===1)?"":fmt(l.q)+l.u+" × "}${fmt(l.p)}<br><b>${fmt(l.amt)}원</b></span></div>`).join("")}
+      ${ls.map(l=>`<div class="li"><span class="k">${l.n}${l.s&&l.s!=="-"?`<br><span style="font-size:10px;opacity:.6">${l.s}</span>`:""}</span><span class="v mono">${(l.u==="Lot"&&l.q===1)?"":fmt(l.q)+l.u+" × "}${fmt(l.p)}<br><b>${fmt(l.amt)}원</b></span></div>`).join("")}
       <div class="li total"><span class="k">${g} 소계</span><span class="v"><b>${won(Math.round(cx.sums[g]/10000))}원</b></span></div>
     </div>`;
   }).join("");
 
   const capexMeta = `<div class="capex-group" style="margin-top:14px">
       <div class="cg-title">산출 조건 <span class="cg-sub">수량·단가 근거 (실측=견적서 / 추정=보간)</span></div>
-      ${cx.basis.map(([k,v,c])=>`<div class="li"><span class="k">${k}</span><span class="v mono">${v} <span style="opacity:.55">${c}</span></span></div>`).join("")}
+      ${cx.basis.map(([k,v,c])=>`<div class="li"><span class="k" style="flex:0 0 auto;white-space:nowrap;margin-right:12px">${k}</span><span class="v mono">${v} <span style="opacity:.55">${c}</span></span></div>`).join("")}
       ${cx.perCell?`<div class="li"><span class="k">셀당 환산 단가</span><span class="v mono">${fmt(cx.perCell)}원/셀</span></div>`:""}
     </div>`;
 
@@ -3013,7 +3029,7 @@ function renderResult(){
         <div class="stat calc-tap" onclick="showCalcModal()" style="cursor:pointer">
           <div class="l">공간 최대 수용 <span style="font-size:9px;color:var(--accent);font-family:'IBM Plex Mono',monospace;display:block;margin-top:2px">탭 → 계산 근거 ▼</span></div>
           <div class="v">${fmt(est.cells)}<small>Cells</small></div>
-          <div class="sub">${d.area||0}평 · ${est.tiers}단 가득 채울 시</div>
+          <div class="sub">${d.area||0}평 · ${est.tiers}단을 가득 채울 때</div>
         </div>
         ${targetTiles}
         <div class="stat slim">
@@ -5105,7 +5121,7 @@ const GL3D = {
         /* 격자는 Bay 단위로만 만들 수 있어 권장 셀 수와 정확히 같아지지 않는다.
            '권장 N셀을 표시'라고 쓰면 화면(240)과 숫자(223)가 어긋나 보인다. */
         ((window.roi_data&&window.roi_data.layout&&window.roi_data.layout.target!==D.cellsShown)
-          ? ` <span style="color:var(--accent-2)">· 목표 ${fmt(window.roi_data.layout.target)}셀 → Bay 정수 배치로 ${fmt(D.cellsShown)}셀</span>`
+          ? `&nbsp;<span style="color:var(--accent-2)">· 목표 ${fmt(window.roi_data.layout.target)}셀 → Bay 정수 배치로 ${fmt(D.cellsShown)}셀</span>`
           : ``)+
         `<br>${this.driverNote()}`+
         `<br>바닥 격자 1칸 = 2m · 서 있는 작업자(키 1.7m)가 크기 기준입니다.`+
@@ -5608,7 +5624,7 @@ function showCalcModal(){
       <span class="cs-result">${fmt(cells)}셀</span>
     </div>
     ${est.kind!=='single' ? `<div class="cs" style="opacity:.75">
-      <span class="cs-num">비교</span>
+      <span class="cs-num">vs</span>
       <div class="cs-body">
         <div class="cs-expr">싱글딥 스태커크레인이면 ${fmt(singleDeep)}셀</div>
         <div class="cs-desc">베이 피치 ${(est.cellW-0.2+0.45).toFixed(2)}m × 모듈 4.0m(랙 2열 + 통로 1.6m) — 다이후쿠 유니트로드 모델 기준. 4-Way 멀티딥이 약 ${(cells/Math.max(1,singleDeep)).toFixed(1)}배 조밀</div>
@@ -5803,34 +5819,49 @@ function applyReqLink(){
   if(location.hash==="#req") setTimeout(openReqSheet,400);
   if(location.hash==="#dl")  setTimeout(openReqDownload,400);   // QR 로 연 경우: 요청서 파일 내려받기
 }
-/* 내용을 먼저 보여주고 메일 · QR · 톡으로 전달 */
+/* 내용을 먼저 보여주고 [전송] → 문자(수신번호) · 톡 으로 보낸다 */
 function openReqSheet(){
   const txt=reqText();
-  const title="솔루션 1차 확인 및 필요자료 요청";
   const box=document.getElementById('objModalBox');
+  let tel=""; try{ tel=localStorage.getItem("eng3_req_tel")||""; }catch(_){}
   box.innerHTML=`
-    <div class="cm-title">${title}</div>
-    <div class="cm-sub mono">// 내용을 확인한 뒤 QR · 톡으로 보냅니다</div>
+    <div class="cm-title">솔루션 1차 확인 및 필요자료 요청</div>
+    <div class="cm-sub mono">// 내용을 확인한 뒤 전송을 누르세요</div>
     <pre class="req-pre">${esc(txt)}</pre>
-    <div class="share-grid two">
-      <button class="share-opt" onclick="reqQR()">
-        <span class="ic">▦</span><b>QR</b><span>찍으면 요청서 파일이 내려받아집니다</span></button>
-      <button class="share-opt" onclick="reqShare()">
-        <span class="ic">💬</span><b>톡</b><span>카톡·문자 등 공유창</span></button>
+    <button class="btn primary req-send" onclick="toggleReqSend()">📤 전송</button>
+    <div class="req-send-box" id="reqSendBox">
+      <div class="share-grid two">
+        <button class="share-opt" id="reqSmsOpt" onclick="reqPick('sms')"><span class="ic">✉️</span><b>문자</b><span>수신번호 입력 후 문자 앱</span></button>
+        <button class="share-opt" onclick="reqPick('talk')"><span class="ic">💬</span><b>톡</b><span>카카오톡 등 공유창</span></button>
+      </div>
+      <div class="req-sms" id="reqSms">
+        <input type="tel" id="reqTel" inputmode="tel" autocomplete="tel" placeholder="수신번호 (예: 010-1234-5678)" value="${esc(tel)}"
+          onkeydown="if(event.key==='Enter')reqSms()">
+        <button class="btn primary" onclick="reqSms()">보내기</button>
+      </div>
     </div>
-    <div id="shareQRBox"></div>
-    <button class="doc-btn view" style="width:100%;margin-top:12px" onclick="copyText(reqText(),'내용이 복사되었습니다')">📋 내용 복사</button>
     <button class="cm-close-btn" onclick="document.getElementById('objModal').classList.remove('show')">닫기</button>`;
   document.getElementById('objModal').classList.add('show');
 }
-function reqQR(){
-  const url=reqLink("#dl"), box=document.getElementById('shareQRBox'); if(!box) return;
-  box.innerHTML=`<div class="share-qr"><canvas id="shareQRCv" width="220" height="220"></canvas>
-    <div class="u">카메라로 찍으면 요청서 본문이 파일(.txt)로 내려받아집니다</div>
-    <button class="doc-btn view" onclick="copyText(reqLink('#dl'),'링크가 복사되었습니다')">링크 복사</button></div>`;
-  if(!drawQR(document.getElementById('shareQRCv'), url))
-    box.innerHTML=`<div class="note">QR 을 만들지 못했습니다 — 링크를 복사해 보내세요.<br><small>${esc(url)}</small></div>`;
-  box.scrollIntoView({block:"nearest"});
+function toggleReqSend(){
+  const b=document.getElementById('reqSendBox'); if(!b) return;
+  b.classList.toggle('show');
+  if(b.classList.contains('show')) b.scrollIntoView({block:"nearest",behavior:"smooth"});
+}
+function reqPick(k){
+  if(k==="talk"){ reqShare(); return; }
+  const s=document.getElementById('reqSms'); if(!s) return;
+  s.classList.add('show'); document.getElementById('reqSmsOpt').classList.add('on');
+  const i=document.getElementById('reqTel'); i.focus(); s.scrollIntoView({block:"nearest",behavior:"smooth"});
+}
+/* 문자 앱을 수신번호·본문이 채워진 상태로 연다 (iOS 는 '&body=', 그 외는 '?body=') */
+function reqSms(){
+  const i=document.getElementById('reqTel'); if(!i) return;
+  const num=i.value.replace(/[^0-9+]/g,"");
+  if(num.replace(/\D/g,"").length<9){ toast("수신번호를 확인해 주세요"); i.focus(); return; }
+  try{ localStorage.setItem("eng3_req_tel",i.value.trim()); }catch(_){}
+  const ios=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+  location.href="sms:"+num+(ios?"&":"?")+"body="+encodeURIComponent(reqText());
 }
 /* 요청서 본문을 텍스트 파일로 저장 (BOM 포함 — 윈도 메모장에서도 한글이 깨지지 않게) */
 function downloadReq(){
@@ -5862,7 +5893,7 @@ async function reqShare(){
     try{ await navigator.share({title:"솔루션 1차 확인 및 필요자료 요청", text:txt}); return; }
     catch(e){ if(e&&e.name==="AbortError") return; }
   }
-  copyText(txt,"내용이 복사되었습니다 — 카톡에 붙여 넣으세요");
+  copyText(txt,"내용이 복사되었습니다 — 카톡 대화창에 붙여 넣으세요");
 }
 
 /* ---- 권장 구축 규모 계산 근거 모달 ---- */
@@ -5954,6 +5985,33 @@ function showTargetModal(){
   document.getElementById('calcModal').classList.add('show');
 }
 
+/* ----- 줄바꿈 다듬기 -----
+   한글 keep-all 만으로는 '16 ⏎ PL', '절감 ⏎ ·확장성', '1.3m × ⏎ 1.3m' 처럼 숫자·단위·기호가
+   줄 끝/처음에 떨어진다. 화면에 들어오는 글자에 붙임 공백(NBSP)·단어 결합자(WJ)를 넣어 묶는다. */
+const NB="\u00A0", WJ="\u2060";
+const WRAP_RULES=[
+  [/(\S) · /g, "$1"+NB+"· "],                                   // ' · ' 구분점은 앞 낱말에 붙여 줄 처음에 오지 않게
+  [/([^\s\u00A0\u2060])·/g, "$1"+WJ+"·"],                       // '절감·확장성' — 점 앞에서는 끊지 않는다
+  [/(\d) (PL\/h|PL|Cells?|EA|Bay|kg|mm|m|t|㎡|%|대|셀|단|평|개소|명)(?=[\s\u00A0)·,.\/]|$)/g, "$1"+NB+"$2"],  // 숫자와 단위
+  [/(^|[\s(\[])(월|일|주|약|총|최대|최소|시간당|입고|출고) (?=\d)/g, "$1$2"+NB],  // '(월 ⏎ 26일)', '일 ⏎ 231 PL' 방지
+  [/(\d[\d.,]*(?:m|mm)?) × (?=\d)/g, "$1"+NB+"×"+NB],            // 1.3m × 1.3m — 치수는 한 덩어리
+  [/(PL\/h|PL) \((?=\d)/g, "$1"+NB+"("],                        // '14.5 PL/h (50%)' 는 한 덩어리
+  [/ ([÷×=]) /g, NB+"$1 "]                                        // 연산 기호는 앞에 붙인다
+];
+const WRAP_SKIP="script,style,textarea,input,select,option,#simLive,#simTime,#simExplain";
+function fixWrapText(root){
+  const tw=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,{acceptNode:n=>
+    (n.nodeValue.length>2 && /[ ·]/.test(n.nodeValue) && !(n.parentElement&&n.parentElement.closest(WRAP_SKIP)))?1:2});
+  const todo=[]; let n; while(n=tw.nextNode()) todo.push(n);
+  todo.forEach(t=>{ let v=t.nodeValue; WRAP_RULES.forEach(([re,to])=>{ v=v.replace(re,to); }); if(v!==t.nodeValue) t.nodeValue=v; });
+}
+let wrapQ=new Set(), wrapT=0;
+new MutationObserver(ms=>{
+  ms.forEach(m=>{ if(m.type==="characterData") wrapQ.add(m.target.parentElement); else m.addedNodes.forEach(x=>wrapQ.add(x.nodeType===3?x.parentElement:x)); });
+  if(!wrapT) wrapT=requestAnimationFrame(()=>{ wrapT=0; const q=[...wrapQ]; wrapQ.clear(); q.forEach(e=>{ if(e&&e.isConnected) fixWrapText(e); }); });
+}).observe(document.body,{childList:true,subtree:true,characterData:true});
+fixWrapText(document.body);
+
 /* ----- init ----- */
 renderNeedChips();
 renderNeedCases(LINES[0].k);
@@ -5973,7 +6031,7 @@ if("serviceWorker" in navigator){
   });
 }
 </script>
-<script src="./simulation.js?v=3.1.4"></script>
+<script src="./simulation.js?v=3.1.5"></script>
 <script src="./higgsfield.js?v=3.1.0"></script>
 </body>
 </html>
