@@ -5,7 +5,7 @@
      activate에서 자기 접두사(eng-v2-)로 시작하는 캐시만 정리한다 —
      전체를 지우면 루트 앱의 오프라인 캐시까지 날아간다. */
 const PREFIX = "eng3-lms-";
-const CACHE  = PREFIX + "3.0.1006.2";
+const CACHE  = PREFIX + "3.0.1006.3";
 const APP_HTML = "index.html";
 
 /* 공용 자원은 상위 경로(../)를 그대로 참조한다. 스코프 밖 URL도 캐시는 가능하다. */
@@ -13,7 +13,7 @@ const ASSETS = [
   APP_HTML, "./higgsfield-scene.js?v=3.0.4", "./higgsfield-reference.html",
   "./higgsfield.js?v=3.1.0", "./higgsfield-models.js?v=3.0.4",
   "../assets/warehouse-higgsfield.glb", "./vendor/GLTFLoader.js", "./vendor/BufferGeometryUtils.js", "./vendor/SkeletonUtils.js",
-  "./simulation.js?v=3.1.1", "./simulation.css?v=3.1.1",
+  "./simulation.js?v=3.1.2", "./simulation.css?v=3.1.1",
   "./vendor/three.module.min.js", "./vendor/three.core.min.js",
   "manifest.webmanifest",
   "./icon-192.png",

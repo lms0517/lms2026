@@ -36,8 +36,7 @@
     byId('simDirectionOut').onclick=()=>SIMDETAIL.direction('out');
     byId('simTimeline').oninput=e=>SIMDETAIL.seek(+e.target.value);
     SIMDETAIL.stageButtons();
-    panel.classList.add('show');byId('simToggle').setAttribute('aria-expanded','true');
-    requestAnimationFrame(()=>SIM3D.init());
+    // v3: 3D 카드는 접힌 채로 둔다 — 펼칠 때 toggleSim3D 가 처음 한 번 초기화(무거운 장면을 미리 만들지 않음)
   };
   const baseInit=GL3D.init;
   GL3D.init=function(){

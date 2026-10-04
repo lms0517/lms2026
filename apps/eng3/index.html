@@ -323,8 +323,18 @@ a.btn{text-decoration:none}
 .share-opt span:last-child{font-size:10.5px;color:var(--muted);text-align:center;line-height:1.3}
 .share-opt:active{transform:scale(.97)}
 .share-qr{margin-top:14px;padding:16px;background:#fff;border-radius:14px;text-align:center}
-.yt-wrap{position:relative;width:100%;aspect-ratio:16/9;border-radius:var(--radius-sm);overflow:hidden;background:#000}
-.yt-wrap iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+#ytFS{position:fixed;inset:0;z-index:10000;background:#000;display:flex;flex-direction:column}
+#ytFS .yt-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px calc(10px);padding-top:calc(10px + env(safe-area-inset-top));color:#fff}
+#ytFS .yt-head b{font-size:14px;font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#ytFS .yt-head .sim-btn{flex:none;padding:7px 14px}
+#ytFS .yt-stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding-bottom:env(safe-area-inset-bottom)}
+#ytFS iframe{width:100%;height:100%;max-height:calc(100vw*9/16);border:0;background:#000}
+@media (orientation:landscape){ #ytFS iframe{max-height:none} #ytFS .yt-head{padding:6px 12px} }
+/* 전달 시트 3칸이 좁은 화면에서 밖으로 밀려나지 않게 */
+.share-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+.share-opt{min-width:0}
+.share-opt span:last-child{word-break:keep-all;overflow-wrap:anywhere}
+.calc-modal .cm-box{overflow-x:hidden}
 .req-pre{white-space:pre-wrap;word-break:keep-all;font-family:inherit;font-size:12px;line-height:1.6;color:var(--ink-soft);
   background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-sm);padding:12px 13px;max-height:42vh;overflow:auto;margin:0}
 .share-qr canvas{width:220px;height:220px;display:block;margin:0 auto}
@@ -520,7 +530,7 @@ body.fs-lock{overflow:hidden}
   <div class="topbar">
     <div class="brand">
       <span class="logo mono"><b>TSPG</b> · LOGISALL ENG</span>
-      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1006.2</span>
+      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1006.3</span>
     </div>
     <div class="prog" id="prog"></div>
   </div>
@@ -2943,12 +2953,8 @@ function renderResult(){
         <h4>${sys.name}</h4>
         <div class="why">${matchReason(d,sysKey)}</div>
       </div>
-      <button class="more" onclick="const b=this.nextElementSibling;b.classList.toggle('show');this.textContent=b.classList.contains('show')?'접기 ▲':'특징 · 공식 영상 더보기 ▼'">특징 · 공식 영상 더보기 ▼</button>
-      <div class="body fold">${pts}
-        <div class="rlinks" style="margin-top:10px">
-          <a href="${soluVideo.url}" target="_blank" rel="noopener" class="rlink yt">▶ ${soluVideo.t} 공식 영상</a>
-        </div>
-      </div>
+      <button class="more" onclick="const b=this.nextElementSibling;b.classList.toggle('show');this.textContent=b.classList.contains('show')?'접기 ▲':'특징 더보기 ▼'">특징 더보기 ▼</button>
+      <div class="body fold">${pts}</div>
     </div>
 `;
 
@@ -5621,9 +5627,7 @@ function showObjModal(i){
   document.getElementById('objModal').classList.add('show');
 }
 document.getElementById('objModal').addEventListener('click', function(e){
-  if(e.target!==this) return;
-  if(this.querySelector('.yt-wrap')) closeOfficialVideo();   // 영상이면 플레이어까지 비워 소리를 끈다
-  else this.classList.remove('show');
+  if(e.target===this) this.classList.remove('show');
 });
 
 /* ----- [v2] 제안 가능 영역 → 판정 근거 모달 ----- */
@@ -5672,22 +5676,27 @@ function openOfficialVideo(){
   const v=window.solu_video||{url:"https://youtu.be/k1Yhm2fbgD4",t:"4-Way Shuttle System"};
   const id=ytId(v.url);
   if(!id){ window.open(v.url,"_blank","noopener"); return; }   // 채널 링크 등은 새 창
-  const box=document.getElementById('objModalBox');
-  box.innerHTML=`
-    <div class="cm-title">${esc(v.t)} · 공식 영상</div>
-    <div class="cm-sub mono">// TSPG 공식 유튜브 — 인터넷 연결 시 재생</div>
-    <div class="yt-wrap"><iframe src="https://www.youtube-nocookie.com/embed/${id}?rel=0&playsinline=1&autoplay=1"
+  closeOfficialVideo(true);
+  /* 화면 전체를 덮는 앱 오버레이 — 브라우저 Fullscreen API 는 쓰지 않는다(크롬 종료 안내가 뜸).
+     가로로 돌리면 영상이 화면을 꽉 채운다. 닫기·뒤로 가기로 빠져나온다. */
+  const ov=document.createElement("div"); ov.id="ytFS";
+  ov.innerHTML=`<div class="yt-head"><b>${esc(v.t)} · 공식 영상</b>
+      <button class="sim-btn" onclick="closeOfficialVideo()">✕ 닫기</button></div>
+    <div class="yt-stage"><iframe src="https://www.youtube-nocookie.com/embed/${id}?rel=0&playsinline=1&autoplay=1"
       title="${esc(v.t)} 공식 영상" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen
-      referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
-    <a class="doc-btn view" style="display:block;text-align:center;margin-top:12px;text-decoration:none" href="https://youtu.be/${id}" target="_blank" rel="noopener">유튜브 앱에서 열기</a>
-    <button class="cm-close-btn" onclick="closeOfficialVideo()">닫기</button>`;
-  document.getElementById('objModal').classList.add('show');
+      referrerpolicy="strict-origin-when-cross-origin"></iframe></div>`;
+  document.body.appendChild(ov);
+  document.body.classList.add("fs-lock");
+  try{ history.pushState({ytFS:1},""); }catch(_){}
+  if(!window._ytPop){ window._ytPop=()=>{ if(document.getElementById("ytFS")) closeOfficialVideo(true); };
+    window.addEventListener("popstate", window._ytPop); }
 }
-/* 닫을 때 플레이어를 비워야 소리가 멈춘다 */
-function closeOfficialVideo(){
-  const m=document.getElementById('objModal');
-  m.classList.remove('show');
-  const f=document.querySelector('#objModalBox .yt-wrap'); if(f) document.getElementById('objModalBox').innerHTML="";
+/* 닫으면 플레이어째 지워 소리를 멈춘다 */
+function closeOfficialVideo(fromPop){
+  const ov=document.getElementById("ytFS"); if(!ov) return;
+  ov.remove();
+  if(!document.getElementById("simFS")) document.body.classList.remove("fs-lock");
+  if(!fromPop){ try{ if(history.state&&history.state.ytFS) history.back(); }catch(_){} }
 }
 
 /* ----- 솔루션 1차 확인 및 필요자료 요청 (고객 전달용) ----- */
@@ -5900,7 +5909,7 @@ if("serviceWorker" in navigator){
   });
 }
 </script>
-<script src="./simulation.js?v=3.1.1"></script>
+<script src="./simulation.js?v=3.1.2"></script>
 <script src="./higgsfield.js?v=3.1.0"></script>
 </body>
 </html>
