@@ -65,7 +65,8 @@ body{
 }
 .mono{font-family:'IBM Plex Mono',monospace}
 /* 글자를 눌러도 크롬 '탭하여 검색'·길게 눌러 선택 메뉴가 뜨지 않게 — 입력칸만 선택 허용 */
-body{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
+body{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;
+  word-break:keep-all;overflow-wrap:anywhere}   /* 한글은 낱말 단위로 줄바꿈('스테이션 대/기' 방지), 칸이 모자랄 때만 강제 줄바꿈 */
 input,textarea,select,[contenteditable]{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
 
 /* shell */
@@ -541,7 +542,7 @@ body.fs-lock{overflow:hidden}
   .app{box-shadow:0 0 60px rgba(12,68,124,.10)}
 }
 </style>
-<link rel="stylesheet" href="./simulation.css?v=3.1.3">
+<link rel="stylesheet" href="./simulation.css?v=3.1.4">
 </head>
 <body>
 <div class="app">
@@ -550,7 +551,7 @@ body.fs-lock{overflow:hidden}
   <div class="topbar">
     <div class="brand">
       <span class="logo mono"><b>TSPG</b> · LOGISALL ENG</span>
-      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1006.5</span>
+      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1006.6</span>
     </div>
     <div class="prog" id="prog"></div>
   </div>
@@ -3036,7 +3037,7 @@ function renderResult(){
           </div>
           <div class="sim-bar">
             <button class="sim-btn" id="simConcept" onclick="SIM3D.toggleConcept()">📐 개념 설명</button>
-            <button class="sim-btn" onclick="SIM3D.fitView()">⟳ 시점 초기화</button>
+            <button class="sim-btn" id="simReset" onclick="SIM3D.fitView()">⟳ 시점 초기화</button>
             <button class="sim-btn" id="simCine" onclick="SIM3D.toggleCinema()">🎬 영상 모드</button>
             <button class="sim-btn" id="simFsBtn" onclick="SIM3D.toggleFull()">⛶ 전체화면</button>
           </div>
@@ -5197,7 +5198,7 @@ const SIM3D = {
     ov.appendChild(bar);
     document.body.classList.add("fs-lock");
     this.full=true;
-    const b=document.getElementById("simFsBtn"); if(b){ b.textContent="⛶ 창 모드"; b.classList.add("on"); }
+    const b=document.getElementById("simFsBtn"); if(b){ b.classList.add("on"); b.setAttribute("aria-label","창 모드"); }
     /* 브라우저 Fullscreen API 는 쓰지 않는다 — 크롬이 '전체 화면을 종료하려면…' 알림을 강제로 띄운다.
        오버레이(#simFS)가 화면을 꽉 채우고, 뒤로 가기·닫기로 빠져나온다. */
     try{ history.pushState({simFS:1},""); this._popped=false; }catch(_){}
@@ -5217,7 +5218,7 @@ const SIM3D = {
     if(ov) ov.remove();
     document.body.classList.remove("fs-lock");
     this.full=false;
-    const b=document.getElementById("simFsBtn"); if(b){ b.textContent="⛶ 전체화면"; b.classList.remove("on"); }
+    const b=document.getElementById("simFsBtn"); if(b){ b.classList.remove("on"); b.setAttribute("aria-label","전체화면"); }
     try{ document.fullscreenElement && document.exitFullscreen(); }catch(_){}
     if(!skipHistory && !this._popped){ try{ history.back(); }catch(_){} }
     this._popped=false;
@@ -5950,7 +5951,7 @@ if("serviceWorker" in navigator){
   });
 }
 </script>
-<script src="./simulation.js?v=3.1.3"></script>
+<script src="./simulation.js?v=3.1.4"></script>
 <script src="./higgsfield.js?v=3.1.0"></script>
 </body>
 </html>

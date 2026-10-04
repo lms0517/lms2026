@@ -23,14 +23,18 @@
     wrap.insertAdjacentHTML('beforeend','<div class="sim-live" id="simLive"><b>배치 준비 중</b><span>입력한 규모로 장면을 생성합니다.</span></div>');
     const controls=document.createElement('div');controls.className='sim-controls';
     wrap.after(controls);
-    controls.innerHTML=`<div class="sim-tools" aria-label="3D 시점"><button data-view="iso" aria-pressed="true">조감도</button><button data-view="top" aria-pressed="false">평면 보기</button><button data-view="aisle" aria-pressed="false">통로 내부</button><button data-view="lift" aria-pressed="false">입출고 설비</button></div>
+    controls.innerHTML=`<div class="sim-tools" aria-label="3D 시점"><button data-view="iso" aria-pressed="true">조감도</button><button data-view="top" aria-pressed="false">평면 보기</button></div>
       <div class="sim-tools sim-dir"><button id="simDirectionIn" aria-pressed="true">▶ 입고 시연</button><button id="simDirectionOut" aria-pressed="false">▶ 출고 시연</button></div>
       <div class="sim-sequence"><div class="sim-seq-head"><strong id="simSequenceTitle">화물 이동 과정 · 입고</strong><span>20초 반복 시연 · 실제 처리 시간과 무관</span></div><div class="sim-stages" id="simStages"></div><div class="sim-scrub"><input id="simTimeline" type="range" min="0" max="19.99" step="0.01" value="0" aria-label="공정 시연 위치"><output id="simTime">0.0 / 20s</output></div><p class="sim-explain" id="simExplain"></p></div>`;
     const bar=inner.querySelector('.sim-bar');controls.appendChild(bar);
     // 영상 모드는 출고 시연 바로 위, 개념 설명은 그 왼쪽(입고 시연 위). 아래 줄은 시점 초기화 | 전체화면
+    const views=controls.querySelector('[aria-label="3D 시점"]'), cine=byId('simCine');
+    if(views&&cine){cine.classList.add('cine-in-views');views.appendChild(cine);}
     const modes=document.createElement('div');modes.className='sim-tools sim-dir sim-modes';
-    ['simConcept','simCine'].forEach(id=>{const b=byId(id);if(b)modes.appendChild(b);});
+    ['simConcept','simReset'].forEach(id=>{const b=byId(id);if(b)modes.appendChild(b);});
     controls.querySelector('.sim-dir').before(modes);
+    // 전체화면은 3D 화면 오른쪽 위 아이콘으로
+    const fs=byId('simFsBtn'); if(fs){fs.className='sim-fs-corner';fs.textContent='⛶';fs.setAttribute('aria-label','전체화면');fs.title='전체화면';wrap.appendChild(fs);}
     controls.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>SIMDETAIL.view(b.dataset.view));
     byId('simDirectionIn').onclick=()=>SIMDETAIL.direction('in');
     byId('simDirectionOut').onclick=()=>SIMDETAIL.direction('out');
@@ -111,7 +115,7 @@
       });
     },
     setDirection(k){if(SIM3D.engine!==GL3D)return;this.normal();state.direction=k;(GL3D.detailArrows||[]).forEach(a=>a.arrow.setDirection(a.direction.clone().multiplyScalar(k==='in'?1:-1)));byId('simDirectionIn').setAttribute('aria-pressed',k==='in');byId('simDirectionOut').setAttribute('aria-pressed',k==='out');byId('simSequenceTitle').textContent='화물 이동 과정 · '+(k==='in'?'입고':'출고 · 공용 스테이션');this.stageButtons();this.seek(0);},
-    view(k){if(SIM3D.engine!==GL3D)return;this.normal();state.view=k;document.querySelectorAll('[data-view]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.view===k));if(k==='top'){GL3D.center.copy(GL3D.homeCenter);GL3D.sph.theta=0;GL3D.sph.phi=.03;GL3D.sph.r=GL3D.fitRadius(GL3D.bbox,0,.03,GL3D.camera.aspect);GL3D.vel.t=GL3D.vel.p=0;GL3D.render();}else SIM3D.preset(k);},
+    view(k){if(SIM3D.engine!==GL3D)return;this.normal();state.view=k;document.querySelectorAll('[data-view]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.view===k));if(k==='top'){GL3D.center.copy(GL3D.homeCenter);GL3D.sph.theta=Math.PI;GL3D.sph.phi=.03;GL3D.sph.r=GL3D.fitRadius(GL3D.bbox,Math.PI,.03,GL3D.camera.aspect);GL3D.vel.t=GL3D.vel.p=0;GL3D.render();}else SIM3D.preset(k);},
     update(t){if(!byId('simTime')||!GL3D.D)return;const s=steps();let index=0;s.forEach((x,i)=>{if(t>=x[2])index=i;});byId('simTime').textContent=t.toFixed(1)+' / 20s';byId('simTimeline').value=t;byId('simStages').querySelectorAll('button').forEach((b,i)=>b.setAttribute('aria-current',i===index?'step':'false'));byId('simExplain').textContent=s[index][1];const live=byId('simLive');const text=`<b>${state.direction==='in'?'입고':'출고'} · ${s[index][0]}</b><span>${fmt(GL3D.D.cellsShown)}셀 · ${GL3D.D.sTier}단 · 설명용 동작</span>`;if(live.innerHTML!==text)live.innerHTML=text;},
     build(e){
       const T=e.THREE,D=e.D,A=e.anchors;
