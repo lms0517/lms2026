@@ -600,7 +600,7 @@ body.fs-lock{overflow:hidden}
   <div class="topbar">
     <div class="brand">
       <span class="logo mono"><b>TSPG</b> · LOGISALL ENG</span>
-      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1010.4</span>
+      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1010.5</span>
     </div>
     <div class="prog" id="prog"></div>
   </div>
@@ -3918,11 +3918,13 @@ const GL3D = {
     }
     /* 입고 시연 화물이 들어갈 칸(앵커 railToX·맨 윗단·첫 통로 앞 칸)은 비워 둔다 — 비워 두지 않으면 적입 때 재고와 겹친다 */
     const demoI=Math.min(sBay-1,Math.floor(sBay*0.7)), demoT=sTier-1, demoZ=aisleY-cellD*0.5;
+    const occ=new Set(), ck=(i,t,z)=>i+","+t+","+z.toFixed(2);   // 재고가 놓인 칸
     for(const [i,t,b,jd] of cellsOrder){
       if(fi>=fillN) break;
       if(i===demoI && t===demoT && Math.abs(b.z0+jd*cellD+cellD/2-demoZ)<0.01) continue;
       if(!packed && Math.floor(++slot*fillN/cellsShown)===Math.floor((slot-1)*fillN/cellsShown)) continue;   // 빈 셀 산포(예시)
       const x=i*cellW+cellW/2, z=b.z0+jd*cellD+cellD/2, y=t*cellH;
+      occ.add(ck(i,t,z));
       m4.makeTranslation(x, y+0.055, z); pallets.setMatrixAt(fi,m4);
       m4.makeTranslation(x, y+0.11+cellH*0.31, z);
       if((i*3+jd+t*2)%5===0) cards.setMatrixAt(ci2++,m4); else boxes.setMatrixAt(bi2++,m4);
@@ -3932,6 +3934,15 @@ const GL3D = {
     boxes.castShadow=shadow&&fi<=2500; cards.castShadow=boxes.castShadow;
     G.add(pallets,boxes,cards); this.track(pallets); this.track(boxes); this.track(cards);
     this.storageMeshes=[pallets,boxes,cards]; this.storageCount=fi;
+    /* 입고 시연 목표 칸 — 입출고 설비가 붙은 첫 통로(모듈 0)의 빈칸을 기존 재고 바로 옆(x=0 쪽 Bay)부터 차례로.
+       레인 안에서는 가장 깊은 칸부터 채운다(4-Way 셔틀이 앞 칸을 막지 않게). 시연이 돌 때마다 하나씩 쌓인다. */
+    const m0=[]; if(sDF>0) m0.push({z0:0,deep:sDF,front:true}); if(sDB>0) m0.push({z0:aisleY+aisleW,deep:sDB,front:false});
+    const targets=[];
+    for(let i=0;i<sBay&&targets.length<600;i++) for(let t=0;t<sTier;t++) for(const b of m0)
+      for(let k=0;k<b.deep;k++){ const jd=b.front?k:b.deep-1-k, z=b.z0+jd*cellD+cellD/2;
+        if(occ.has(ck(i,t,z))||(i===demoI&&t===demoT&&Math.abs(z-demoZ)<0.01)) continue;
+        targets.push({x:i*cellW+cellW/2, t, z}); }
+    this.demoTargets=targets; this.demoIdx=0; this.demoStored=[];
     this.lodFar=[];                                        // 멀리서 숨길 잔 부재 목록
 
     /* ---- 4방향 트랙 그리드 ----
@@ -4404,6 +4415,8 @@ const GL3D = {
       railZ: aisleY+aisleW/2,
       dropZ: aisleY-cellD*0.5, cellH
     };
+    this.anchorHome={railToX:this.anchors.railToX, liftTopY:this.anchors.liftTopY, dropZ:this.anchors.dropZ};
+    if(this.setDemoTarget) this.setDemoTarget(this.demoTargets&&this.demoTargets[0]);   // 첫 입고는 기존 재고 바로 옆
     this.center=new this.THREE.Vector3(rackW/2-0.5, rackH*0.42, totalD/2-1);
     this.homeCenter=this.center.clone();      // [v2] 영역 포커스 후 복귀용
     // 화면 맞춤용 바운딩 박스 — 랙 블록 + 리프트·컨베이어 쪽 여유 (바닥 전체는 제외)
@@ -6011,7 +6024,7 @@ if("serviceWorker" in navigator){
   });
 }
 </script>
-<script src="./simulation.js?v=3.2.3"></script>
+<script src="./simulation.js?v=3.2.4"></script>
 <script src="./higgsfield.js?v=3.1.2"></script>
 </body>
 </html>

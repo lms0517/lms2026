@@ -24,7 +24,7 @@
     const L=window.roi_data.layout,d=window.d_data||STATE.data,tp=Engine.throughput(d);
     const occupied=d.stock>0?Math.min(L.cellsBuilt,Math.round(d.stock)):Math.round(L.cellsBuilt*.85);
     // 시연용 현재 재고 — 입고 적입이 끝나면 +1, 출고 인출이 끝나면 -1
-    Object.assign(state,{stockNow:occupied,stockCap:L.cellsBuilt,lastIdx:0,skipCount:true,flash:'',flashUntil:0});
+    Object.assign(state,{stockNow:occupied,stockCap:L.cellsBuilt,lastIdx:0,skipCount:true,flash:'',flashUntil:0,inDeposited:false,popped:null,lastT:null});
     // 기본값으로 계산한 장면이면 3D 위에 분명히 적는다
     const dm=(typeof defMain==='function')?defMain(d):[];
     inner.insertAdjacentHTML('afterbegin',(dm.length?`<div class="sim-def">기본값 예시 3D — ${defSummary(d).filter(t=>/면적|층고|물동량|보유/.test(t)).join(' · ')} 기준 (실제 값을 넣으면 바뀝니다)</div>`:'')+`<div class="sim-kpis">
@@ -65,8 +65,30 @@
     this._detailResize=new ResizeObserver(()=>{if(!this.renderer||!this.canvas)return;const w=this.canvas.clientWidth,h=this.canvas.clientHeight;if(w&&h&&(this._detailW!==w||this._detailH!==h)){this._detailW=w;this._detailH=h;this.resize(w,h);}});
     this._detailResize.observe(this.canvas);
   };
+  /* ── 입고 시연이 쌓이게: 목표 칸(기존 재고 바로 옆 빈칸)을 바꾸고, 넣은 화물은 그 칸에 남긴다 ── */
+  GL3D.setDemoTarget=function(g){const A=this.anchors,H=this.anchorHome;if(!A)return;
+    if(g){A.railToX=g.x;A.liftTopY=g.t*A.cellH+0.72;A.dropZ=g.z;}else if(H){A.railToX=H.railToX;A.liftTopY=H.liftTopY;A.dropZ=H.dropZ;}
+    if(this.drawRoutes&&this.detailRoutes)this.drawRoutes();};
+  GL3D.commitDemo=function(){const A=this.anchors,ap=this.actors&&this.actors.animPallet;if(!ap||!this.demoTargets)return;
+    const c=ap.clone();c.position.set(A.railToX,A.liftTopY,A.dropZ);c.visible=true;(ap.parent||this.world).add(c);
+    (this.demoStored=this.demoStored||[]).push({mesh:c,g:this.demoTargets[this.demoIdx]||null});
+    this.demoIdx=Math.min(this.demoTargets.length,this.demoIdx+1);this.setDemoTarget(this.demoTargets[this.demoIdx]);};
+  GL3D.popDemo=function(){const st=this.demoStored||[],last=st.pop();
+    if(last){if(last.mesh.parent)last.mesh.parent.remove(last.mesh);this.demoIdx=Math.max(0,this.demoIdx-1);this.setDemoTarget(last.g);return last;}
+    this.setDemoTarget(null);return null;};
+  // 방향 전환: 출고는 마지막에 쌓은 화물부터 꺼내고, 꺼내기 전에 입고로 돌아오면 제자리에 되돌린다
+  GL3D.demoDir=function(k){if(!this.demoTargets)return;
+    if(k==='out'){if(state.inDeposited){this.commitDemo();state.inDeposited=false;}if(!state.popped)state.popped=this.popDemo();}
+    else{const p=state.popped;if(p){(this.actors.animPallet.parent||this.world).add(p.mesh);(this.demoStored=this.demoStored||[]).push(p);this.demoIdx=Math.min(this.demoTargets.length,this.demoIdx+1);state.popped=null;}
+      this.setDemoTarget(this.demoTargets[this.demoIdx]);}};
   const originalTick=GL3D.tick;
   GL3D.tick=function(t){
+    // 시연이 한 바퀴 돌면: 입고는 넣은 화물을 남기고 다음 빈칸으로, 출고는 다음 화물을 꺼낼 준비
+    if(this.playing&&state.lastT!=null&&t<state.lastT-5&&this.demoTargets){
+      if(state.direction==='in'){if(state.inDeposited){this.commitDemo();state.inDeposited=false;}}
+      else if(!state.popped)state.popped=this.popDemo();
+    }
+    state.lastT=t;
     // 출고는 입고 경로를 거꾸로(이재 정지 포함), 1단 배치는 대기 구간을 줄인 시간표로
     const sceneTime=state.direction==='out' ? warp(t,oneTier()?OUT1_KEYS:OUT_KEYS) : (oneTier()?warp(t,IN1_KEYS):t);
     originalTick.call(this,sceneTime);
@@ -129,13 +151,13 @@
         b.classList.toggle('playing',run);
       });
     },
-    setDirection(k){if(SIM3D.engine!==GL3D)return;this.normal();state.direction=k;state.skipCount=true;(GL3D.detailArrows||[]).forEach(a=>a.arrow.setDirection(a.direction.clone().multiplyScalar(k==='in'?1:-1)));byId('simDirectionIn').setAttribute('aria-pressed',k==='in');byId('simDirectionOut').setAttribute('aria-pressed',k==='out');byId('simSequenceTitle').textContent='화물 이동 과정 · '+(k==='in'?'입고':'출고 · 공용 스테이션');this.stageButtons();this.seek(0);},
+    setDirection(k){if(SIM3D.engine!==GL3D)return;this.normal();state.direction=k;state.skipCount=true;GL3D.demoDir(k);(GL3D.detailArrows||[]).forEach(a=>a.arrow.setDirection(a.direction.clone().multiplyScalar(k==='in'?1:-1)));byId('simDirectionIn').setAttribute('aria-pressed',k==='in');byId('simDirectionOut').setAttribute('aria-pressed',k==='out');byId('simSequenceTitle').textContent='화물 이동 과정 · '+(k==='in'?'입고':'출고 · 공용 스테이션');this.stageButtons();this.seek(0);},
     view(k){if(SIM3D.engine!==GL3D)return;this.normal();state.view=k;document.querySelectorAll('[data-view]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.view===k));if(k==='top'){GL3D.center.copy(GL3D.homeCenter);GL3D.sph.theta=Math.PI;GL3D.sph.phi=.03;GL3D.sph.r=GL3D.fitRadius(GL3D.bbox,Math.PI,.03,GL3D.camera.aspect);GL3D.vel.t=GL3D.vel.p=0;GL3D.render();}else if(k==='iso'&&GL3D.overview)GL3D.overview();else SIM3D.preset(k);},
     update(t){if(!byId('simTime')||!GL3D.D)return;const s=steps();let index=0;s.forEach((x,i)=>{if(t>=x[2])index=i;});byId('simTime').textContent=t.toFixed(1)+' / 20s';byId('simTimeline').value=t;byId('simStages').querySelectorAll('button').forEach((b,i)=>b.setAttribute('aria-current',i===index?'step':'false'));byId('simExplain').textContent=s[index][1];// 현재 재고: 입고는 '설비 복귀'(적입 완료)로 넘어갈 때 +1, 출고는 '통로 복귀'(셀 인출 완료)로 넘어갈 때 -1
     if(state.stockNow!=null){
       if(!state.skipCount&&index!==state.lastIdx){
-        if(state.direction==='in'&&index===4&&state.lastIdx===3&&state.stockNow<state.stockCap){state.stockNow++;state.flash='+1 입고';state.flashUntil=performance.now()+2200;}
-        if(state.direction==='out'&&index===1&&state.lastIdx===0&&state.stockNow>0){state.stockNow--;state.flash='−1 출고';state.flashUntil=performance.now()+2200;}
+        if(state.direction==='in'&&index===4&&state.lastIdx===3&&state.stockNow<state.stockCap){state.stockNow++;state.inDeposited=true;state.flash='+1 입고';state.flashUntil=performance.now()+2200;}
+        if(state.direction==='out'&&index===1&&state.lastIdx===0&&state.stockNow>0){state.stockNow--;state.popped=null;state.flash='−1 출고';state.flashUntil=performance.now()+2200;}
         const sn=byId('simStockNow'),sp=byId('simStockPct');
         if(sn)sn.textContent=fmt(state.stockNow)+' 매';if(sp)sp.textContent=(state.stockNow/state.stockCap*100).toFixed(1);
       }
@@ -149,15 +171,20 @@
       const routes=e.detailRoutes=new T.Group(),dims=e.detailDimensions=new T.Group();e.world.add(routes,dims);
       const vec=a=>new T.Vector3(...a);
       const line=(points,color,parent)=>{const g=e.geo(new T.BufferGeometry().setFromPoints(points.map(vec)));const m=e.track(new T.LineBasicMaterial({color,transparent:true,opacity:.9,depthTest:false}));const l=new T.Line(g,m);l.renderOrder=20;parent.add(l);};
-      const pts=[[A.convStart.x,A.convStart.y,A.convStart.z],[A.convEnd.x,A.convEnd.y,A.convEnd.z],[A.convEnd.x,A.liftTopY,A.convEnd.z],[A.railFromX,A.liftTopY,A.railZ],[A.railToX,A.liftTopY,A.railZ],[A.railToX,A.liftTopY,A.dropZ]];
+      // 입고 목표 칸이 바뀌면(시연이 쌓일 때마다) 경로를 다시 그린다
+      e.drawRoutes=()=>{
+        routes.clear();e.detailArrows=[];
+        const A=e.anchors;const pts=[[A.convStart.x,A.convStart.y,A.convStart.z],[A.convEnd.x,A.convEnd.y,A.convEnd.z],[A.convEnd.x,A.liftTopY,A.convEnd.z],[A.railFromX,A.liftTopY,A.railZ],[A.railToX,A.liftTopY,A.railZ],[A.railToX,A.liftTopY,A.dropZ]];
       // Tubes retain a visible width when the entire warehouse is framed.
-      e.detailArrows=[];
       for(let i=0;i<pts.length-1;i++){
         const a=vec(pts[i]),b=vec(pts[i+1]),v=b.clone().sub(a),length=v.length();if(length<.01)continue;
         const tube=new T.Mesh(e.geo(new T.TubeGeometry(new T.LineCurve3(a,b),1,.12,6,false)),e.track(new T.MeshBasicMaterial({color:0x20eab0,depthTest:false,transparent:true,opacity:.85})));tube.renderOrder=20;routes.add(tube);
         const arrow=new T.ArrowHelper(v.normalize(),a.clone().lerp(b,.55),Math.min(2.2,length*.45),0x9dffe1,.9,.6);arrow.line.material.depthTest=arrow.cone.material.depthTest=false;arrow.line.renderOrder=arrow.cone.renderOrder=21;e.track(arrow.line.material);e.track(arrow.cone.material);routes.add(arrow);e.detailArrows.push({arrow,direction:v.clone()});
       }
       pts.forEach(p=>{const dot=new T.Mesh(e.geo(new T.SphereGeometry(.16,12,8)),e.track(new T.MeshBasicMaterial({color:0x6fffd7,depthTest:false})));dot.position.copy(vec(p));dot.renderOrder=21;routes.add(dot);});
+        if(state.direction==='out')e.detailArrows.forEach(x=>x.arrow.setDirection(x.direction.clone().multiplyScalar(-1)));
+      };
+      e.drawRoutes();
       const ring=new T.Mesh(e.geo(new T.TorusGeometry(Math.max(D.cellW,D.cellD)*.65,.055,6,36)),e.track(new T.MeshBasicMaterial({color:0x64ffd1,depthTest:false})));ring.rotation.x=Math.PI/2;ring.renderOrder=22;
       e.detailMarker=new T.Group();e.detailMarker.add(ring);e.world.add(e.detailMarker);
       const label=(text,position)=>{const c=document.createElement('canvas');c.width=512;c.height=96;const x=c.getContext('2d');x.fillStyle='#12283eee';x.fillRect(0,0,512,96);x.strokeStyle='#6b92b7';x.lineWidth=3;x.strokeRect(2,2,508,92);x.font='700 44px sans-serif';x.fillStyle='#e4f1ff';x.textAlign='center';x.textBaseline='middle';x.fillText(text,256,48);const tex=e.track(new T.CanvasTexture(c));const m=e.track(new T.SpriteMaterial({map:tex,depthTest:false,transparent:true}));const sp=new T.Sprite(m);sp.position.copy(vec(position));const scale=Math.max(5,Math.max(D.rackW,D.totalD)*.2);sp.scale.set(scale,scale*96/512,1);sp.renderOrder=24;dims.add(sp);};
