@@ -520,7 +520,7 @@ body.fs-lock{overflow:hidden}
   <div class="topbar">
     <div class="brand">
       <span class="logo mono"><b>TSPG</b> · LOGISALL ENG</span>
-      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1006.1</span>
+      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1006.2</span>
     </div>
     <div class="prog" id="prog"></div>
   </div>
@@ -5173,7 +5173,8 @@ const SIM3D = {
     document.body.classList.add("fs-lock");
     this.full=true;
     const b=document.getElementById("simFsBtn"); if(b){ b.textContent="⛶ 창 모드"; b.classList.add("on"); }
-    try{ ov.requestFullscreen && ov.requestFullscreen(); }catch(_){}
+    /* 브라우저 Fullscreen API 는 쓰지 않는다 — 크롬이 '전체 화면을 종료하려면…' 알림을 강제로 띄운다.
+       오버레이(#simFS)가 화면을 꽉 채우고, 뒤로 가기·닫기로 빠져나온다. */
     try{ history.pushState({simFS:1},""); this._popped=false; }catch(_){}
     requestAnimationFrame(()=>this.resize());
     if(!this._onPop){ this._onPop=()=>{ if(this.full){ this._popped=true; this.exitFull(); } };
