@@ -600,7 +600,7 @@ body.fs-lock{overflow:hidden}
   <div class="topbar">
     <div class="brand">
       <span class="logo mono"><b>TSPG</b> · LOGISALL ENG</span>
-      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1010.5</span>
+      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1010.6</span>
     </div>
     <div class="prog" id="prog"></div>
   </div>
@@ -3934,14 +3934,23 @@ const GL3D = {
     boxes.castShadow=shadow&&fi<=2500; cards.castShadow=boxes.castShadow;
     G.add(pallets,boxes,cards); this.track(pallets); this.track(boxes); this.track(cards);
     this.storageMeshes=[pallets,boxes,cards]; this.storageCount=fi;
-    /* 입고 시연 목표 칸 — 입출고 설비가 붙은 첫 통로(모듈 0)의 빈칸을 기존 재고 바로 옆(x=0 쪽 Bay)부터 차례로.
-       레인 안에서는 가장 깊은 칸부터 채운다(4-Way 셔틀이 앞 칸을 막지 않게). 시연이 돌 때마다 하나씩 쌓인다. */
+    /* 입고 시연 목표 칸 — 입출고 설비가 붙은 첫 통로(모듈 0)에서, 기존 재고 끝 Bay 보다 5칸 이상 떨어진 곳부터
+       (화면에서 새로 쌓이는 게 보이게). 넣을 때마다 층을 바꿔(예: 5단→3단→4단→2단→1단) 리프트가 오르내리고,
+       레인 안은 가장 깊은 칸부터 채운다(4-Way 셔틀이 앞 칸을 막지 않게). 시연이 돌 때마다 하나씩 쌓인다. */
     const m0=[]; if(sDF>0) m0.push({z0:0,deep:sDF,front:true}); if(sDB>0) m0.push({z0:aisleY+aisleW,deep:sDB,front:false});
-    const targets=[];
-    for(let i=0;i<sBay&&targets.length<600;i++) for(let t=0;t<sTier;t++) for(const b of m0)
-      for(let k=0;k<b.deep;k++){ const jd=b.front?k:b.deep-1-k, z=b.z0+jd*cellD+cellD/2;
-        if(occ.has(ck(i,t,z))||(i===demoI&&t===demoT&&Math.abs(z-demoZ)<0.01)) continue;
-        targets.push({x:i*cellW+cellW/2, t, z}); }
+    let lastI=-1;
+    for(let i=0;i<sBay;i++) for(let t=0;t<sTier;t++) for(const b of m0) for(let jd=0;jd<b.deep;jd++)
+      if(occ.has(ck(i,t,b.z0+jd*cellD+cellD/2))) lastI=Math.max(lastI,i);
+    const startI=Math.min(sBay-1, lastI>=0 ? lastI+5 : Math.min(3,sBay-1));
+    const top=sTier-1, mid=Math.floor(top/2);
+    const tierOrder=[...new Set([top,mid,...Array.from({length:sTier},(_,k)=>top-k)])];   // 5단·3단·4단·2단·1단 …
+    const maxDeep=Math.max(sDF,sDB), targets=[];
+    for(let i=startI;i<sBay&&targets.length<600;i++)
+      for(let k=0;k<maxDeep;k++) for(const b of m0){ if(k>=b.deep) continue;
+        const jd=b.front?k:b.deep-1-k, z=b.z0+jd*cellD+cellD/2;
+        for(const t of tierOrder){
+          if(occ.has(ck(i,t,z))||(i===demoI&&t===demoT&&Math.abs(z-demoZ)<0.01)) continue;
+          targets.push({x:i*cellW+cellW/2, t, z}); } }
     this.demoTargets=targets; this.demoIdx=0; this.demoStored=[];
     this.lodFar=[];                                        // 멀리서 숨길 잔 부재 목록
 
