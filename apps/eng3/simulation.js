@@ -25,7 +25,7 @@
     const occupied=d.stock>0?Math.min(L.cellsBuilt,Math.round(d.stock)):Math.round(L.cellsBuilt*.85);
     // 기본값으로 계산한 장면이면 3D 위에 분명히 적는다
     const dm=(typeof defMain==='function')?defMain(d):[];
-    inner.insertAdjacentHTML('afterbegin',(dm.length?`<div class="sim-def">기본값 예시 3D — ${defSummary(d).filter(t=>/면적|층고|물동량/.test(t)).join(' · ')} 기준 (실제 값을 넣으면 바뀝니다)</div>`:'')+`<div class="sim-kpis">
+    inner.insertAdjacentHTML('afterbegin',(dm.length?`<div class="sim-def">기본값 예시 3D — ${defSummary(d).filter(t=>/면적|층고|물동량|보유/.test(t)).join(' · ')} 기준 (실제 값을 넣으면 바뀝니다)</div>`:'')+`<div class="sim-kpis">
       <div class="sim-kpi"><span>구축 규모</span><b>${fmt(L.cellsBuilt)} 셀</b><small>${L.aisles}통로 · ${L.bay}Bay · ${L.tier}단</small></div>
       <div class="sim-kpi"><span>랙 외곽 치수</span><b>${L.rackW.toFixed(1)} × ${(L.footD-6).toFixed(1)} m</b><small>랙 높이 ${L.rackH.toFixed(1)}m · 층고 ${d.height}m</small></div>
       <div class="sim-kpi"><span>${d.stock>0?'현재 보관 화물':'보관 화물 (85% 예시)'}</span><b>${fmt(occupied)} 매</b><small>${(occupied/L.cellsBuilt*100).toFixed(1)}% 점유${d.stock>L.cellsBuilt?' · 공간 초과 '+fmt(d.stock-L.cellsBuilt)+'매':''}</small></div>

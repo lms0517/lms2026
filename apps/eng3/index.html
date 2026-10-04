@@ -592,7 +592,7 @@ body.fs-lock{overflow:hidden}
   <div class="topbar">
     <div class="brand">
       <span class="logo mono"><b>TSPG</b> · LOGISALL ENG</span>
-      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1009.2</span>
+      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1009.3</span>
     </div>
     <div class="prog" id="prog"></div>
   </div>
@@ -730,7 +730,7 @@ body.fs-lock{overflow:hidden}
       <div class="row2" style="margin-bottom:18px">
         <div class="field">
           <label>창고 면적 (평) <span class="req">*</span></label>
-          <input type="number" id="f_area" placeholder="800" inputmode="numeric">
+          <input type="number" id="f_area" placeholder="520" inputmode="numeric">
         </div>
         <div class="field">
           <label>유효 층고 (m) <span class="req">*</span></label>
@@ -741,7 +741,7 @@ body.fs-lock{overflow:hidden}
         <div class="field">
           <label>월 물동량 <span class="req">*</span></label>
           <div class="suffix">
-            <input type="number" id="f_volume" placeholder="6000" inputmode="numeric">
+            <input type="number" id="f_volume" placeholder="10000" inputmode="numeric">
             <span class="u mono">PLT/월</span>
           </div>
         </div>
@@ -779,7 +779,7 @@ body.fs-lock{overflow:hidden}
       <div class="row2">
         <div class="field">
           <label>현 보관 파렛트 수</label>
-          <input type="number" id="f_stock" placeholder="예: 4000" inputmode="numeric">
+          <input type="number" id="f_stock" placeholder="1000" inputmode="numeric">
         </div>
         <div class="field">
           <label>평균 보관일수</label>
@@ -873,8 +873,11 @@ const CONFIG = {
   CELL_FOOTPRINT_M2: 1.96,     // 자동창고 셀 1칸 바닥 점유 = 1.4m × 1.4m  [실측 견적 기준]
   RACK_BEAM_M: 0.25,           // 단 간 빔/여유
   /* 입력 기본값 — 칸을 비워 두면 이 값으로 계산하고 결과·3D 에 '기본값'으로 표시한다.
-     중견 물류센터의 흔한 조건: 800평 · 유효 10m · 월 6,000PLT(일 약 230PL) · KPP 표준 T11 파렛트 */
-  DEFAULT_INPUT: { area:800, height:10, volume:6000, palletW:1100, palletL:1100, palletH:1.5, palletKg:1000, storeDays:15 },
+     '권장 구축 3,000셀' 예시가 나오도록 맞춘 값 (4-Way 셔틀 중형 규모 — 예: GS칼텍스 인천 3,700→4,600PL · 67→84PL/h)
+       520평 · 유효 10m · 적재 1.5m(T11 1100×1100, 일반 박스 화물) → 5단 · 3,000셀
+       월 10,000PLT(입고 50% · 보관 15일) → 물동량 기준 필요 3,000셀 · 시간당 48PL
+       현 보유 1,000PL(일반 랙 3단) → 개선 예상: 보관량 1,000→3,000 · 3단→5단 · 48 필요 ▶ 75 능력 */
+  DEFAULT_INPUT: { area:520, height:10, volume:10000, stock:1000, palletW:1100, palletL:1100, palletH:1.5, palletKg:1000, storeDays:15 },
   DEFAULT_PALLET_LOAD_H: 1.5,  // 파렛트 적재높이(m) 폴백값 — DEFAULT_INPUT.palletH 와 같게
   AISLE_LOSS: 0.20,            // 주행통로·리프트·입출고 설비 점유 차감율 [견적 3건 역산]
   LABOR_COST_MAN: 4000,        // 1인 연간 총비용(만원) — 인당 4천만원 기준
@@ -2334,7 +2337,7 @@ function collect(){
   d.cells=0;   // v3: 구축 셀규모 입력 삭제 — 항상 면적이 허용하는 최대로 계산
   d.palletKg=num("f_palletKg","palletKg");
   d.palletH=num("f_palletH","palletH");
-  d.stock=+$("#f_stock").value||0;
+  d.stock=num("f_stock","stock");
   d.storeDays=num("f_storeDays","storeDays");
   d.defaulted=used;                                   // 기본값으로 채운 칸 (결과·3D·요청서에 표시)
   // 현 운영 인력 입력은 v2에서 제거 — Engine.roi 의 staffRaw 폴백이 물동량·면적으로 추정
@@ -2757,7 +2760,7 @@ function renderDocList(){
 }
 
 /* 기본값 표시 — 규모를 좌우하는 면적·층고·물동량 중 기본값이 있으면 '기본값 예시' 결과로 본다 */
-const DEF_LABEL={area:"면적",height:"유효 층고",volume:"월 물동량",palletW:"파렛트 규격",palletL:"파렛트 규격",palletH:"적재높이",palletKg:"최대중량",storeDays:"보관일수"};
+const DEF_LABEL={area:"면적",height:"유효 층고",volume:"월 물동량",stock:"현 보유 파렛트",palletW:"파렛트 규격",palletL:"파렛트 규격",palletH:"적재높이",palletKg:"최대중량",storeDays:"보관일수"};
 function isDef(d,k){ return !!(d&&d.defaulted&&d.defaulted.includes(k)); }
 function defMain(d){ return ["area","height","volume"].filter(k=>isDef(d,k)); }
 function defSummary(d){
@@ -2765,6 +2768,7 @@ function defSummary(d){
   if(isDef(d,"area")) out.push(`면적 ${fmt(DF.area)}평`);
   if(isDef(d,"height")) out.push(`유효 층고 ${DF.height}m`);
   if(isDef(d,"volume")) out.push(`월 물동량 ${fmt(DF.volume)} PLT`);
+  if(isDef(d,"stock")) out.push(`현 보유 ${fmt(DF.stock)} 파렛트`);
   if(isDef(d,"palletW")||isDef(d,"palletL")) out.push(`파렛트 ${DF.palletW}×${DF.palletL}`);
   if(isDef(d,"palletH")) out.push(`적재높이 ${DF.palletH}m`);
   if(isDef(d,"palletKg")) out.push(`최대중량 ${fmt(DF.palletKg)}kg`);
@@ -5662,7 +5666,7 @@ function reqText(){
     const df=k=>isDef(d,k)?"(기본값)":"";
     L.push(`  - 규모 : ${fmt(d.area)}평${df("area")} · 유효 층고 ${d.height}m${df("height")}`);
     L.push(`  - 물동량 : 월 ${fmt(d.volume)} PL${df("volume")} → 일 ${fmt(tp.perDay)} PL (시간당 ${fmt(tp.perHr)} PL/h · 주6일 8시간)`);
-    if(d.stock) L.push(`  - 현 보관량 : ${fmt(d.stock)} PL`);
+    if(d.stock) L.push(`  - 현 보관량 : ${fmt(d.stock)} PL${df("stock")}`);
     if(d.palletW||d.palletL||d.palletKg||d.palletH){
       const ps=[]; if(d.palletW||d.palletL) ps.push((d.palletW||"?")+"×"+(d.palletL||"?")+"mm");
       if(d.palletKg) ps.push(fmt(d.palletKg)+"kg"); if(d.palletH) ps.push("적재 "+d.palletH+"m");
@@ -5941,7 +5945,7 @@ if("serviceWorker" in navigator){
   });
 }
 </script>
-<script src="./simulation.js?v=3.2.0"></script>
+<script src="./simulation.js?v=3.2.1"></script>
 <script src="./higgsfield.js?v=3.1.2"></script>
 </body>
 </html>
