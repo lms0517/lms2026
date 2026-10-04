@@ -329,9 +329,27 @@ a.btn{text-decoration:none}
 #ytFS .yt-head .sim-btn{flex:none;padding:7px 14px}
 #ytFS .yt-stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding-bottom:env(safe-area-inset-bottom)}
 #ytFS iframe{width:100%;height:100%;max-height:calc(100vw*9/16);border:0;background:#000}
-@media (orientation:landscape){ #ytFS iframe{max-height:none} #ytFS .yt-head{padding:6px 12px} }
+#ytFS .yt-x{display:none}
+/* 가로 화면: 제목줄 없이 영상만 꽉 */
+@media (orientation:landscape){
+  #ytFS .yt-head{display:none}
+  #ytFS iframe{max-height:none}
+  #ytFS .yt-stage{position:relative}
+  #ytFS .yt-x{display:flex}
+}
+/* 세로 화면: 휴대폰을 돌리지 않아도 영상을 90° 돌려 화면 전체를 채운다 */
+@media (orientation:portrait){
+  #ytFS .yt-head{display:none}
+  #ytFS .yt-stage{position:fixed;top:50%;left:50%;width:100vh;width:100dvh;height:100vw;padding:0;
+    transform:translate(-50%,-50%) rotate(90deg);transform-origin:center}
+  #ytFS iframe{max-height:none;width:100%;height:100%}
+  #ytFS .yt-x{display:flex}
+}
+#ytFS .yt-x{position:absolute;top:10px;right:10px;z-index:2;width:38px;height:38px;border-radius:50%;
+  align-items:center;justify-content:center;border:none;background:rgba(0,0,0,.55);color:#fff;font-size:18px;cursor:pointer}
 /* 전달 시트 3칸이 좁은 화면에서 밖으로 밀려나지 않게 */
 .share-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+.share-grid.two{grid-template-columns:repeat(2,minmax(0,1fr))}
 .share-opt{min-width:0}
 .share-opt span:last-child{word-break:keep-all;overflow-wrap:anywhere}
 .calc-modal .cm-box{overflow-x:hidden}
@@ -530,7 +548,7 @@ body.fs-lock{overflow:hidden}
   <div class="topbar">
     <div class="brand">
       <span class="logo mono"><b>TSPG</b> · LOGISALL ENG</span>
-      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1006.3</span>
+      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1006.4</span>
     </div>
     <div class="prog" id="prog"></div>
   </div>
@@ -5682,7 +5700,7 @@ function openOfficialVideo(){
   const ov=document.createElement("div"); ov.id="ytFS";
   ov.innerHTML=`<div class="yt-head"><b>${esc(v.t)} · 공식 영상</b>
       <button class="sim-btn" onclick="closeOfficialVideo()">✕ 닫기</button></div>
-    <div class="yt-stage"><iframe src="https://www.youtube-nocookie.com/embed/${id}?rel=0&playsinline=1&autoplay=1"
+    <div class="yt-stage"><button class="yt-x" onclick="closeOfficialVideo()" aria-label="닫기">✕</button><iframe src="https://www.youtube-nocookie.com/embed/${id}?rel=0&playsinline=1&autoplay=1"
       title="${esc(v.t)} 공식 영상" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen
       referrerpolicy="strict-origin-when-cross-origin"></iframe></div>`;
   document.body.appendChild(ov);
@@ -5741,12 +5759,12 @@ function reqText(){
 /* 같은 조건으로 다시 여는 짧은 링크 — QR 에 담을 수 있게 입력값만 넣는다 */
 const REQ_KEYS=[["t","temp"],["b","build"],["a","area"],["h","height"],["v","volume"],["r","inRatio"],
   ["w","palletW"],["l","palletL"],["ph","palletH"],["kg","palletKg"],["s","stock"],["sd","storeDays"]];
-function reqLink(){
+function reqLink(hash){
   const d=window.d_data||STATE.data;
   const q=REQ_KEYS.filter(([k,f])=>d[f]!==undefined&&d[f]!==""&&d[f]!==0&&!(f==="inRatio"&&d[f]===50))
                   .map(([k,f])=>k+":"+d[f]).join(",");
   const u=new URL(location.href); u.search=""; u.hash="";
-  return u.href+(q?"?p="+q:"")+"#req";    // 값은 영문·숫자·점뿐이라 인코딩 없이 짧게
+  return u.href+(q?"?p="+q:"")+(hash||"#req");    // 값은 영문·숫자·점뿐이라 인코딩 없이 짧게
 }
 /* 링크로 열면 입력칸을 채우고 결과 화면까지 바로 간다 */
 function applyReqLink(){
@@ -5760,22 +5778,20 @@ function applyReqLink(){
   setv("f_stock",m.s); setv("f_storeDays",m.sd);
   flowLiveCalc(); collect(); renderResult(); showStep(STATE.total-1);
   if(location.hash==="#req") setTimeout(openReqSheet,400);
+  if(location.hash==="#dl")  setTimeout(openReqDownload,400);   // QR 로 연 경우: 요청서 파일 내려받기
 }
 /* 내용을 먼저 보여주고 메일 · QR · 톡으로 전달 */
 function openReqSheet(){
-  const txt=reqText(), link=reqLink();
+  const txt=reqText();
   const title="솔루션 1차 확인 및 필요자료 요청";
-  const subject=encodeURIComponent(title), mbody=encodeURIComponent(txt+"\n\n■ 같은 조건으로 열어보기\n"+link);
   const box=document.getElementById('objModalBox');
   box.innerHTML=`
     <div class="cm-title">${title}</div>
-    <div class="cm-sub mono">// 내용을 확인한 뒤 메일 · QR · 톡으로 보냅니다</div>
+    <div class="cm-sub mono">// 내용을 확인한 뒤 QR · 톡으로 보냅니다</div>
     <pre class="req-pre">${esc(txt)}</pre>
-    <div class="share-grid">
-      <a class="share-opt" href="mailto:?subject=${subject}&body=${mbody}">
-        <span class="ic">✉️</span><b>이메일</b><span>메일 앱에 본문이 채워집니다</span></a>
+    <div class="share-grid two">
       <button class="share-opt" onclick="reqQR()">
-        <span class="ic">▦</span><b>QR</b><span>찍으면 같은 조건으로 열림</span></button>
+        <span class="ic">▦</span><b>QR</b><span>찍으면 요청서 파일이 내려받아집니다</span></button>
       <button class="share-opt" onclick="reqShare()">
         <span class="ic">💬</span><b>톡</b><span>카톡·문자 등 공유창</span></button>
     </div>
@@ -5785,13 +5801,37 @@ function openReqSheet(){
   document.getElementById('objModal').classList.add('show');
 }
 function reqQR(){
-  const url=reqLink(), box=document.getElementById('shareQRBox'); if(!box) return;
+  const url=reqLink("#dl"), box=document.getElementById('shareQRBox'); if(!box) return;
   box.innerHTML=`<div class="share-qr"><canvas id="shareQRCv" width="220" height="220"></canvas>
-    <div class="u">카메라로 찍으면 이 조건 그대로 결과와 요청서가 열립니다</div>
-    <button class="doc-btn view" onclick="copyText(reqLink(),'링크가 복사되었습니다')">링크 복사</button></div>`;
+    <div class="u">카메라로 찍으면 요청서 본문이 파일(.txt)로 내려받아집니다</div>
+    <button class="doc-btn view" onclick="copyText(reqLink('#dl'),'링크가 복사되었습니다')">링크 복사</button></div>`;
   if(!drawQR(document.getElementById('shareQRCv'), url))
     box.innerHTML=`<div class="note">QR 을 만들지 못했습니다 — 링크를 복사해 보내세요.<br><small>${esc(url)}</small></div>`;
   box.scrollIntoView({block:"nearest"});
+}
+/* 요청서 본문을 텍스트 파일로 저장 (BOM 포함 — 윈도 메모장에서도 한글이 깨지지 않게) */
+function downloadReq(){
+  const txt=reqText().replace(/\n/g,"\r\n");
+  const d=new Date(), ymd=d.getFullYear()+String(d.getMonth()+1).padStart(2,"0")+String(d.getDate()).padStart(2,"0");
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob(["\ufeff"+txt],{type:"text/plain;charset=utf-8"}));
+  a.download=`TSPG_solution_request_${ymd}.txt`;   // 한글 파일명은 일부 브라우저가 'download' 로 바꿔 버린다
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+  toast("요청서 파일을 내려받았습니다");
+}
+/* QR 로 연 사람에게: 본문 미리보기 + 내려받기 (자동으로 한 번, 버튼으로 다시) */
+function openReqDownload(){
+  const box=document.getElementById('objModalBox');
+  box.innerHTML=`
+    <div class="cm-title">솔루션 1차 확인 및 필요자료 요청</div>
+    <div class="cm-sub mono">// 요청서 파일이 내려받아집니다 — 안 받아지면 아래 버튼을 누르세요</div>
+    <pre class="req-pre">${esc(reqText())}</pre>
+    <button class="btn primary" style="width:100%;margin-top:12px" onclick="downloadReq()">📥 요청서 내려받기 (.txt)</button>
+    <button class="doc-btn view" style="width:100%;margin-top:8px" onclick="copyText(reqText(),'내용이 복사되었습니다')">📋 내용 복사</button>
+    <button class="cm-close-btn" onclick="document.getElementById('objModal').classList.remove('show')">닫기</button>`;
+  document.getElementById('objModal').classList.add('show');
+  try{ downloadReq(); }catch(_){}
 }
 async function reqShare(){
   const txt=reqText();
