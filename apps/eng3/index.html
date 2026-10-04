@@ -574,7 +574,7 @@ body.fs-lock{overflow:hidden}
   border:none;border-radius:24px;padding:12px 20px;font:600 14px inherit;font-family:inherit;color:#fff;background:var(--grad-btn);
   box-shadow:0 8px 24px rgba(0,0,0,.45);cursor:pointer;white-space:nowrap}
 </style>
-<link rel="stylesheet" href="./simulation.css?v=3.1.6">
+<link rel="stylesheet" href="./simulation.css?v=3.1.7">
 </head>
 <body>
 <div class="app">
@@ -583,7 +583,7 @@ body.fs-lock{overflow:hidden}
   <div class="topbar">
     <div class="brand">
       <span class="logo mono"><b>TSPG</b> · LOGISALL ENG</span>
-      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1008.4</span>
+      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1008.5</span>
     </div>
     <div class="prog" id="prog"></div>
   </div>
@@ -2832,7 +2832,7 @@ function renderResult(){
     </div>`;}).join("");
 
   // 개략 투자비(CAPEX) — 실제 견적서와 동일한 항목별 구성 (회수기간은 표시하지 않음)
-  const cx = roi.capex;
+  const cx = capexView(roi.capex);   // 관리비·이윤을 항목 단가에 녹인 고객용 표시
   const capexWarn = cx.warn
     ? `<div class="note" style="border-color:#e5a50a;color:#e5a50a;margin-bottom:10px">⚠ ${cx.warn}</div>` : "";
   const capexLines = cx.groupOrder.map(g=>{
@@ -2851,10 +2851,7 @@ function renderResult(){
       ${cx.perCell?`<div class="li"><span class="k">셀당 환산 단가</span><span class="v mono">${fmt(cx.perCell)}원/셀</span></div>`:""}
     </div>`;
 
-  const capexProfit = `<div class="capex-group" style="margin-top:14px">
-      <div class="li total"><span class="k">소계 (직접비 계)</span><span class="v"><b>${won(Math.round(cx.subtotal/10000))}원</b></span></div>
-      ${cx.overheadLines.map(o=>`<div class="li total"><span class="k">${o.n} ${(o.r*100).toFixed(0)}%</span><span class="v"><b>${won(Math.round(o.amt/10000))}원</b></span></div>`).join("")}
-    </div>`;
+  const capexProfit = "";   // 관리비·이윤은 고객 화면에 따로 보이지 않는다 (capexView 에서 항목 단가에 포함)
 
   const capexScope = `<div class="capex-group" style="margin-top:14px">
       <div class="cg-title">견적 제외 범위 <span class="cg-sub">고객 별도 부담 — 반드시 고지</span></div>
@@ -5534,9 +5531,22 @@ document.getElementById('objModal').addEventListener('click', function(e){
   if(e.target===this) this.classList.remove('show');
 });
 
+/* 고객에게 보여 주는 투자비 — 일반관리비·기업이윤 줄을 따로 보이지 않게 항목 단가에 녹인다.
+   항목 금액을 모두 더하면 총 투자비와 같다(만원 단위 반올림 차이만). 산출 조건 문구의 금액도 같은 비율로. */
+function capexView(cx){
+  const f = cx.subtotal>0 ? cx.total/cx.subtotal : 1;
+  const won100 = v => Math.round(v*f/100)*100;
+  const lines = cx.lines.map(l=>{ const p=won100(l.p); return Object.assign({},l,{p, amt:p*l.q}); });
+  const sums = {}; Object.keys(cx.sums||{}).forEach(g=>{ sums[g]=lines.filter(l=>l.g===g).reduce((a,l)=>a+l.amt,0); });
+  const basis = (cx.basis||[]).map(([k,v,c])=>[k,
+    String(v).replace(/\s*\+\s*관리비·이윤\s*[\d.]+%/,"").replace(/([\d,]{4,})원/g,(m,n)=>fmt(won100(+n.replace(/,/g,"")))+"원").replace(/(셀 )([\d,]{5,})/g,(m,a2,n)=>a2+fmt(won100(+n.replace(/,/g,"")))), c]);
+  return Object.assign({},cx,{lines, sums, basis, overheadLines:[], subtotal:cx.total});
+}
+
 /* ----- [v2] 제안 가능 영역 → 판정 근거 모달 ----- */
 /* 스코프 모달용 항목별 투자비 표 — 자동창고 CAPEX 카드와 같은 구성 */
 function capexMini(cx){
+  cx = capexView(cx);
   const rows = cx.lines.map(l=>`<div class="li"><span class="k">${l.n} <small style="color:var(--muted)">${l.s||''} · ${fmt(l.q)}${l.u}</small></span><span class="v">${won(Math.round(l.amt/10000))}원</span></div>`).join("");
   const oh = cx.overheadLines.map(o=>`<div class="li"><span class="k">${o.n} ${(o.r*100).toFixed(0)}%</span><span class="v">${won(Math.round(o.amt/10000))}원</span></div>`).join("");
   const basis = (cx.basis||[]).map(([a,b,c])=>`<div class="li"><span class="k">${a} <small style="color:${c==='실측'?'var(--green)':'#E8B21F'}">[${c}]</small></span><span class="v" style="font-weight:400;font-size:11.5px;text-align:right;max-width:58%">${b}</span></div>`).join("");
@@ -5894,7 +5904,7 @@ if("serviceWorker" in navigator){
   });
 }
 </script>
-<script src="./simulation.js?v=3.1.8"></script>
-<script src="./higgsfield.js?v=3.1.1"></script>
+<script src="./simulation.js?v=3.1.9"></script>
+<script src="./higgsfield.js?v=3.1.2"></script>
 </body>
 </html>

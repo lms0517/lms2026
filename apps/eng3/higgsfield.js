@@ -7,25 +7,20 @@
   };
   const fit=GL3D.fitView,cam=GL3D.applyCam,tick=GL3D.tick;
   // 조감도 — 창고 전체가 화면에 들어오게
-  GL3D.overview=function(keep){
+  GL3D.overview=function(){
     if(!this.higgsfieldScene){fit.call(this);return;}
     this.center.copy(this.homeCenter);this.sph.theta=-2.43;this.sph.phi=1.06;
     // 바닥 판 가장자리까지 넣으면 랙이 작게 보인다 — 랙이 화면을 꽉 채우도록 당긴다(가장자리는 일부 잘려도 됨)
     // 가로 전체화면은 입출고 설비(앞쪽)까지 들어오게 조금 덜 당긴다
     this.sph.r=this.fitRadius(this.bbox,this.sph.theta,this.sph.phi,this.camera.aspect)*(this.camera.aspect>1.2?0.75:0.6);
-    this.vel.t=this.vel.p=0;if(!keep)this.render();
+    this.vel.t=this.vel.p=0;this.render();
   };
-  // 기본 시점 — 입출고 설비(리프트·컨베이어·지게차)와 설비 쪽 재고를 크게. 전체는 '조감도'
+  // 기본 시점 = 조감도(창고 전체). 설비 쪽 확대(D안)는 너무 가깝다는 의견으로 되돌림
   GL3D.fitView=function(){
     if(!this.higgsfieldScene)return fit.call(this);
-    // 가로로 넓은 화면(전체화면)은 창고 전체가 잘 들어오므로 조감도로
-    if(this.camera.aspect>1.2)return this.overview();
-    this.overview(true);
-    const A=this.anchors;
-    this.center.set(A.railToX*0.3,this.D.rackH*0.35,A.convEnd.z+2);
-    this.sph.r=Math.max(12,this.sph.r*0.62);
-    this.render();
+    this.overview();
   };
+
   GL3D.applyCam=function(){cam.call(this);if(this.higgsfieldScene&&this.scene?.fog){this.scene.fog.near=this.camera.far*.85;this.scene.fog.far=this.camera.far;}};
   GL3D.tick=function(t){tick.call(this,t);if(this.higgsfieldScene){this.actors.shuttles.forEach((s,i)=>{s.position.y+=.2;const load=this.actors.shuttleLoad[i];if(load)load.position.y=s.position.y+.515;});}};
   const preset=GL3D.preset;

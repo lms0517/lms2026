@@ -32,7 +32,7 @@
     wrap.insertAdjacentHTML('beforeend','<div class="sim-live" id="simLive"><b>배치 준비 중</b><span>입력한 규모로 장면을 생성합니다.</span></div>');
     const controls=document.createElement('div');controls.className='sim-controls';
     wrap.after(controls);
-    controls.innerHTML=`<div class="sim-tools" aria-label="3D 시점"><button data-view="iso" aria-pressed="false">조감도</button><button data-view="top" aria-pressed="false">평면 보기</button></div>
+    controls.innerHTML=`<div class="sim-tools" aria-label="3D 시점"><button data-view="iso" aria-pressed="true">조감도</button><button data-view="top" aria-pressed="false">평면 보기</button></div>
       <div class="sim-tools sim-dir"><button id="simDirectionIn" aria-pressed="true">▶ 입고 시연</button><button id="simDirectionOut" aria-pressed="false">▶ 출고 시연</button></div>
       <div class="sim-sequence"><div class="sim-seq-head"><strong id="simSequenceTitle">화물 이동 과정 · 입고</strong><span>20초 반복 시연 · 실제 처리 시간과 무관</span></div><div class="sim-stages" id="simStages"></div><div class="sim-scrub"><input id="simTimeline" type="range" min="0" max="19.99" step="0.01" value="0" aria-label="공정 시연 위치"><output id="simTime">0.0 / 20s</output></div><p class="sim-explain" id="simExplain"></p></div>`;
     const bar=inner.querySelector('.sim-bar');controls.appendChild(bar);
@@ -86,8 +86,8 @@
   const initSim=SIM3D.init;
   SIM3D.init=async function(){await initSim.call(this);const badge=byId('simRenderer');if(!this.engine)return;if(badge)badge.textContent=this.engine===GL3D?'3D · 입력값 반영':'2D · 호환 모드';if(this.engine!==GL3D){document.querySelectorAll('.sim-controls button,.sim-controls select,.sim-controls input').forEach(b=>{if(!['simDirectionIn','simDirectionOut','simFsBtn'].includes(b.id))b.disabled=true;});byId('simLive').innerHTML='<b>2D 호환 모드</b><span>이 환경에서 WebGL을 사용할 수 없습니다.</span>';byId('simExplain').textContent='공정별 제어와 단면 보기는 WebGL 지원 브라우저에서 사용할 수 있습니다.';}};
   // Move the canvas together with captions and controls when entering fullscreen.
-  // 시점 초기화 = 기본(설비 쪽 확대) 시점 — 조감도 버튼 눌림 표시를 끈다
-  const baseFit=SIM3D.fitView;SIM3D.fitView=function(){document.querySelectorAll('[data-view]').forEach(b=>b.setAttribute('aria-pressed','false'));baseFit.call(this);};
+  // 시점 초기화 = 조감도 — 버튼 눌림 표시도 조감도로
+  const baseFit=SIM3D.fitView;SIM3D.fitView=function(){document.querySelectorAll('[data-view]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.view==='iso')));baseFit.call(this);};
   const enterFull=SIM3D.enterFull,exitFull=SIM3D.exitFull;
   SIM3D.enterFull=function(){if(this.full||!this.engine)return;const wrap=byId('simCanvas').parentNode,controls=document.querySelector('#simPanel .sim-controls');enterFull.call(this);if(!this.full)return;this._detailHome={wrap,parent:wrap.parentNode,next:wrap.nextSibling,controls,cp:controls.parentNode,cn:controls.nextSibling};wrap.appendChild(byId('simCanvas'));wrap.insertBefore(byId('simCanvas'),wrap.firstChild);byId('simFS').querySelector('.fs-cv').appendChild(wrap);controls.appendChild(byId('simFS').querySelector('.sim-bar'));byId('simFS').appendChild(controls);};
   SIM3D.exitFull=function(skip){if(!this.full)return;const h=this._detailHome;if(h){h.cp.insertBefore(h.controls,h.cn&&h.cn.parentNode===h.cp?h.cn:null);h.parent.insertBefore(h.wrap,h.next&&h.next.parentNode===h.parent?h.next:null);const bar=h.controls.querySelector('.sim-bar');if(bar)byId('simFS').appendChild(bar);this._detailHome=null;}exitFull.call(this,skip);};
