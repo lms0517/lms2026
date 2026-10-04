@@ -66,7 +66,7 @@
     if(sh&&sceneTime>=this.PH.railEnd&&sceneTime<this.PH.depositEnd){sh.position.z=ap.position.z;sh.position.y=ap.position.y-.72;}
     else if(sh&&sceneTime>=this.PH.depositEnd){sh.position.z=this.anchors.dropZ+(this.anchors.railZ-this.anchors.dropZ)*this.sCurve((sceneTime-this.PH.depositEnd)/(this.LOOP-this.PH.depositEnd));}
     if(state.direction==='out')this.actors.convPallets.forEach(p=>p.visible=false);
-    if(this.detailMarker){this.detailMarker.position.copy(ap.position);this.detailMarker.visible=ap.visible&&!this.concept&&!this.cinema;this.detailMarker.rotation.y=t*.8;}
+    if(this.detailMarker){this.detailMarker.position.copy(ap.position);this.detailMarker.visible=ap.visible&&!this.concept;this.detailMarker.rotation.y=t*.8;}
     SIMDETAIL.update(t);
   };
   // Pause retains positions and simulation time, so scrubbing and resume are consistent.
@@ -82,9 +82,6 @@
   const enterFull=SIM3D.enterFull,exitFull=SIM3D.exitFull;
   SIM3D.enterFull=function(){if(this.full||!this.engine)return;const wrap=byId('simCanvas').parentNode,controls=document.querySelector('#simPanel .sim-controls');enterFull.call(this);if(!this.full)return;this._detailHome={wrap,parent:wrap.parentNode,next:wrap.nextSibling,controls,cp:controls.parentNode,cn:controls.nextSibling};wrap.appendChild(byId('simCanvas'));wrap.insertBefore(byId('simCanvas'),wrap.firstChild);byId('simFS').querySelector('.fs-cv').appendChild(wrap);controls.appendChild(byId('simFS').querySelector('.sim-bar'));byId('simFS').appendChild(controls);};
   SIM3D.exitFull=function(skip){if(!this.full)return;const h=this._detailHome;if(h){h.cp.insertBefore(h.controls,h.cn&&h.cn.parentNode===h.cp?h.cn:null);h.parent.insertBefore(h.wrap,h.next&&h.next.parentNode===h.parent?h.next:null);const bar=h.controls.querySelector('.sim-bar');if(bar)byId('simFS').appendChild(bar);this._detailHome=null;}exitFull.call(this,skip);};
-  // 영상 모드는 공식 영상처럼 화면 위 안내선(경로·치수)을 숨기고, 끄면 다시 켠다
-  const baseSetCinema=GL3D.setCinema;
-  GL3D.setCinema=function(on){baseSetCinema.call(this,on);[this.detailRoutes,this.detailDimensions].forEach(g=>{if(g)g.visible=!on;});if(this.detailMarker&&on)this.detailMarker.visible=false;if(this.renderer)this.render();};
   const baseConcept=SIM3D.toggleConcept,baseCinema=SIM3D.toggleCinema;
   SIM3D.toggleConcept=function(){if(GL3D.concept){baseConcept.call(this);SIMDETAIL.normal();GL3D.tick(0);return;}SIMDETAIL.normal();baseConcept.call(this);byId('simLive').style.display='none';};
   SIM3D.toggleCinema=function(){
@@ -127,13 +124,13 @@
       e.detailArrows=[];
       for(let i=0;i<pts.length-1;i++){
         const a=vec(pts[i]),b=vec(pts[i+1]),v=b.clone().sub(a),length=v.length();if(length<.01)continue;
-        const tube=new T.Mesh(e.geo(new T.TubeGeometry(new T.LineCurve3(a,b),1,.075,6,false)),e.track(new T.MeshBasicMaterial({color:0x20eab0,depthTest:false,transparent:true,opacity:.85})));tube.renderOrder=20;routes.add(tube);
-        const arrow=new T.ArrowHelper(v.normalize(),a.clone().lerp(b,.55),Math.min(1.5,length*.4),0x9dffe1,.55,.4);arrow.line.material.depthTest=arrow.cone.material.depthTest=false;arrow.line.renderOrder=arrow.cone.renderOrder=21;e.track(arrow.line.material);e.track(arrow.cone.material);routes.add(arrow);e.detailArrows.push({arrow,direction:v.clone()});
+        const tube=new T.Mesh(e.geo(new T.TubeGeometry(new T.LineCurve3(a,b),1,.12,6,false)),e.track(new T.MeshBasicMaterial({color:0x20eab0,depthTest:false,transparent:true,opacity:.85})));tube.renderOrder=20;routes.add(tube);
+        const arrow=new T.ArrowHelper(v.normalize(),a.clone().lerp(b,.55),Math.min(2.2,length*.45),0x9dffe1,.9,.6);arrow.line.material.depthTest=arrow.cone.material.depthTest=false;arrow.line.renderOrder=arrow.cone.renderOrder=21;e.track(arrow.line.material);e.track(arrow.cone.material);routes.add(arrow);e.detailArrows.push({arrow,direction:v.clone()});
       }
       pts.forEach(p=>{const dot=new T.Mesh(e.geo(new T.SphereGeometry(.16,12,8)),e.track(new T.MeshBasicMaterial({color:0x6fffd7,depthTest:false})));dot.position.copy(vec(p));dot.renderOrder=21;routes.add(dot);});
       const ring=new T.Mesh(e.geo(new T.TorusGeometry(Math.max(D.cellW,D.cellD)*.65,.055,6,36)),e.track(new T.MeshBasicMaterial({color:0x64ffd1,depthTest:false})));ring.rotation.x=Math.PI/2;ring.renderOrder=22;
       e.detailMarker=new T.Group();e.detailMarker.add(ring);e.world.add(e.detailMarker);
-      const label=(text,position)=>{const c=document.createElement('canvas');c.width=512;c.height=96;const x=c.getContext('2d');x.fillStyle='#12283eee';x.fillRect(0,0,512,96);x.strokeStyle='#6b92b7';x.lineWidth=3;x.strokeRect(2,2,508,92);x.font='600 36px sans-serif';x.fillStyle='#e4f1ff';x.textAlign='center';x.textBaseline='middle';x.fillText(text,256,48);const tex=e.track(new T.CanvasTexture(c));const m=e.track(new T.SpriteMaterial({map:tex,depthTest:false,transparent:true}));const sp=new T.Sprite(m);sp.position.copy(vec(position));const scale=Math.max(3.8,Math.max(D.rackW,D.totalD)*.14);sp.scale.set(scale,scale*96/512,1);sp.renderOrder=24;dims.add(sp);};
+      const label=(text,position)=>{const c=document.createElement('canvas');c.width=512;c.height=96;const x=c.getContext('2d');x.fillStyle='#12283eee';x.fillRect(0,0,512,96);x.strokeStyle='#6b92b7';x.lineWidth=3;x.strokeRect(2,2,508,92);x.font='700 44px sans-serif';x.fillStyle='#e4f1ff';x.textAlign='center';x.textBaseline='middle';x.fillText(text,256,48);const tex=e.track(new T.CanvasTexture(c));const m=e.track(new T.SpriteMaterial({map:tex,depthTest:false,transparent:true}));const sp=new T.Sprite(m);sp.position.copy(vec(position));const scale=Math.max(5,Math.max(D.rackW,D.totalD)*.2);sp.scale.set(scale,scale*96/512,1);sp.renderOrder=24;dims.add(sp);};
       const tick=(p,axis)=>{const a=p.slice(),b=p.slice();a[axis]-=.35;b[axis]+=.35;line([a,b],0x9bc9ff,dims);};
       line([[0,.18,-2],[D.rackW,.18,-2]],0x9bc9ff,dims);tick([0,.18,-2],2);tick([D.rackW,.18,-2],2);label('W '+D.rackW.toFixed(1)+' m',[D.rackW/2,.8,-2.5]);
       line([[D.rackW+2,.18,0],[D.rackW+2,.18,D.totalD]],0x9bc9ff,dims);tick([D.rackW+2,.18,0],0);tick([D.rackW+2,.18,D.totalD],0);label('D '+D.totalD.toFixed(1)+' m',[D.rackW+3,1,D.totalD/2]);

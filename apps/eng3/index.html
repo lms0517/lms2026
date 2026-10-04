@@ -509,7 +509,7 @@ body.fs-lock{overflow:hidden}
   .app{box-shadow:0 0 60px rgba(12,68,124,.10)}
 }
 </style>
-<link rel="stylesheet" href="./simulation.css?v=3.0.8">
+<link rel="stylesheet" href="./simulation.css?v=3.1.0">
 </head>
 <body>
 <div class="app">
@@ -518,7 +518,7 @@ body.fs-lock{overflow:hidden}
   <div class="topbar">
     <div class="brand">
       <span class="logo mono"><b>TSPG</b> · LOGISALL ENG</span>
-      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1005.9</span>
+      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1006</span>
     </div>
     <div class="prog" id="prog"></div>
   </div>
@@ -3853,10 +3853,19 @@ const GL3D = {
     const boxes  =new T.InstancedMesh(boxG,boxM,Math.max(1,fillN));
     const cards  =new T.InstancedMesh(boxG,cardM,Math.max(1,fillN));
     let fi=0, bi2=0, ci2=0, slot=0;
-    outer:
-    for(let t=0;t<sTier;t++) for(const b of blocks) for(let jd=0;jd<b.deep;jd++) for(let i=0;i<sBay;i++){
-      if(fi>=fillN) break outer;
-      if(Math.floor(++slot*fillN/cellsShown)===Math.floor((slot-1)*fillN/cellsShown)) continue;                 // 빈 셀 산포
+    /* 현재 재고를 넣었으면 실제 운영처럼 입출고 설비(리프트·컨베이어, x=0 쪽)에 가까운
+       Bay 부터 차곡차곡 채운다. 재고 미입력(85% 예시)일 때만 고르게 흩어 놓는다. */
+    const packed = (D.d && D.d.stock>0);
+    const cellsOrder = [];
+    if(packed){
+      const bl=blocks.slice().sort((a,b)=>a.z0-b.z0);
+      for(let i=0;i<sBay;i++) for(let t=0;t<sTier;t++) for(const b of bl) for(let jd=0;jd<b.deep;jd++) cellsOrder.push([i,t,b,jd]);
+    } else {
+      for(let t=0;t<sTier;t++) for(const b of blocks) for(let jd=0;jd<b.deep;jd++) for(let i=0;i<sBay;i++) cellsOrder.push([i,t,b,jd]);
+    }
+    for(const [i,t,b,jd] of cellsOrder){
+      if(fi>=fillN) break;
+      if(!packed && Math.floor(++slot*fillN/cellsShown)===Math.floor((slot-1)*fillN/cellsShown)) continue;   // 빈 셀 산포(예시)
       const x=i*cellW+cellW/2, z=b.z0+jd*cellD+cellD/2, y=t*cellH;
       m4.makeTranslation(x, y+0.055, z); pallets.setMatrixAt(fi,m4);
       m4.makeTranslation(x, y+0.11+cellH*0.31, z);
@@ -5857,7 +5866,7 @@ if("serviceWorker" in navigator){
   });
 }
 </script>
-<script src="./simulation.js?v=3.0.9"></script>
-<script src="./higgsfield.js?v=3.0.7"></script>
+<script src="./simulation.js?v=3.1.0"></script>
+<script src="./higgsfield.js?v=3.1.0"></script>
 </body>
 </html>
