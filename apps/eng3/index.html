@@ -53,6 +53,8 @@
   --grad-stat:linear-gradient(180deg,#17233b,#121c30);
   --grad-btn:linear-gradient(135deg,#183461,#22477f);
   --grad-hero:linear-gradient(135deg,#112443,#1a3561);
+  --hi:#5ee6bd;            /* 핵심 숫자 강조(권장 구축 규모·총 투자비·목표값) — 어두운 바탕에서 가장 잘 보이게 */
+  --hi-soft:rgba(94,230,189,.10);
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{height:100%}
@@ -216,7 +218,13 @@ a.btn{text-decoration:none}
 .stat .v{overflow-wrap:normal}
 .stat .v small{display:inline-block}
 @media (max-width:440px){.stats{grid-template-columns:1fr 1fr}.stat .v{font-size:22px}.stat .v small{font-size:11.5px}}
-.stat.hl .v{color:var(--accent-2)}
+.def-hint{margin-top:6px;font-size:12px;color:var(--muted)}
+.def-hint b{color:var(--ink-soft)}
+.def-note{margin:0 0 14px;padding:11px 14px;border:1px dashed rgba(232,178,31,.55);border-radius:var(--radius-sm);background:rgba(232,178,31,.07);font-size:12.5px;line-height:1.6;color:var(--ink-soft)}
+.def-note b{color:#f2c55c;margin-right:6px}
+.stat.hl{border-color:rgba(94,230,189,.55);background:linear-gradient(180deg,rgba(94,230,189,.10),rgba(94,230,189,.03)),var(--grad-stat)}
+.stat.hl .v{color:var(--hi);text-shadow:0 0 18px rgba(94,230,189,.25)}
+.stat.hl .l{color:var(--ink-soft)}
 .stat.green .v{color:var(--green)}
 .stat .sub{font-size:10.5px;color:var(--muted);margin-top:3px}
 /* 압축형 — 취급량처럼 숫자 둘을 한 줄에 */
@@ -282,7 +290,7 @@ a.btn{text-decoration:none}
 .kpi2 .li .v{display:flex;gap:10px;align-items:baseline;justify-content:flex-end}
 .kpi2 .li .now{color:var(--muted);min-width:74px;text-align:right}
 .kpi2 .li .arw{color:var(--accent);font-size:10px}
-.kpi2 .li .tgt{color:var(--accent-2);font-weight:700;min-width:74px;text-align:right}
+.kpi2 .li .tgt{color:var(--hi);font-weight:700;min-width:74px;text-align:right}
 .kpi2-head{display:flex;justify-content:flex-end;gap:10px;font-size:10px;color:var(--muted);padding-bottom:6px;margin-bottom:4px;border-bottom:1px solid var(--line);font-family:'IBM Plex Mono',monospace}
 .kpi2-head span{min-width:74px;text-align:right}
 /* [v2] 초동 질문 탭 · 입력 포커스 강조 */
@@ -479,7 +487,7 @@ body.fs-lock{overflow:hidden}
 .li.total{border-top:1px solid var(--line-2);margin-top:4px;padding-top:10px;border-bottom:none}
 .li.total .k{font-weight:600;color:var(--ink)}
 .capex-total{display:flex;justify-content:space-between;align-items:baseline;margin-top:16px;padding:13px 14px;background:linear-gradient(135deg,rgba(143,176,220,.12),rgba(143,176,220,.04));border:1px solid var(--accent);border-radius:var(--radius-sm);font-size:13.5px;font-weight:600;color:var(--ink);box-shadow:var(--sh-md),var(--hl)}
-.capex-total .v{font-size:22px;font-family:'IBM Plex Mono',monospace;color:var(--accent-2)}
+.capex-total .v{font-size:22px;font-family:'IBM Plex Mono',monospace;color:var(--hi)}
 .li .v.mono{font-family:'IBM Plex Mono',monospace;font-size:12.5px}
 
 
@@ -549,7 +557,7 @@ body.fs-lock{overflow:hidden}
 .cs-result{font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:700;color:var(--accent-2);text-align:right;white-space:nowrap;min-width:80px}
 .calc-final{background:linear-gradient(135deg,rgba(143,176,220,.12),rgba(143,176,220,.04));border:1px solid var(--accent);border-radius:var(--radius-sm);padding:13px 15px;margin:14px 0;display:flex;justify-content:space-between;align-items:center}
 .calc-final .cf-l{font-size:13px;color:var(--ink-soft)}
-.calc-final .cf-v{font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:700;color:var(--accent-2)}
+.calc-final .cf-v{font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:700;color:var(--hi)}
 .const-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
 .const-item{background:var(--bg-2);border:1px solid var(--line);border-radius:var(--radius-sm);padding:10px 12px}
 .const-item .ck{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--accent);display:block;margin-bottom:3px}
@@ -575,7 +583,7 @@ body.fs-lock{overflow:hidden}
   border:none;border-radius:24px;padding:12px 20px;font:600 14px inherit;font-family:inherit;color:#fff;background:var(--grad-btn);
   box-shadow:0 8px 24px rgba(0,0,0,.45);cursor:pointer;white-space:nowrap}
 </style>
-<link rel="stylesheet" href="./simulation.css?v=3.1.7">
+<link rel="stylesheet" href="./simulation.css?v=3.2.0">
 </head>
 <body>
 <div class="app">
@@ -584,7 +592,7 @@ body.fs-lock{overflow:hidden}
   <div class="topbar">
     <div class="brand">
       <span class="logo mono"><b>TSPG</b> · LOGISALL ENG</span>
-      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1009.1</span>
+      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1009.2</span>
     </div>
     <div class="prog" id="prog"></div>
   </div>
@@ -690,6 +698,7 @@ body.fs-lock{overflow:hidden}
         <div class="step-kicker mono">STEP 2 / 3</div>
         <h2>운영 정보</h2>
         <p>1차 개념 제안에 필요한 최소 정보입니다. 아래 6가지만 있으면 방향과 개략 투자비가 나옵니다.</p>
+        <p class="def-hint">회색 숫자는 <b>기본값</b>입니다 — 비워 두면 그 값으로 계산하고, 결과와 3D 에 '기본값'으로 표시합니다.</p>
       </div>
 
       <div class="card">
@@ -721,18 +730,18 @@ body.fs-lock{overflow:hidden}
       <div class="row2" style="margin-bottom:18px">
         <div class="field">
           <label>창고 면적 (평) <span class="req">*</span></label>
-          <input type="number" id="f_area" placeholder="예: 500" inputmode="numeric">
+          <input type="number" id="f_area" placeholder="800" inputmode="numeric">
         </div>
         <div class="field">
           <label>유효 층고 (m) <span class="req">*</span></label>
-          <input type="number" id="f_height" placeholder="예: 8" inputmode="decimal">
+          <input type="number" id="f_height" placeholder="10" inputmode="decimal">
         </div>
       </div>
       <div class="row2 flow-row" style="margin-bottom:6px">
         <div class="field">
           <label>월 물동량 <span class="req">*</span></label>
           <div class="suffix">
-            <input type="number" id="f_volume" placeholder="예: 10000" inputmode="numeric">
+            <input type="number" id="f_volume" placeholder="6000" inputmode="numeric">
             <span class="u mono">PLT/월</span>
           </div>
         </div>
@@ -759,7 +768,7 @@ body.fs-lock{overflow:hidden}
         </div>
         <div class="field">
           <label>적재높이 <small>m</small></label>
-          <input type="number" id="f_palletH" placeholder="1.8" inputmode="decimal" step="0.1">
+          <input type="number" id="f_palletH" placeholder="1.5" inputmode="decimal" step="0.1">
         </div>
         <div class="field">
           <label>최대중량 <small>kg</small></label>
@@ -775,12 +784,12 @@ body.fs-lock{overflow:hidden}
         <div class="field">
           <label>평균 보관일수</label>
           <div class="suffix">
-            <input type="number" id="f_storeDays" placeholder="예: 15" inputmode="numeric">
+            <input type="number" id="f_storeDays" placeholder="15" inputmode="numeric">
             <span class="u mono">일</span>
           </div>
         </div>
       </div>
-      <div class="hint" style="margin-bottom:18px">평균 보관일수 = 입고~출고 평균 체류일. 재고·물동량 기반 '권장 규모' 참고치 산출에 사용(미입력 시 15일로 계산).</div>
+      <div class="hint" style="margin-bottom:18px">평균 보관일수 = 입고~출고 평균 체류일. 재고·물동량 기반 '권장 규모' 참고치 산출에 사용(비우면 기본 15일).</div>
 
 
     </section>
@@ -863,7 +872,10 @@ const CONFIG = {
   CONV_RACK_TIERS: 3,          // 일반 창고 평균 적재 단수(비교 기준) — 가정
   CELL_FOOTPRINT_M2: 1.96,     // 자동창고 셀 1칸 바닥 점유 = 1.4m × 1.4m  [실측 견적 기준]
   RACK_BEAM_M: 0.25,           // 단 간 빔/여유
-  DEFAULT_PALLET_LOAD_H: 1.8,  // 파렛트 적재높이(m) 폴백값 — 사용자가 STEP1에서 직접 입력, 미입력 시에만 사용
+  /* 입력 기본값 — 칸을 비워 두면 이 값으로 계산하고 결과·3D 에 '기본값'으로 표시한다.
+     중견 물류센터의 흔한 조건: 800평 · 유효 10m · 월 6,000PLT(일 약 230PL) · KPP 표준 T11 파렛트 */
+  DEFAULT_INPUT: { area:800, height:10, volume:6000, palletW:1100, palletL:1100, palletH:1.5, palletKg:1000, storeDays:15 },
+  DEFAULT_PALLET_LOAD_H: 1.5,  // 파렛트 적재높이(m) 폴백값 — DEFAULT_INPUT.palletH 와 같게
   AISLE_LOSS: 0.20,            // 주행통로·리프트·입출고 설비 점유 차감율 [견적 3건 역산]
   LABOR_COST_MAN: 4000,        // 1인 연간 총비용(만원) — 인당 4천만원 기준
   LABOR_REDUCTION: 0.65,       // 자동화 후 인력 절감율
@@ -2307,21 +2319,24 @@ function showStep(n){
 
 function collect(){
   const d=STATE.data;
+  const DF=CONFIG.DEFAULT_INPUT, used=[];
+  const num=(id,key)=>{ const v=+$("#"+id).value; if(v>0) return v; used.push(key); return DF[key]; };
   d.build=$("#f_build").value;
-  d.area=+$("#f_area").value||0;
-  d.height=+$("#f_height").value||0;
+  d.area=num("f_area","area");
+  d.height=num("f_height","height");
   /* v3: 월 물동량 한 칸 + 입·출고 비율(선택). 일 입출고 칸은 없앴다. */
   d.inDay=0; d.outDay=0;
-  d.volume=+$("#f_volume").value||0;
+  d.volume=num("f_volume","volume");
   const ipRaw=$("#f_inPct").value, ip=Number(ipRaw);
   d.inRatio=(ipRaw!==""&&ip>=0&&ip<=100)?ip:50;     // 0%·100% 도 그대로 (빈칸만 기본 50)
-  d.palletW=Number($("#f_palletW").value)||0;
-  d.palletL=Number($("#f_palletL").value)||0;
+  d.palletW=num("f_palletW","palletW");
+  d.palletL=num("f_palletL","palletL");
   d.cells=0;   // v3: 구축 셀규모 입력 삭제 — 항상 면적이 허용하는 최대로 계산
-  d.palletKg=+$("#f_palletKg").value||0;
-  d.palletH=+$("#f_palletH").value||0;
+  d.palletKg=num("f_palletKg","palletKg");
+  d.palletH=num("f_palletH","palletH");
   d.stock=+$("#f_stock").value||0;
-  d.storeDays=+$("#f_storeDays").value||0;
+  d.storeDays=num("f_storeDays","storeDays");
+  d.defaulted=used;                                   // 기본값으로 채운 칸 (결과·3D·요청서에 표시)
   // 현 운영 인력 입력은 v2에서 제거 — Engine.roi 의 staffRaw 폴백이 물동량·면적으로 추정
   d.staff=0;
 }
@@ -2741,6 +2756,21 @@ function renderDocList(){
     `<div class="note">‘보기’는 앱 안에서 바로 소개서를 펼칩니다. ‘전달’은 QR·톡 중 골라 소개서를 보냅니다. 받는 분이 링크를 눌러 열람·저장할 수 있습니다.</div>`;
 }
 
+/* 기본값 표시 — 규모를 좌우하는 면적·층고·물동량 중 기본값이 있으면 '기본값 예시' 결과로 본다 */
+const DEF_LABEL={area:"면적",height:"유효 층고",volume:"월 물동량",palletW:"파렛트 규격",palletL:"파렛트 규격",palletH:"적재높이",palletKg:"최대중량",storeDays:"보관일수"};
+function isDef(d,k){ return !!(d&&d.defaulted&&d.defaulted.includes(k)); }
+function defMain(d){ return ["area","height","volume"].filter(k=>isDef(d,k)); }
+function defSummary(d){
+  const DF=CONFIG.DEFAULT_INPUT, out=[];
+  if(isDef(d,"area")) out.push(`면적 ${fmt(DF.area)}평`);
+  if(isDef(d,"height")) out.push(`유효 층고 ${DF.height}m`);
+  if(isDef(d,"volume")) out.push(`월 물동량 ${fmt(DF.volume)} PLT`);
+  if(isDef(d,"palletW")||isDef(d,"palletL")) out.push(`파렛트 ${DF.palletW}×${DF.palletL}`);
+  if(isDef(d,"palletH")) out.push(`적재높이 ${DF.palletH}m`);
+  if(isDef(d,"palletKg")) out.push(`최대중량 ${fmt(DF.palletKg)}kg`);
+  if(isDef(d,"storeDays")) out.push(`보관일수 ${DF.storeDays}일`);
+  return out;
+}
 const TEMP_LABEL={ambient:"상온",chilled:"냉장 0~10℃",frozen:"냉동 -20℃↓",hot:"항온/고온",clean:"클린/방폭"};
 const BUILD_LABEL={new:"신설",existing:"기존건물 개조",extend:"증축"};
 
@@ -2762,10 +2792,14 @@ function renderResult(){
   // 환경 칩
   const envChips=[
     TEMP_LABEL[d.temp], BUILD_LABEL[d.build],
-    d.area?`${fmt(d.area)}평`:null,
-    d.height?`유효 ${d.height}m`:null,
-    tp.perDay?`일 ${fmt(tp.perDay)} PL (시간당 ${fmt(tp.perHr)})`:null
+    d.area?`${fmt(d.area)}평${isDef(d,"area")?" · 기본":""}`:null,
+    d.height?`유효 ${d.height}m${isDef(d,"height")?" · 기본":""}`:null,
+    tp.perDay?`일 ${fmt(tp.perDay)} PL (시간당 ${fmt(tp.perHr)})${isDef(d,"volume")?" · 기본":""}`:null
   ].filter(Boolean).map(x=>`<span>${x}</span>`).join("");
+  // 기본값으로 채운 칸이 있으면 결과 맨 위에 알린다
+  const defs=defSummary(d);
+  const defNote = defs.length ? `<div class="def-note"><b>${defMain(d).length?'기본값 예시':'일부 기본값'}</b>
+      입력하지 않은 항목은 기본값으로 계산했습니다 — ${defs.join(" · ")}. 실제 값을 넣으면 규모·투자비·3D 가 바뀝니다.</div>` : "";
 
   /* 산출 불가: 숫자(규모·투자비)를 지어내지 않고, 무엇이 모자란지만 알려 준다 */
   if(roi.infeasible){
@@ -2937,6 +2971,7 @@ function renderResult(){
       <div class="env">${envChips}</div>
     </div>
 
+    ${defNote}
     <div class="card">
       <div class="h mono">개략 규모 추정<span class="ln"></span></div>
       <div class="stats">
@@ -2949,7 +2984,7 @@ function renderResult(){
         <div class="stat slim">
           <div class="l">취급량</div>
           <div class="v">${fmt(tp.perDay)}<small>PL/일</small></div><span class="sep">·</span>
-          <div class="v" style="color:var(--accent-2)">${fmt(tp.perHr)}<small>PL/h</small></div>
+          <div class="v" style="color:var(--hi)">${fmt(tp.perHr)}<small>PL/h</small></div>
           <div class="sub">월 ${fmt(roi.volMonth)} ÷ ${tp.workDays}일 · 입${tp.inRatio}:출${100-tp.inRatio} · ${tp.opHours}h</div>
         </div>
       </div>
@@ -5624,13 +5659,14 @@ function reqText(){
     const tp=Engine.throughput(d);
     L.push("■ 오늘 확인한 조건");
     L.push(`  - 온도대 / 공사분류 : ${TEMP_LABEL[d.temp]} / ${BUILD_LABEL[d.build]}`);
-    L.push(`  - 규모 : ${fmt(d.area)}평 · 유효 층고 ${d.height}m`);
-    L.push(`  - 물동량 : 일 ${fmt(tp.perDay)} PL (시간당 ${fmt(tp.perHr)} PL/h · 주6일 8시간)`);
+    const df=k=>isDef(d,k)?"(기본값)":"";
+    L.push(`  - 규모 : ${fmt(d.area)}평${df("area")} · 유효 층고 ${d.height}m${df("height")}`);
+    L.push(`  - 물동량 : 월 ${fmt(d.volume)} PL${df("volume")} → 일 ${fmt(tp.perDay)} PL (시간당 ${fmt(tp.perHr)} PL/h · 주6일 8시간)`);
     if(d.stock) L.push(`  - 현 보관량 : ${fmt(d.stock)} PL`);
     if(d.palletW||d.palletL||d.palletKg||d.palletH){
       const ps=[]; if(d.palletW||d.palletL) ps.push((d.palletW||"?")+"×"+(d.palletL||"?")+"mm");
       if(d.palletKg) ps.push(fmt(d.palletKg)+"kg"); if(d.palletH) ps.push("적재 "+d.palletH+"m");
-      L.push(`  - 파렛트 : ${ps.join(" · ")}`);
+      L.push(`  - 파렛트 : ${ps.join(" · ")}${["palletW","palletL","palletH","palletKg"].some(k=>isDef(d,k))?" (일부 기본값)":""}`);
     }
     L.push("");
     if(roi&&est){
@@ -5905,7 +5941,7 @@ if("serviceWorker" in navigator){
   });
 }
 </script>
-<script src="./simulation.js?v=3.1.9"></script>
+<script src="./simulation.js?v=3.2.0"></script>
 <script src="./higgsfield.js?v=3.1.2"></script>
 </body>
 </html>
