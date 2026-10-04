@@ -163,6 +163,15 @@ a.btn{text-decoration:none}
 .card{background:var(--grad-panel);border:1px solid var(--line);border-radius:var(--radius);padding:17px;margin-bottom:14px;box-shadow:var(--sh-md),var(--hl)}
 .card>.h{display:flex;align-items:center;gap:8px;font-size:11px;font-family:'IBM Plex Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin-bottom:13px}
 .card>.h .ln{flex:1;height:1px;background:var(--line)}
+.duo{padding:12px}
+.duo-heads{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.duo-h{display:flex;align-items:center;gap:7px;width:100%;font-family:inherit;text-align:left;cursor:pointer;
+  border:1px solid var(--line);background:var(--grad-stat);border-radius:var(--radius-sm);padding:13px 12px;
+  box-shadow:var(--sh-sm),var(--hl);color:var(--ink)}
+.duo-h .ic{flex:none;font-size:15px;line-height:1}
+.duo-h b{flex:1;min-width:0;font-size:13.5px;font-weight:700;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.duo-h.open{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset,var(--sh-sm)}
+.duo-panel .roi-panel-inner{padding-top:6px}
 
 /* stat grid */
 .stats{display:grid;grid-template-columns:.82fr 1.18fr;gap:9px}
@@ -407,20 +416,6 @@ body.fs-lock{overflow:hidden}
 .lchip b{font-size:13px;font-weight:700}
 .lchip i{font-style:normal;font-size:10.5px;opacity:.62;font-family:'IBM Plex Mono',monospace}
 .lchip em{font-style:normal;font-size:11px;font-weight:700;opacity:.55}
-.cph{display:flex;gap:8px;overflow-x:auto;margin-top:9px;padding-bottom:4px;-webkit-overflow-scrolling:touch;scroll-snap-type:x mandatory}
-.cph .it{flex:0 0 64%;scroll-snap-align:start;border-radius:9px;overflow:hidden;border:1px solid var(--line);background:rgba(255,255,255,.03)}
-.cph .it img{width:100%;height:120px;object-fit:cover;display:block;background:#0d1424}
-.cph .it .ppl{height:120px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:var(--muted);font-size:18px;border-bottom:1px dashed rgba(255,255,255,.16)}
-.cph .it .ppl small{font-size:9.5px;letter-spacing:.04em}
-.cph .it .cp{font-size:10px;color:var(--muted);padding:5px 7px;text-align:center;line-height:1.35}
-.afterbox{margin-top:9px;background:rgba(61,220,132,.055);border:1px solid rgba(61,220,132,.2);border-radius:10px;padding:9px 11px}
-.afterbox .lb{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.09em;color:#16a34a;margin-bottom:5px}
-.afterbox ul{margin:0;padding-left:13px}
-.afterbox li{font-size:11.5px;line-height:1.5;margin-bottom:3px;color:var(--ink-soft)}
-.eqline{margin-top:8px;background:rgba(127,178,255,.09);border:1px solid rgba(127,178,255,.26);border-radius:9px;padding:8px 10px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#1565c0;line-height:1.5}
-.bawrap{margin-top:9px}
-.mcap2{font-size:10px;color:var(--muted);margin-top:5px;line-height:1.45}
-.bacv{width:100%;height:150px;display:block;border-radius:10px;border:1px solid var(--line);background:linear-gradient(180deg,#0e1526,#0a0f1c)}
 .cmed{margin-top:9px}
 .cmed .ph{display:flex;gap:7px;overflow-x:auto;padding-bottom:3px;-webkit-overflow-scrolling:touch}
 .cmed .ph img{height:100px;border-radius:8px;border:1px solid var(--line);flex:0 0 auto}
@@ -498,7 +493,7 @@ body.fs-lock{overflow:hidden}
   <div class="topbar">
     <div class="brand">
       <span class="logo mono"><b>TSPG</b> · LOGISALL ENG</span>
-      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1004</span>
+      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1004.2</span>
     </div>
     <div class="prog" id="prog"></div>
   </div>
@@ -530,7 +525,7 @@ body.fs-lock{overflow:hidden}
         <div class="roi-panel">
           <div class="roi-panel-inner">
             <div class="intro-list">
-              <div class="ipt"><span class="ck">✓</span><span><b>로지스올그룹</b>(40년 풀링 네트워크 · 연매출 2조) 계열 — 2024년 TSPG 인수로 <b>자동화 원천기술 내재화</b></span></div>
+              <div class="ipt"><span class="ck">✓</span><span><b>로지스올그룹</b>(40년 풀링 네트워크) 계열 — 2024년 TSPG 인수로 <b>자동화 원천기술 내재화</b></span></div>
               <div class="ipt"><span class="ck">✓</span><span>국내 최초 셔틀형 자동창고 <b>원천기술 보유</b> (MDPS 자체개발)</span></div>
               <div class="ipt"><span class="ck">✓</span><span>설계·제작·설치·AS <b>일괄 수행</b> (전 구성원 91% 엔지니어)</span></div>
               <div class="ipt"><span class="ck">✓</span><span>냉동 -30℃ ~ 고온 55℃ <b>전 온도대 구축 경험</b></span></div>
@@ -575,14 +570,16 @@ body.fs-lock{overflow:hidden}
         </div>
       </div>
 
-      <div class="card">
-        <div class="h mono">📄 회사소개서<span class="ln"></span></div>
-        <div id="docList"></div>
-      </div>
-
-      <div class="card">
-        <div class="h mono obj-toggle" onclick="toggleCardPanel(this)" style="cursor:pointer">🔗 소개자료<span class="ln"></span><span class="obj-caret mono">▼</span></div>
-        <div class="roi-panel tall">
+      <!-- 회사소개서 · 소개자료 — 하단에 좌우로 나란히, 누르면 아래로 펼친다 -->
+      <div class="card duo">
+        <div class="duo-heads">
+          <button class="duo-h obj-toggle" data-p="docPanel" onclick="toggleDuo(this)"><span class="ic">📄</span><b>회사소개서</b><span class="obj-caret mono">▼</span></button>
+          <button class="duo-h obj-toggle" data-p="resPanel" onclick="toggleDuo(this)"><span class="ic">🔗</span><b>소개자료</b><span class="obj-caret mono">▼</span></button>
+        </div>
+        <div class="roi-panel duo-panel" id="docPanel">
+          <div class="roi-panel-inner"><div id="docList"></div></div>
+        </div>
+        <div class="roi-panel tall duo-panel" id="resPanel">
           <div class="roi-panel-inner">
             <div class="res-tabs">
               <button class="res-tab on" data-c="tspg" onclick="renderResList('tspg')">TSPG</button>
@@ -899,8 +896,8 @@ const SYSTEMS = {
 
 const OBJECTIONS = [
   ["“너무 비싸다”","초기 투자가 아니라 회수기간·TCO로 보십시오. 통상 5~8년 회수 후 10년 이상 절감이 이어집니다. 무엇보다 사람을 못 구하면 그 매출 기회손실이 더 큰 비용입니다."],
-  ["“수입 장비가 더 검증됐다”","국산 원천기술이라 납기·당일 유지보수·부품·커스터마이징이 유리합니다. 수입 장비는 고장 시 부품이 바다를 건너옵니다. TSPG는 충남 서천 공장에서 직접 제작하며, 2024년 로지스올그룹(연매출 2조) 인수로 그룹 차원의 재무·운영 안정성까지 확보했습니다. KOREA MAT 2026에서 실환경 시연도 공개했습니다."],
-  ["“회사 규모가 작아 불안하다”","TSPG는 로지스올그룹 계열입니다. 1984년부터 40년간 파렛트 풀링 네트워크를 운영해온 연매출 2조 그룹이 자동화 원천기술을 내재화한 것으로, 장기 AS·부품 공급·프로젝트 이행력이 그룹 차원에서 보증됩니다."],
+  ["“수입 장비가 더 검증됐다”","국산 원천기술이라 납기·당일 유지보수·부품·커스터마이징이 유리합니다. 수입 장비는 고장 시 부품이 바다를 건너옵니다. TSPG는 충남 서천 공장에서 직접 제작하며, 2024년 로지스올그룹 인수로 그룹 차원의 재무·운영 안정성까지 확보했습니다. KOREA MAT 2026에서 실환경 시연도 공개했습니다."],
+  ["“회사 규모가 작아 불안하다”","TSPG는 로지스올그룹 계열입니다. 1984년부터 40년간 파렛트 풀링 네트워크를 운영해온 그룹이 자동화 원천기술을 내재화한 것으로, 장기 AS·부품 공급·프로젝트 이행력이 그룹 차원에서 보증됩니다."],
   ["“물량이 줄면 무용지물 아니냐”","확장·축소가 유연한 셔틀이고, 무인지게차로 시작해 단계적으로 확장하는 모듈러 설계가 가능합니다."],
   ["“고장나면 라인 전체가 멈춘다”","리프트 입·출고 분리 이중화, 원격 예지보전, 자체 AS팀, SLA로 가동률을 보장합니다."],
   ["“기존 건물이라 고단이 안 된다”","Unit Rack Type으로 기존 건물 내부에 설치하고, 멀티딥으로 바닥면적 밀도를 확보합니다. (실적: 지하 4.5m 포함 설치 사례)"],
@@ -971,9 +968,7 @@ const LINES = [
   { k:"conv",    t:"이송설비",    s:"C/V·Lifter·RGV·Gantry", d:"공정 간 반복 운반을 자동화한 사례" },
   { k:"consult", t:"통합 컨설팅", s:"센터 전체 재설계",     d:"개선 효과가 수치로 남아 있는 사례" },
   { k:"pick",    t:"분류·피킹",   s:"Sorter·Mini Load·DAS", d:"다품종 출고를 자동화한 사례" },
-  { k:"agv",     t:"무인이송",    s:"AGV·AGF·LGV",          d:"지게차 유인 운반을 무인화한 사례",
-    scene:"agv", opt:{units:3, rackA:3},
-    scap:"지정 경로를 무인 주행하며 파렛트를 이송합니다 — 계열 개념 재현(특정 현장 아님)" },
+  { k:"agv",     t:"무인이송",    s:"AGV·AGF·LGV",          d:"지게차 유인 운반을 무인화한 사례" },
   { k:"dock",    t:"자동상하차",  s:"Devanning·파렛타이저", d:"차량 상하차를 자동화한 사례" }
 ];
 /* 설비 실적 1건이 어느 계열인지 (컨설팅 사례는 line 필드로 직접 지정) */
@@ -997,10 +992,6 @@ const CASES = [
   {cat:"logi", co:"H 식품 제조사", line:"agv", cells:0,
    title:"완제품 이송 프로세스 무인화를 통한 효율적이고 안전한 물류 환경 구축",
    build:["AGF 5대","충전소 3개","RCS 관제"], gain:[],
-   after:{li:["Vision 기반 자율주행 AGF 5대가 완제품 무인 이송",
-              "유인 지게차와 혼용 운영 대응 안전 솔루션 적용",
-              "WET 구간 부식방지 커스텀 설계 · 무선 충전 신규 개발"],
-     photos:[{src:"", cap:"AGF 운영 Layout"},{src:"", cap:"AGF"},{src:"", cap:"AGF 무선 충전소"}]},
    detail:{
      biz:"육계 가공 및 사료 제조업",
      needs:[
@@ -1028,11 +1019,6 @@ const CASES = [
   {cat:"logi", co:"S 전자 제조사", line:"dock", cells:0,
    title:"Bulk Box 하차 자동화를 위한 혁신적인 Devanning System 솔루션 구축",
    build:["Devanning Robot 2대","Spiral Conveyor","Box/Pallet Conveyor","랩핑기","파렛타이저"], gain:[],
-   after:{li:["Devanning ~ 이송 ~ 파렛타이징 ~ AS/RS 입고 전 영역 자동화 프로세스 설계",
-              "요구 Capa. 고려한 최적 자동화 설비 선정 및 투자비 제안",
-              "시뮬레이션으로 시간당 Capa.·가동률·Idle 검증"],
-     photos:[{src:"", cap:"Devanning System"},{src:"", cap:"Spiral C/V"},{src:"", cap:"랜덤 파렛타이저"},
-             {src:"", cap:"자동 랩핑기"},{src:"", cap:"자동화설비 프로세스 설계"}]},
    detail:{
      biz:"가전 제품 · 디스플레이 패널 · 휴대폰 · 컴퓨터 등",
      needs:[
@@ -1059,10 +1045,6 @@ const CASES = [
    title:"통합 센터 물류 자동화 시스템 구축을 통한 차별화된 물류 역량 확보",
    build:["DPS 연계 Flow Rack","OTP 모바일 로봇","시퀀스버퍼 컨베이어/소터","비전 기반 로봇 팔레타이저"],
    gain:["인시당 출고 생산성 77% 개선","인건비 35% 절감"],
-   after:{li:["융·복합 로봇·설비 기반으로 피킹/분류/출고 처리 Capa. 극대화",
-              "3D Modeling Layout — 작업동선 효율화와 설비 확장 유연성 반영",
-              "통합 물량을 안정적으로 처리 가능한 자동화 솔루션 구축"],
-     photos:[{src:"", cap:"융·복합 자동화설비 Solution"},{src:"", cap:"자동화설비 배치 Layout"}]},
    detail:{
      biz:"필터 · 정수기 · 비데 · 가정용 기기",
      needs:[
@@ -1093,10 +1075,6 @@ const CASES = [
    title:"로지스올 그룹을 대표하는 Innovation Center 구축을 통한 대내외 운영 및 자동화 영업 확대 거점 활용",
    build:["DAS 336 Cell","Mobile Robot 9 Set","Palletizer 2 Set","Pallet Stacker 1 Set","AGF 10 Set"],
    gain:["보관 Capa. 121% 향상","피킹 생산성 33.6% 향상","인건비 연 11.8억원 절감"],
-   after:{li:["상품을 배송지별로 분류하는 피킹시스템 + 출고 박스·파렛트 적재 자동화",
-              "Rack·피킹시스템 외 Robot System을 통한 고도화 센터 구축",
-              "고도화 WCS 연동으로 물류 프로세스 최적화 및 재고·주문 관리"],
-     photos:[{src:"", cap:"융·복합자동화설비 Solution"},{src:"", cap:"자동화설비 배치 Layout"}]},
    detail:{
      biz:"3PL · 풀필먼트",
      needs:[
@@ -1128,10 +1106,6 @@ const CASES = [
   {cat:"logi", co:"C 유통사", line:"agv", cells:0,
    title:"신규 물류센터 피킹 및 분류 프로세스 효율화를 위한 자동화 설비 구축 및 CS 업무 대응",
    build:["AGV 200대","POD Rack 2,100개","충전소 30개","Work Station 30개소"], gain:[],
-   after:{li:["AGV · POD Rack · Charger · Work Station 전체 설비 구축 완료",
-              "2차 전기 및 통신 등 시스템 Infra 공사 포함",
-              "Go-Live 이후 24시간 콜센터 · 월간 리뷰까지 CS 대응"],
-     photos:[{src:"", cap:"AGV 운영 Layout"},{src:"", cap:"AGV 장애물 감지 Test"},{src:"", cap:"CS 대응 업무범위"}]},
    detail:{
      biz:"온라인몰 · 3PL 풀필먼트",
      needs:[
@@ -1159,10 +1133,6 @@ const CASES = [
   {cat:"logi", co:"O 유통사", line:"agv", cells:0,
    title:"피킹 작업 생산성 효율화를 위한 Pilot Test 및 자동화 설비 구축",
    build:["AGV 6대","충전소 6개","FMS","MCS"], gain:[],
-   after:{li:["Pilot Test로 시나리오2(Zone Picking) 적합 검증",
-              "작업자 : 로봇 비율 1:2 ~ 1:3 최적 산출",
-              "AGV 전용 토트박스 자체 개발 적용"],
-     photos:[{src:"", cap:"AGV 운영 Layout"},{src:"", cap:"AGV Picking"},{src:"", cap:"AGV 및 전용 토트박스"}]},
    detail:{
      biz:"온라인몰 · 3PL 풀필먼트",
      needs:[
@@ -1194,8 +1164,6 @@ const CASES = [
   {cat:"factory", co:"B 부품 제조사", line:"agv", cells:576,
    title:"전기차 부품 생산 신축공장 고도화를 위한 무인화 솔루션 도입",
    build:["AGV 13대","3Way-AGF 2대","High Rack 576 Cell","소물 분류 DAS"], gain:[],
-   after:{li:["설비 라인 부품(소물·대물)을 AGV가 무인 이송","MES ↔ WCS·ACS 연동으로 이송 지시 자동화","AGV 전용 표준 물류기기로 적재 정밀도 확보"],
-     photos:[{src:"", cap:"AGV 운영 Layout"},{src:"", cap:"AGF 운영 Layout"},{src:"", cap:"AGV 전용 표준 물류기기"}]},
    detail:{
      biz:"차량 부품 · 액세서리",
      needs:[
@@ -2272,6 +2240,14 @@ const $ = s => document.querySelector(s);
 const $$ = s => document.querySelectorAll(s);
 
 /* 카드 헤더 탭 → 바로 아래 패널 펼치기/접기 (소개 화면 등 공용) */
+/* 하단 좌우 카드 — 하나를 펼치면 다른 하나는 접는다 */
+function toggleDuo(btn){
+  const card = btn.closest('.duo');
+  const open = !btn.classList.contains('open');
+  card.querySelectorAll('.duo-h').forEach(b=>b.classList.remove('open'));
+  card.querySelectorAll('.duo-panel').forEach(p=>p.classList.remove('show'));
+  if(open){ btn.classList.add('open'); document.getElementById(btn.dataset.p).classList.add('show'); }
+}
 function toggleCardPanel(head){
   const panel = head.nextElementSibling;
   if(!panel) return;
@@ -2289,122 +2265,6 @@ function renderNeedChips(){
     }</em></span>`
   ).join("");
 }
-/* ============================================================
-   [BA2D] 전 / 후 비교 애니메이션
-   좌 = 도입 전(현재 방식), 우 = 구축 후. 같은 작업을 같은 화면에서 동시에 돌려
-   "무엇이 달라지는지"를 말이 아니라 움직임으로 보여준다.
-   외부 영상·이미지 파일을 쓰지 않는다 — 앱 전체가 절차적 렌더이고,
-   고객 현장 실사진이 아닌 것을 현장인 척 붙이지 않기 위해서다.
-   ============================================================ */
-const BA_COL = { dim:"#7A879E", warn:"#E8B21F", ok:"#3DDC84", rack:"#2A3550", rackTop:"#3A4A6E", plt:"#C89B5A", agv:"#4D8BFF" };
-
-function baRound(g,x,y,w,h,r){ g.beginPath(); g.moveTo(x+r,y); g.arcTo(x+w,y,x+w,y+h,r); g.arcTo(x+w,y+h,x,y+h,r); g.arcTo(x,y+h,x,y,r); g.arcTo(x,y,x+w,y,r); g.closePath(); }
-function baPallet(g,x,y,s,col){ g.fillStyle=col||BA_COL.plt; g.fillRect(x-s*0.5,y-s*0.34,s,s*0.34); g.fillStyle="rgba(0,0,0,.28)"; g.fillRect(x-s*0.5,y-s*0.10,s,s*0.10); }
-
-/* 유인 지게차 — 운전석과 사람 머리를 그려 "사람이 탄다"를 명확히 */
-function baForklift(g,x,y,s,carry){
-  g.fillStyle=BA_COL.warn; baRound(g,x-s*0.55,y-s*0.62,s*1.05,s*0.62,3); g.fill();
-  g.fillStyle="rgba(0,0,0,.35)"; g.fillRect(x-s*0.5,y-s*0.98,s*0.10,s*0.40); // 마스트
-  g.fillStyle="#0B0F1A"; g.beginPath(); g.arc(x-s*0.30,y,s*0.15,0,7); g.arc(x+s*0.34,y,s*0.15,0,7); g.fill();
-  g.fillStyle="#F2C9A0"; g.beginPath(); g.arc(x+s*0.16,y-s*0.80,s*0.14,0,7); g.fill();   // 기사 머리
-  g.strokeStyle=BA_COL.warn; g.lineWidth=1.6; g.beginPath(); g.moveTo(x-s*0.46,y-s*0.14); g.lineTo(x-s*0.95,y-s*0.14); g.stroke();
-  if(carry) baPallet(g,x-s*0.72,y-s*0.18,s*0.62);
-}
-/* 무인 AGV — 기사 없음, 주행 표시등만 */
-function baAgv(g,x,y,s,t,carry){
-  g.fillStyle=BA_COL.agv; baRound(g,x-s*0.52,y-s*0.34,s*1.04,s*0.34,3); g.fill();
-  g.fillStyle="#0B0F1A"; g.fillRect(x-s*0.42,y,s*0.22,s*0.10); g.fillRect(x+s*0.20,y,s*0.22,s*0.10);
-  g.fillStyle=`rgba(61,220,132,${0.45+0.55*Math.abs(Math.sin(t*4))})`; g.beginPath(); g.arc(x,y-s*0.44,s*0.09,0,7); g.fill();
-  if(carry) baPallet(g,x,y-s*0.52,s*0.68);
-}
-function baRack(g,x,y,w,tiers,th){
-  for(let i=0;i<tiers;i++){
-    const yy=y-i*th;
-    g.fillStyle=BA_COL.rack; g.fillRect(x,yy-th+2,w,th-3);
-    g.fillStyle=BA_COL.rackTop; g.fillRect(x,yy-th+2,w,2);
-  }
-}
-function baLabel(g,x,y,txt,col){
-  g.font="600 9.5px 'IBM Plex Mono',monospace"; g.fillStyle=col; g.textAlign="left"; g.fillText(txt,x,y);
-}
-
-/* 장면 정의 — 계열마다 하나. side:'b'(전) / 'a'(후) */
-const BA_SCENES = {
-  agv(g,W,H,t,side,o){
-    const lane=H*0.72, bx=W*0.03, bw=W*0.17, pickX=W*0.29, dropX=W*0.60,
-          rackX=W*0.66, rackW=W*0.30, ph=H*0.07, A=side==="a";
-    g.fillStyle="rgba(255,255,255,.035)"; g.fillRect(0,lane+5,W,H-lane-5);            // 바닥
-    g.fillStyle="rgba(255,255,255,.05)"; baRound(g,bx,lane-H*0.30,bw,H*0.30,3); g.fill();
-    baLabel(g,bx+4,lane-H*0.13,"생산","rgba(255,255,255,.34)");
-    baLabel(g,bx+4,lane-H*0.05,"라인","rgba(255,255,255,.34)");
-    baRack(g,rackX,lane,rackW,A?(o.rackA||3):(o.rackB||3),H*0.13);
-    g.setLineDash([4,4]); g.strokeStyle="rgba(255,255,255,.10)"; g.lineWidth=1;       // 주행 경로
-    g.beginPath(); g.moveTo(pickX-W*0.05,lane+6); g.lineTo(rackX-3,lane+6); g.stroke(); g.setLineDash([]);
-    if(!A){
-      const T=4.6, p=(t%T)/T;                                                          // 왕복 + 상하차 정지
-      let x, carry;
-      if(p<0.30){ x=pickX+(dropX-pickX)*(p/0.30); carry=true; }
-      else if(p<0.44){ x=dropX; carry=false; }
-      else if(p<0.74){ x=dropX-(dropX-pickX)*((p-0.44)/0.30); carry=false; }
-      else { x=pickX; carry=false; }
-      const sx=pickX-W*0.035;
-      for(let i=0;i<4;i++) baPallet(g,sx,lane-i*ph,W*0.10);                            // 적체
-      baLabel(g,sx-W*0.055,lane-4*ph-5,"대기 ▲",BA_COL.warn);
-      baForklift(g,x,lane,W*0.115,carry);
-    }else{
-      const n=o.units||3;
-      for(let i=0;i<n;i++){
-        const p=((t*0.17)+i/n)%1;
-        const x = p<0.5 ? pickX+(dropX-pickX)*(p/0.5) : dropX-(dropX-pickX)*((p-0.5)/0.5);
-        baAgv(g,x,lane,W*0.105,t+i,p<0.5);
-      }
-      baPallet(g,pickX-W*0.035,lane,W*0.10);
-      g.fillStyle="rgba(61,220,132,.14)"; baRound(g,bx,lane+H*0.07,W*0.13,H*0.14,2); g.fill();
-      baLabel(g,bx+5,lane+H*0.165,"충전소",BA_COL.ok);
-    }
-  }
-};
-
-function baDrawOne(cv,t){
-  const key=cv.dataset.scene, sc=BA_SCENES[key]; if(!sc) return;
-  const o=JSON.parse(cv.dataset.opt||"{}");
-  const dpr=Math.min(2,window.devicePixelRatio||1), w=cv.clientWidth, h=cv.clientHeight;
-  if(!w||!h) return;
-  if(cv.width!==Math.round(w*dpr)){ cv.width=Math.round(w*dpr); cv.height=Math.round(h*dpr); }
-  const g=cv.getContext("2d"); g.setTransform(dpr,0,0,dpr,0,0); g.clearRect(0,0,w,h);
-  sc(g,w,h,t,"a",o);                                   // 구축 후 상태만 그린다
-  g.fillStyle=BA_COL.ok; g.beginPath(); g.arc(9,13,3,0,7); g.fill();
-  baLabel(g,16,16,(cv.dataset.title||"개념 재현"),BA_COL.ok);
-}
-/* 화면에 보이는 캔버스만 그린다 — 카드가 접혀 있으면 아무것도 돌지 않는다 */
-let baRAF=null;
-function baLoop(ts){
-  const t=ts/1000, list=document.querySelectorAll("canvas.bacv");
-  let live=0;
-  list.forEach(cv=>{ const r=cv.getBoundingClientRect();
-    if(r.bottom>0 && r.top<innerHeight && r.width>0){ baDrawOne(cv,t); live++; } });
-  baRAF = list.length ? requestAnimationFrame(baLoop) : null;
-}
-function baStart(){ if(!baRAF) baRAF=requestAnimationFrame(baLoop); }
-
-/* 구축 후 블록 — 사진이 있으면 사진, 없으면 개념 재현 애니메이션.
-   사진 파일이 아직 없는 슬롯은 자리표시로 남긴다(가짜 이미지를 채우지 않는다). */
-function afterHTML(c){
-  const a=c.after; if(!a) return "";
-  let media="";
-  if(a.photos && a.photos.length){
-    media = `<div class="cph">${a.photos.map(p=>`
-      <div class="it">${p.src
-        ? `<img src="${p.src}" alt="${p.cap}" loading="lazy">`
-        : `<div class="ppl">📷<small>사진 준비 중</small></div>`}
-        <div class="cp">${p.cap}</div>
-      </div>`).join("")}</div>`;
-  }
-  return media
-    + `<div class="afterbox"><div class="lb">구축 후</div><ul>${a.li.map(x=>`<li>${x}</li>`).join("")}</ul></div>`
-    + `<div class="eqline">주요 설비 : ${c.build.join(" · ")}</div>`;
-}
-
 /* 상세 슬라이드가 있는 사례 — 고객니즈 / 구축내용 / 구축결과 3단 */
 function caseDetailHTML(c){
   const d = c.detail;
@@ -2437,10 +2297,6 @@ function renderNeedCases(key){
   const more = (all,top)=> all.length>top.length ? ` <span style="opacity:.6">(총 ${all.length}건 중 ${top.length}건)</span>` : "";
 
   let html = `<div class="note" style="margin-bottom:6px">${n.d} — 관련 사례 <b>${cs.length+rs.length}건</b></div>`;
-  if(n.scene && BA_SCENES[n.scene]){
-    html += `<div class="bawrap"><canvas class="bacv" data-title="${n.t} · 개념 재현" data-scene="${n.scene}" data-opt='${JSON.stringify(n.opt||{})}'></canvas>`
-          + `<div class="mcap2">${n.scap||""}</div></div>`;
-  }
 
   if(csTop.length){
     html += `<div class="caseGrp">컨설팅 &amp; 구축 사례${more(cs,csTop)}</div>`
@@ -2450,7 +2306,7 @@ function renderNeedCases(key){
         <div class="rc">
           <div class="rh"><b>${c.co}</b><span class="cat ${c.cat}">${CASE_CAT[c.cat]}</span></div>
           <div class="rnote">${c.title}</div>
-          ${afterHTML(c) || `<div class="rspec">${c.build.join(" · ")}</div>`}
+          <div class="rspec">${c.build.join(" · ")}</div>
           ${c.gain.length?`<div class="gain">${c.gain.map(g=>`<i>▲ ${g}</i>`).join("")}</div>`:""}
           ${c.detail?`<span class="dbtn" onclick="toggleCaseDetail(this)">상세 보기 ▾</span>${caseDetailHTML(c)}`:""}
         </div>
@@ -2471,7 +2327,6 @@ function renderNeedCases(key){
   if(!csTop.length && !rsTop.length)
     html += `<div class="note">이 니즈에 해당하는 사례가 아직 등록되지 않았습니다.</div>`;
   box.innerHTML = html;
-  baStart();
 }
 
 function buildProgress(){
