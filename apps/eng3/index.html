@@ -293,6 +293,8 @@ a.btn{text-decoration:none}
 .kpi2 .li .tgt{color:var(--hi);font-weight:700;min-width:74px;text-align:right}
 .kpi2-head{display:flex;justify-content:flex-end;gap:10px;font-size:10px;color:var(--muted);padding-bottom:6px;margin-bottom:4px;border-bottom:1px solid var(--line);font-family:'IBM Plex Mono',monospace}
 .kpi2-head span{min-width:74px;text-align:right}
+.imp-in{margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+.imp-in .imp-t{font-size:12px;font-weight:700;color:var(--ink);margin-bottom:6px}
 /* [v2] 초동 질문 탭 · 입력 포커스 강조 */
 .intake-tap{cursor:pointer;transition:.15s}
 .intake-tap:active{transform:scale(.99)}
@@ -592,7 +594,7 @@ body.fs-lock{overflow:hidden}
   <div class="topbar">
     <div class="brand">
       <span class="logo mono"><b>TSPG</b> · LOGISALL ENG</span>
-      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1009.6</span>
+      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1009.7</span>
     </div>
     <div class="prog" id="prog"></div>
   </div>
@@ -3019,6 +3021,17 @@ function renderResult(){
           <div class="sub">월 ${fmt(roi.volMonth)} ÷ ${tp.workDays}일 · 입${tp.inRatio}:출${100-tp.inRatio} · ${tp.opHours}h</div>
         </div>
       </div>
+      <!-- 개선 예상 — 같은 면적·층고 일반 랙 대비 (취급량 바로 아래, 따로 접지 않음) -->
+      <div class="kpi2 imp-in">
+        <div class="imp-t">개선 예상 · 같은 공간 일반 랙 → 4-Way</div>
+          <div class="kpi2-head"><span>일반 랙</span><span style="min-width:10px"></span><span>4-Way</span></div>
+          ${improveRows}
+          ${roi.capped?`<div class="note" style="border-color:#E8B21F;color:#E8B21F;margin-bottom:8px">필요 보관량(재고·물동량 기준)이 <b>이 공간의 최대 구축 규모를 넘습니다</b>. 면적·층고 확보가 선행돼야 합니다.</div>`:""}
+          <div class="note">같은 ${fmt(d.area)}평·유효 ${d.height}m 에 <b>일반 선반형 랙(리치트럭 통로 ${CONFIG.REACH_AISLE_M}m, ${cv.tiers}단)</b>을 놓았을 때와 비교한 값입니다.
+            보관 가능량은 실사용률(일반 ${Math.round(CONFIG.UTIL_SELECTIVE*100)}% · 4-Way 멀티딥 ${Math.round(CONFIG.UTIL_MULTIDEEP*100)}%)을 반영했습니다.
+            업계 비교치는 일반 랙 대비 +40~67%입니다.${d.stock?` 현 보유 ${fmt(d.stock)} PL 은 4-Way 보관 가능량의 ${Math.round(d.stock/Math.max(1,cv.autoCap)*100)}%입니다.`:''}
+            <b>절감 금액과 투자 회수기간은 임대료·인건비 가정에 크게 좌우되므로 이 화면에서는 제시하지 않습니다</b> — 상세 제안 단계에서 고객사 실제 단가로 산출합니다.</div>
+      </div>
       <div class="note">'공간 최대 수용'은 면적·층고를 가득 채울 때의 한도입니다. '권장 구축 규모'는 공간 최대 수용에서 입출고 스테이션·벽 이격 공간을 뺀 실제 구축 셀 수로, 3D 배치와 투자비가 이 수로 계산됩니다. 재고·물동량 기반 값은 필요 규모 참고치이며, 모두 개략값으로 Bay×(앞+뒤Deep)×Tier 설계·시뮬레이션으로 확정합니다.</div>
     </div>
 
@@ -3030,21 +3043,6 @@ function renderResult(){
       <div class="scope-list">${scopeRows.replace("<!--SOLU-->", soluHTML)}</div>
       <div class="note">각 항목을 누르면 판정 근거와 개략 구성을 봅니다. <b>'확인 필요'</b>는 판단할 정보가 아직 없다는 뜻이며, 무엇을 받아야 하는지 함께 적어 두었습니다.</div>
       </div></div>
-    </div>
-
-    <div class="card">
-      <div class="h mono obj-toggle" onclick="toggleCardPanel(this)" style="cursor:pointer">개선 예상 (같은 공간 · 일반 랙 → 4-Way)<span class="ln"></span><span class="obj-caret mono">▼</span></div>
-      <div class="roi-panel">
-        <div class="roi-panel-inner kpi2">
-          <div class="kpi2-head"><span>일반 랙</span><span style="min-width:10px"></span><span>4-Way</span></div>
-          ${improveRows}
-          ${roi.capped?`<div class="note" style="border-color:#E8B21F;color:#E8B21F;margin-bottom:8px">필요 보관량(재고·물동량 기준)이 <b>이 공간의 최대 구축 규모를 넘습니다</b>. 면적·층고 확보가 선행돼야 합니다.</div>`:""}
-          <div class="note">같은 ${fmt(d.area)}평·유효 ${d.height}m 에 <b>일반 선반형 랙(리치트럭 통로 ${CONFIG.REACH_AISLE_M}m, ${cv.tiers}단)</b>을 놓았을 때와 비교한 값입니다.
-            보관 가능량은 실사용률(일반 ${Math.round(CONFIG.UTIL_SELECTIVE*100)}% · 4-Way 멀티딥 ${Math.round(CONFIG.UTIL_MULTIDEEP*100)}%)을 반영했습니다.
-            업계 비교치는 일반 랙 대비 +40~67%입니다.${d.stock?` 현 보유 ${fmt(d.stock)} PL 은 4-Way 보관 가능량의 ${Math.round(d.stock/Math.max(1,cv.autoCap)*100)}%입니다.`:''}
-            <b>절감 금액과 투자 회수기간은 임대료·인건비 가정에 크게 좌우되므로 이 화면에서는 제시하지 않습니다</b> — 상세 제안 단계에서 고객사 실제 단가로 산출합니다.</div>
-        </div>
-      </div>
     </div>
 
     <div class="card" id="simCard">
