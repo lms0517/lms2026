@@ -592,7 +592,7 @@ body.fs-lock{overflow:hidden}
   <div class="topbar">
     <div class="brand">
       <span class="logo mono"><b>TSPG</b> · LOGISALL ENG</span>
-      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1009.4</span>
+      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1009.5</span>
     </div>
     <div class="prog" id="prog"></div>
   </div>
@@ -4742,27 +4742,41 @@ const GL3D = {
   },
 
   attachGestures(){
-    const cv=this.canvas, ptrs=new Map(); let rot=false, lx=0, ly=0, pinch0=0, r0=0, lastTap=0;
-    const clampR=v=>Math.max(8, Math.min(this.bound*4, v));
+    const cv=this.canvas, ptrs=new Map(), raws=new Map(); let rot=false, lx=0, ly=0, pinch0=0, r0=0, lastTap=0, anchor=null;
+    const clampR=v=>Math.max(4, Math.min(this.bound*4, v));
+    /* 손가락(커서)이 가리킨 바닥 지점을 기준으로 확대·이동한다 — 그 지점이 손가락 아래에 계속 머문다.
+       (예전에는 화면 중심 고정 확대라 보고 싶은 곳을 키울 수 없었다) */
+    const T=this.THREE, ray=new T.Raycaster(), floor=new T.Plane(new T.Vector3(0,1,0),0), hit=new T.Vector3(), ndc=new T.Vector2();
+    const local=(cx,cy)=>{ const r=cv.getBoundingClientRect();          // 화면 좌표 → 캔버스 안 좌표 (90° 돌린 전체화면 포함)
+      return cv.closest("#simFS.rot") ? {x:cy-r.top, y:r.right-cx} : {x:cx-r.left, y:cy-r.top}; };
+    const ground=pt=>{ this.applyCam(); this.camera.updateMatrixWorld();
+      ndc.set(pt.x/cv.clientWidth*2-1, -(pt.y/cv.clientHeight)*2+1); ray.setFromCamera(ndc,this.camera);
+      return ray.ray.intersectPlane(floor,hit) ? hit.clone() : null; };
+    const mid=()=>{ const a=[...raws.values()]; return local((a[0].x+a[1].x)/2,(a[0].y+a[1].y)/2); };
+    const keepUnder=(pt)=>{ if(!anchor) return; const q=ground(pt); if(!q) return;
+      const B=this.bbox, m=6;
+      this.center.x=Math.max(B.min.x-m,Math.min(B.max.x+m,this.center.x+anchor.x-q.x));
+      this.center.z=Math.max(B.min.z-m,Math.min(B.max.z+m,this.center.z+anchor.z-q.z)); };
     // 90° 돌린 전체화면에서는 화면 좌표를 돌린 화면 기준으로 바꿔야 손가락 방향대로 돈다
     const P=e=>{ const ov=cv.closest("#simFS.rot"); return ov ? {x:e.clientY, y:-e.clientX} : {x:e.clientX, y:e.clientY}; };
     cv.addEventListener("pointerdown",e=>{
       // 직접 조작하면 영상 모드 해제 (카메라 소유권을 사용자에게)
       if(this.cinema && SIM3D.cinemaOff) SIM3D.cinemaOff();
-      const q=P(e); ptrs.set(e.pointerId,q);
+      const q=P(e); ptrs.set(e.pointerId,q); raws.set(e.pointerId,{x:e.clientX,y:e.clientY});
       lx=q.x; ly=q.y; rot=false; this.vel.t=0; this.vel.p=0;
-      if(ptrs.size===2){ const a=[...ptrs.values()]; pinch0=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y); r0=this.sph.r; }
+      if(ptrs.size===2){ const a=[...ptrs.values()]; pinch0=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y); r0=this.sph.r; anchor=ground(mid()); }
       const now=Date.now();
       if(now-lastTap<300 && ptrs.size===1) this.fitView();
       lastTap=now;
     });
     cv.addEventListener("pointermove",e=>{
       if(!ptrs.has(e.pointerId)) return;
-      const q=P(e); ptrs.set(e.pointerId,q);
+      const q=P(e); ptrs.set(e.pointerId,q); raws.set(e.pointerId,{x:e.clientX,y:e.clientY});
       if(ptrs.size===2){
         const a=[...ptrs.values()];
         const dnow=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y);
-        if(pinch0>0){ this.sph.r=clampR(r0*pinch0/dnow); this.render(); }
+        // 벌리면 그 지점으로 확대, 두 손가락을 함께 끌면 화면 이동
+        if(pinch0>0){ this.sph.r=clampR(r0*pinch0/dnow); keepUnder(mid()); this.render(); }
         e.preventDefault(); return;
       }
       const dx=q.x-lx, dy=q.y-ly;
@@ -4785,12 +4799,15 @@ const GL3D = {
       e.preventDefault();
     },{passive:false});
     const up=e=>{
-      ptrs.delete(e.pointerId); if(ptrs.size<2) pinch0=0;
+      ptrs.delete(e.pointerId); raws.delete(e.pointerId);
+      if(ptrs.size<2){ pinch0=0; anchor=null; }
+      if(ptrs.size===1){ const rem=[...ptrs.values()][0]; lx=rem.x; ly=rem.y; }   // 한 손가락만 남아도 화면이 튀지 않게
       if(rot){ rot=false; cv.classList.remove("dragging"); this.inertia(); }
     };
     cv.addEventListener("pointerup",up); cv.addEventListener("pointercancel",up);
     cv.addEventListener("wheel",e=>{ e.preventDefault();
-      this.sph.r=clampR(this.sph.r*(e.deltaY<0?0.92:1.09)); this.render();
+      const pt=local(e.clientX,e.clientY); anchor=ground(pt);      // 커서가 가리킨 곳을 기준으로
+      this.sph.r=clampR(this.sph.r*(e.deltaY<0?0.92:1.09)); keepUnder(pt); anchor=null; this.render();
     },{passive:false});
   },
   inertia(){
@@ -5078,7 +5095,7 @@ const GL3D = {
           : ``)+
         `<br>${this.driverNote()}`+
         `<br>바닥 격자 1칸 = 2m · 서 있는 작업자(키 1.7m)가 크기 기준입니다.`+
-        `<br>좌우로 끌기 = 회전 · 위아래로 쓸기 = 페이지 스크롤 · 두 손가락/휠 = 줌 · 더블탭 = 초기화 · ⛶ 전체화면에서는 위아래로 시점 높이. 개략 배치 개념도입니다.`;
+        `<br>좌우로 끌기 = 회전 · 위아래로 쓸기 = 페이지 스크롤 · 두 손가락 = 벌린 곳 확대 · 함께 끌면 이동 · 휠 = 커서 위치 확대 · 더블탭 = 초기화 · ⛶ 전체화면에서는 위아래로 시점 높이. 개략 배치 개념도입니다.`;
     }
   },
 
