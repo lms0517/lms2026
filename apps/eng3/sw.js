@@ -4,7 +4,7 @@
    ★ activate 에서는 자기 접두사(eng3-lms-)로 시작하는 캐시만 정리한다 —
      전체를 지우면 같은 사이트의 다른 앱(eng·eng2 등) 오프라인 캐시까지 날아간다. */
 const PREFIX = "eng3-lms-";
-const CACHE  = PREFIX + "3.0.1008.3";
+const CACHE  = PREFIX + "3.0.1008.4";
 const APP_HTML = "index.html";
 
 /* 공용 자원은 상위 경로(../)를 그대로 참조한다. 스코프 밖 URL도 캐시는 가능하다. */
@@ -12,7 +12,7 @@ const ASSETS = [
   APP_HTML, "./higgsfield-scene.js?v=3.0.4", "./higgsfield-reference.html",
   "./higgsfield.js?v=3.1.1", "./higgsfield-models.js?v=3.0.4",
   "../assets/warehouse-higgsfield.glb", "./vendor/GLTFLoader.js", "./vendor/BufferGeometryUtils.js", "./vendor/SkeletonUtils.js",
-  "./simulation.js?v=3.1.7", "./simulation.css?v=3.1.6",
+  "./simulation.js?v=3.1.8", "./simulation.css?v=3.1.6",
   "./vendor/three.module.min.js", "./vendor/three.core.min.js",
   "manifest.webmanifest",
   "./icon-192.png",

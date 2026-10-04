@@ -4,9 +4,17 @@
   'use strict';
   const byId=id=>document.getElementById(id);
   const state={direction:'in',view:'iso'};   // 이동 경로·치수 표시는 항상 켬
-  const inbound=[['입고 이송','입고 컨베이어에서 파렛트를 리프트로 이송합니다.',0],['수직 상승','목표 보관층까지 수직으로 이동합니다.',6.2],['통로 이동','선택한 보관 위치까지 반송 설비가 이동합니다.',11.6],['보관 적입','통로에서 보관 셀 안쪽으로 화물을 이재합니다.',15.6],['설비 복귀','적입을 마친 설비가 다음 작업을 준비합니다.',17.2]];
-  const outbound=[['셀 인출','보관 셀에서 파렛트를 통로로 인출합니다.',0],['통로 복귀','입출고 스테이션 방향으로 화물을 반송합니다.',2],['수직 인계','수직 반송 설비에 화물을 인계합니다.',7],['수직 하강','출고를 위해 입출고층까지 내려옵니다.',9],['출고 이송','공용 입출고 라인을 통해 화물을 반출합니다.',14]];
-  const steps=()=>{const s=(state.direction==='in'?inbound:outbound).map(x=>x.slice());if(GL3D.D&&GL3D.D.sTier===1){const i=state.direction==='in'?1:3;s[i]=['이재 대기','1단 배치이므로 수직 이동 없이 같은 높이에서 이재를 준비합니다.',s[i][2]];}return s;};
+  const inbound=[['입고 이송','입고 컨베이어에서 파렛트를 리프트로 이송합니다.',0],['리프트 상승','목표 보관층까지 수직으로 이동합니다.',6.2],['통로 이동','선택한 보관 위치까지 반송 설비가 이동합니다.',11.6],['보관 적입','통로에서 보관 셀 안쪽으로 화물을 이재합니다.',15.6],['설비 복귀','적입을 마친 설비가 다음 작업을 준비합니다.',17.2]];
+  const outbound=[['셀 인출','보관 셀에서 파렛트를 통로로 인출합니다.',0],['통로 복귀','입출고 스테이션 방향으로 화물을 반송합니다.',2],['리프트 이재','수직 반송 설비에 화물을 인계합니다.',7],['리프트 하강','출고를 위해 입출고층까지 내려옵니다.',9],['출고 이송','공용 입출고 라인을 통해 화물을 반출합니다.',14]];
+  // 1단 배치는 수직 이동이 없어 리프트 구간(4초 넘게)이 그냥 '대기'로 보인다 → 1초로 줄이고 통로 주행에 나눠 준다.
+  // [화면 시각, 원래 장면 시각] 꺾은선 — 루프 길이(20초)는 그대로
+  const OUT_KEYS=[[0,17.19],[2,15.6],[7,11.6],[9,10.4],[14,6.2],[15.2,5],[19.99,0]];
+  const IN1_KEYS=[[0,0],[5,5],[5.6,6.2],[6.6,10.4],[7.8,11.6],[14.4,15.6],[16.6,17.2],[20,20]];
+  const OUT1_KEYS=[[0,17.19],[2.5,15.6],[9.5,11.6],[10.7,10.4],[11.7,6.2],[12.9,5],[19.99,0]];
+  const STEP1_T={in:[0,5.6,7.8,14.4,16.6],out:[0,2.5,9.5,10.7,11.7]};
+  const warp=(t,keys)=>{let i=0;while(i<keys.length-2&&t>keys[i+1][0])i++;const a=keys[i],b=keys[i+1];return a[1]+(b[1]-a[1])*Math.max(0,Math.min(1,(t-a[0])/(b[0]-a[0])));};
+  const oneTier=()=>!!(GL3D.D&&GL3D.D.sTier===1);
+  const steps=()=>{const s=(state.direction==='in'?inbound:outbound).map(x=>x.slice());if(oneTier()){const i=state.direction==='in'?1:3;s[i]=['이재 대기','1단 배치이므로 수직 이동 없이 같은 높이에서 바로 이재합니다.',s[i][2]];const T=STEP1_T[state.direction];s.forEach((x,k)=>x[2]=T[k]);}return s;};
   const baseResult=renderResult;
   renderResult=function(){
     baseResult();
@@ -55,13 +63,8 @@
   };
   const originalTick=GL3D.tick;
   GL3D.tick=function(t){
-    let sceneTime=t;
-    if(state.direction==='out'){
-      // Reverse the existing connected route, with visible transfer dwell times.
-      const keys=[[0,17.19],[2,15.6],[7,11.6],[9,10.4],[14,6.2],[15.2,5],[19.99,0]];
-      let i=0;while(i<keys.length-2&&t>keys[i+1][0])i++;
-      const a=keys[i],b=keys[i+1];sceneTime=a[1]+(b[1]-a[1])*Math.max(0,Math.min(1,(t-a[0])/(b[0]-a[0])));
-    }
+    // 출고는 입고 경로를 거꾸로(이재 정지 포함), 1단 배치는 대기 구간을 줄인 시간표로
+    const sceneTime=state.direction==='out' ? warp(t,oneTier()?OUT1_KEYS:OUT_KEYS) : (oneTier()?warp(t,IN1_KEYS):t);
     originalTick.call(this,sceneTime);
     // Keep the main shuttle under its load through the deep-lane transfer.
     const sh=this.actors.shuttles[0],ap=this.actors.animPallet;
@@ -97,7 +100,7 @@
     baseCinema.call(this);SIMDETAIL.dirLabels();};
   window.SIMDETAIL={
     normal(){if(GL3D.concept){GL3D.setConcept(false);const b=byId('simConcept');b.classList.remove('on');b.textContent='📐 개념 설명';}SIM3D.cinemaOff();if(byId('simLive'))byId('simLive').style.display='';},
-    stageButtons(){byId('simStages').innerHTML=steps().map((s,i)=>`<button class="sim-stage" data-stage="${i}" aria-current="${i===0?'step':'false'}"><b>0${i+1}</b>${s[0]}</button>`).join('');byId('simStages').querySelectorAll('button').forEach(b=>b.onclick=()=>this.seek(steps()[+b.dataset.stage][2]));},
+    stageButtons(){byId('simStages').innerHTML=steps().map((s,i)=>`<button class="sim-stage" data-stage="${i}" aria-current="${i===0?'step':'false'}"><b>0${i+1}</b>${s[0].replace(' ','<br>')}</button>`).join('');byId('simStages').querySelectorAll('button').forEach(b=>b.onclick=()=>this.seek(steps()[+b.dataset.stage][2]));},
     seek(t){if(SIM3D.engine!==GL3D)return;this.normal();GL3D.stop();GL3D.animT=t;GL3D.tick(t);GL3D.render();},
     /* 시연 버튼 — 누르면 그 방향으로 처음부터 재생, 재생 중 같은 버튼을 다시 누르면 일시정지 */
     direction(k){
