@@ -5,7 +5,7 @@
     this.higgsfieldScene=false;build.call(this,shadow);this.higgsfieldApplied=false;
     if(this.higgsfield)this.higgsfield.module.applyLibrary(this,this.higgsfield.library);
   };
-  const fit=GL3D.fitView,cam=GL3D.applyCam,tick=GL3D.tick,focus=GL3D.focusScope;
+  const fit=GL3D.fitView,cam=GL3D.applyCam,tick=GL3D.tick;
   GL3D.fitView=function(){
     if(!this.higgsfieldScene)return fit.call(this);
     this.center.copy(this.homeCenter);this.sph.theta=-2.43;this.sph.phi=1.06;
@@ -14,7 +14,6 @@
   };
   GL3D.applyCam=function(){cam.call(this);if(this.higgsfieldScene&&this.scene?.fog){this.scene.fog.near=this.camera.far*.85;this.scene.fog.far=this.camera.far;}};
   GL3D.tick=function(t){tick.call(this,t);if(this.higgsfieldScene){this.actors.shuttles.forEach((s,i)=>{s.position.y+=.2;const load=this.actors.shuttleLoad[i];if(load)load.position.y=s.position.y+.515;});}};
-  GL3D.focusScope=function(k){if(this.higgsfieldScene&&this.groups?.gDock)this.groups.gDock.visible=k==='dock'&&this._scopeFocus!=='dock';focus.call(this,k);};
   const preset=GL3D.preset;
   GL3D.preset=function(k){
     preset.call(this,k);
@@ -36,7 +35,7 @@
       if(badge)badge.textContent='Higgsfield 모델 준비 중';
       GL3D.higgsfield=null;
       try{
-        const [three,module]=await Promise.all([import('./vendor/three.module.min.js'),import('./higgsfield-models.js?v=0911.4')]);
+        const [three,module]=await Promise.all([import('./vendor/three.module.min.js'),import('./higgsfield-models.js?v=3.0.4')]);
         const library=await module.loadLibrary();
         if(current!==generation)return;
         this.threeMod=three;GL3D.higgsfield={module,library};

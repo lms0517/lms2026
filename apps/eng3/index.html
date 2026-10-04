@@ -261,10 +261,6 @@ a.btn{text-decoration:none}
 .stage .sg-t{font-size:13px;font-weight:600;margin-bottom:3px}
 .stage .sg-d{font-size:11px;color:var(--muted);line-height:1.6}
 /* [v2] 3D 영역 하이라이트 칩 */
-.sim-scope{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
-.sim-scope .ss{font-size:10.5px;font-family:'IBM Plex Mono',monospace;padding:5px 9px;border:1px solid var(--line);border-radius:20px;background:var(--bg-2);color:var(--ink-soft);cursor:pointer;transition:.15s}
-.sim-scope .ss.on{border-color:var(--accent);color:var(--accent-2);background:rgba(12,68,124,.12)}
-.sim-scope .ss.off{opacity:.4;text-decoration:line-through;cursor:default}
 
 /* objection chips → modal */
 .obj-chips{display:flex;flex-direction:column;gap:8px;margin-bottom:6px}
@@ -500,7 +496,7 @@ body.fs-lock{overflow:hidden}
   <div class="topbar">
     <div class="brand">
       <span class="logo mono"><b>TSPG</b> · LOGISALL ENG</span>
-      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1004.3</span>
+      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1004.4</span>
     </div>
     <div class="prog" id="prog"></div>
   </div>
@@ -2999,7 +2995,6 @@ function renderResult(){
             <button class="sim-btn" id="simCine" onclick="SIM3D.toggleCinema()">🎬 영상 모드</button>
             <button class="sim-btn" id="simFsBtn" onclick="SIM3D.toggleFull()">⛶ 전체화면</button>
           </div>
-          <div class="sim-scope" id="simScope"></div>
           <div class="sim-legend" id="simLegend"></div>
           <div class="note" id="simNote"></div>
         </div>
@@ -3707,9 +3702,8 @@ const GL3D = {
     /* ── [v2] 제안 가능 영역 판정과 렌더 연동 ─────────────────────
        Engine.scope 가 '부적합(no)'으로 본 영역은 아예 그리지 않는다.
        화면에 보이는 것 = 실제로 제안하는 것. (판정 전이면 전부 표시) */
-    const SC = window.sc_data || null;
-    const scOn = k => !SC || !SC[k] ? true : (SC[k].v === "fit" || SC[k].v === "cond");
-    const agvOn = scOn("agv"), convOn = scOn("conv"), dockOn = scOn("dock");
+    /* v3: 3D 는 자동창고만 그린다 — 무인이송·고정형 이송설비·자동 상하차는 제외 */
+    const agvOn = false, convOn = false, dockOn = false;
     this.scopeOn = {agv:agvOn, conv:convOn, dock:dockOn};
     const gAGF=new T.Group(), gConv=new T.Group(), gDock=new T.Group();
     G.add(gAGF); G.add(gConv); G.add(gDock);
@@ -4105,119 +4099,8 @@ const GL3D = {
       this.actors.unmanned=unmanned;
     }
 
-    /* ══ [v2] ① 무인이송 (AGV·AMR·무인지게차) — gAGF ══════════════
-       주행 경로 라인 + 충전 스테이션 + 인수인계 지점. 판정이 '부적합'이면 통째로 비움. */
-    if(agvOn){
-      const pathM=this.mat({color:0x4FC3E8, transparent:true, opacity:.45, roughness:.9});
-      const pz=totalD*0.62, px0=-5.4, px1=rackW+4.6;
-      // 바닥 주행 경로 (랙 전면을 따라 왕복)
-      const lane=new T.Mesh(this.geo(new T.PlaneGeometry(px1-px0, 0.55)), pathM);
-      lane.rotation.x=-Math.PI/2; lane.position.set((px0+px1)/2, 0.03, pz);
-      lane.userData.noFrame=true;            // 전폭 라인 — 카메라 프레이밍 기준에서 제외
-      gAGF.add(lane);
-      const spur=new T.Mesh(this.geo(new T.PlaneGeometry(0.55, Math.max(1.5, pz-(aisleY+aisleW/2-convLen-1.6)))), pathM);
-      spur.rotation.x=-Math.PI/2;
-      spur.position.set(px0+0.8, 0.03, (pz+(aisleY+aisleW/2-convLen-1.6))/2);
-      spur.userData.noFrame=true; gAGF.add(spur);
-      // 충전 스테이션 (라인 끝)
-      const chg=new T.Group();
-      const cab=new T.Mesh(this.geo(new T.BoxGeometry(0.5,1.25,0.85)),
-        this.mat({color:0x2E3A4E, roughness:.6, metalness:.3}));
-      cab.position.y=0.63; cab.castShadow=shadow; chg.add(cab);
-      const led=new T.Mesh(this.geo(new T.BoxGeometry(0.06,0.35,0.5)),
-        this.mat({color:0x34BE82, emissive:0x1E7A52, emissiveIntensity:.9}));
-      led.position.set(0.28,0.95,0); chg.add(led);
-      const pad=new T.Mesh(this.geo(new T.PlaneGeometry(1.9,1.9)),
-        this.mat({color:0x34BE82, transparent:true, opacity:.3}));
-      pad.rotation.x=-Math.PI/2; pad.position.set(1.3,0.035,0); chg.add(pad);
-      chg.position.set(px1+1.0, 0, pz); gAGF.add(chg);
-      // 인수인계 지점 표시 (컨베이어 종단)
-      const hand=new T.Mesh(this.geo(new T.PlaneGeometry(1.6,1.6)),
-        this.mat({color:0x4FC3E8, transparent:true, opacity:.28}));
-      hand.rotation.x=-Math.PI/2;
-      hand.position.set(-3.0, 0.035, aisleY+aisleW/2-convLen-0.4);
-      hand.userData.noFrame=true;            // 창고 반대편 — 대표 샷 프레이밍에서 제외
-      gAGF.add(hand);
-    }
 
-    /* ══ [v2] ② 고정형 이송설비 — gConv ═══════════════════════════
-       기존 입고 컨베이어는 자동창고 입출고 설비이므로 항상 존재한다.
-       여기서는 '추가로 제안하는' 출고측 컨베이어 라인과 버퍼를 그린다. */
-    if(convOn){
-      const outLen=Math.min(9, Math.max(4, totalD*0.45));
-      const og=new T.Group();
-      const of=new T.Mesh(this.geo(new T.BoxGeometry(1.15,0.42,outLen)),
-        this.mat({color:C.conv, roughness:.6, metalness:.3}));
-      of.position.set(0,0.36,0); of.castShadow=shadow; og.add(of);
-      const org=this.geo(new T.CylinderGeometry(0.05,0.05,1.05,8));
-      const orm=this.mat({color:C.roller, metalness:.55, roughness:.35});
-      const oN=Math.floor(outLen/0.42);
-      const oRolls=new T.InstancedMesh(org,orm,oN);
-      const m4o=new T.Matrix4();
-      for(let i=0;i<oN;i++){
-        m4o.makeRotationZ(Math.PI/2);
-        m4o.setPosition(0,0.62,-outLen/2+0.3+i*0.42);
-        oRolls.setMatrixAt(i,m4o);
-      }
-      og.add(oRolls); this.track(oRolls);
-      og.position.set(rackW+1.9, 0, totalD*0.62-outLen/2+1.0);
-      og.rotation.y=Math.PI;
-      gConv.add(og);
-      this.actors.convOut={group:og, len:outLen};
-      // 출고 버퍼 존 (축적 구간 표시)
-      const buf=new T.Mesh(this.geo(new T.PlaneGeometry(2.4, outLen*0.5)),
-        this.mat({color:C.conv, transparent:true, opacity:.22}));
-      buf.rotation.x=-Math.PI/2;
-      buf.position.set(rackW+1.9, 0.035, totalD*0.62-outLen*0.75+1.0); gConv.add(buf);
-    }
 
-    /* ══ [v2] ③ 자동 상하차 (ATLS) — gDock ════════════════════════
-       도크 2구 + 트럭 1대 + 도크↔창고 연결 컨베이어. */
-    if(dockOn){
-      const zBase=aisleY+aisleW/2-convLen-2.0;
-      const dockZ=[zBase, zBase+5.2];
-      const wallM=this.mat({color:0x39445C, roughness:.85});
-      const bumpM=this.mat({color:0x1E242F, roughness:.9});
-      dockZ.forEach((dz,i)=>{
-        // 도크 벽면 + 개구부
-        const wall=new T.Mesh(this.geo(new T.BoxGeometry(0.4,4.2,4.4)), wallM);
-        wall.position.set(dockX+2.6,2.1,dz); wall.castShadow=shadow; gDock.add(wall);
-        const lip=new T.Mesh(this.geo(new T.BoxGeometry(1.5,0.18,3.0)),
-          this.mat({color:C.conv, roughness:.55, metalness:.4}));
-        lip.position.set(dockX+1.7,1.15,dz); gDock.add(lip);
-        [-1.6,1.6].forEach(o=>{
-          const bp=new T.Mesh(this.geo(new T.BoxGeometry(0.22,0.5,0.4)), bumpM);
-          bp.position.set(dockX+2.3,1.0,dz+o); gDock.add(bp);
-        });
-      });
-      // 트럭 (1번 도크에 접안)
-      {
-        const tg=new T.Group();
-        const box=new T.Mesh(this.geo(new T.BoxGeometry(7.2,2.9,2.5)),
-          this.mat({color:0xE9EDF3, roughness:.62, metalness:.12}));
-        box.position.set(-3.9,2.05,0); box.castShadow=shadow; tg.add(box);
-        const cabin=new T.Mesh(this.geo(new T.BoxGeometry(2.1,2.2,2.4)),
-          this.mat({color:0x2E6BC4, roughness:.5, metalness:.3}));
-        cabin.position.set(-8.6,1.7,0); cabin.castShadow=shadow; tg.add(cabin);
-        const wgeo=this.geo(new T.CylinderGeometry(0.52,0.52,0.34,14));
-        const wmat=this.mat({color:0x1A1E26, roughness:.9});
-        [[-1.6,-1.15],[-1.6,1.15],[-6.0,-1.15],[-6.0,1.15],[-8.4,-1.15],[-8.4,1.15]].forEach(([wx,wz])=>{
-          const w=new T.Mesh(wgeo,wmat); w.rotation.z=Math.PI/2;
-          w.position.set(wx,0.52,wz); tg.add(w);
-        });
-        tg.position.set(dockX+1.4, 0, dockZ[0]);
-        gDock.add(tg); this.actors.truck=tg;
-      }
-      // 도크 → 입고 컨베이어 연결 라인
-      {
-        const linkLen=Math.abs((-1.15-0.6)-(dockX+1.7));
-        const lk=new T.Mesh(this.geo(new T.BoxGeometry(linkLen,0.42,1.15)),
-          this.mat({color:C.conv, roughness:.6, metalness:.3}));
-        lk.position.set((dockX+1.7 + (-1.75))/2, 0.36, zBase+0.4);
-        lk.castShadow=shadow; gDock.add(lk);
-        this.actors.dockLink={mesh:lk, x0:dockX+1.7, x1:-1.75, z:zBase+0.4};
-      }
-    }
 
     /* ── Size Checker (오버사이즈 검지) : 견적 항목 — 컨베이어 상부 게이트 ── */
     {
@@ -5114,24 +4997,7 @@ const GL3D = {
       `<span><i style="background:${hex(this.COL.pallet)}"></i>보관 파렛트</span>`+
       `<span><i style="background:${hex(this.COL.shuttleY)}"></i>${D.sysKey==="stc"?"스태커크레인":"4-Way 셔틀"}</span>`+
       `<span><i style="background:${hex(this.COL.lifter)}"></i>리프트</span>`+
-      `<span><i style="background:${hex(this.COL.agf)}"></i>${(this.actors&&this.actors.unmanned)?"무인지게차 (AGF)":"지게차"}</span>`+
-      ((this.scopeOn&&this.scopeOn.agv)?`<span><i style="background:#4FC3E8"></i>무인이송 경로·충전</span>`:"")+
-      ((this.scopeOn&&this.scopeOn.conv)?`<span><i style="background:${hex(this.COL.conv)}"></i>출고 컨베이어·버퍼</span>`:"")+
-      ((this.scopeOn&&this.scopeOn.dock)?`<span><i style="background:#E9EDF3"></i>도크·트럭</span>`:"");
-    // [v2] 영역 하이라이트 칩 — 판정이 '부적합'인 영역은 비활성으로 표시
-    const scb=document.getElementById("simScope"), SC=window.sc_data;
-    if(scb){
-      const on=this._scopeFocus||"all";
-      scb.innerHTML=`<span class="ss${on==='all'?' on':''}" onclick="SIM3D.focusScope('all')">전체</span>`+
-        SCOPES.map(sp=>{
-          const v=SC&&SC[sp.k]?SC[sp.k].v:"fit";
-          const drawn = sp.k==="asrs" ? true : (this.scopeOn?this.scopeOn[sp.k]:true);
-          const label = sp.t.split(" (")[0];
-          return drawn
-            ? `<span class="ss${on===sp.k?' on':''}" onclick="SIM3D.focusScope('${sp.k}')">${label}</span>`
-            : `<span class="ss off" title="판정: ${SCOPE_VERDICT[v].label} — 화면에 그리지 않음">${label}</span>`;
-        }).join("");
-    }
+      `<span><i style="background:${hex(this.COL.agf)}"></i>${(this.actors&&this.actors.unmanned)?"무인지게차 (AGF)":"지게차"}</span>`;
     const note=document.getElementById("simNote");
     if(note){
       const r=D.real;
@@ -5175,93 +5041,9 @@ const GL3D = {
     this.D=this.actors=null; this.inited=false;
     this.conceptG=this.conceptUnits=this.conceptFrame=this.conceptShuttle=this.conceptSaved=null;
     this.concept=false; this.cinema=false; this.freeCam=null; this._darkBg=null;
-    this.groups=null; this.scopeOn=null; this._scopeFocus=null;
+    this.groups=null; this.scopeOn=null;
   },
 
-  /* [v2] 영역 하이라이트 — 선택 영역만 정상 밝기, 나머지는 흐리게.
-     'all' 이면 전체 복귀. 그리지 않은 영역은 애초에 선택 대상이 아니다. */
-  focusScope(k){
-    if(!this.scene) return;
-    const cur=this._scopeFocus||"all";
-    const next=(k===cur)?"all":k;
-    this._scopeFocus=next;
-    const dim=o=>{ o.traverse(n=>{ if(n.material){
-        const ms=Array.isArray(n.material)?n.material:[n.material];
-        ms.forEach(m=>{
-          if(m.__op===undefined) m.__op = (m.opacity!==undefined ? m.opacity : 1);
-          if(m.__dw===undefined) m.__dw = m.depthWrite;
-          // depthWrite 를 끄면 반투명 랙이 앞뒤로 뒤섞여 화면이 지저분해진다 → 유지
-          // three.js 는 transparent 를 런타임에 바꾸면 needsUpdate 없이는 반영되지 않는다
-          if(!m.transparent) m.needsUpdate=true;
-          m.transparent=true; m.opacity=m.__op*0.16;
-        });
-      }}); };
-    const undim=o=>{ o.traverse(n=>{ if(n.material){
-        const ms=Array.isArray(n.material)?n.material:[n.material];
-        ms.forEach(m=>{
-          if(m.__op!==undefined){
-            const wantT=(m.__op<1);
-            if(m.transparent!==wantT) m.needsUpdate=true;
-            m.opacity=m.__op; m.transparent=wantT;
-            if(m.__dw!==undefined) m.depthWrite=m.__dw;
-          }
-        });
-      }}); };
-    const gm=this.groups||{};
-    const map={agv:gm.gAGF, conv:gm.gConv, dock:gm.gDock};
-    // 자동창고(asrs)는 별도 그룹이 아니라 world 전체에서 위 3개를 뺀 나머지
-    if(next==="all"){
-      undim(this.world);
-    } else if(next==="asrs"){
-      undim(this.world);
-      Object.values(map).forEach(g=>{ if(g) dim(g); });
-    } else {
-      dim(this.world);
-      const g=map[next]; if(g) undim(g);
-    }
-    /* 하이라이트만으로는 큰 창고에서 해당 설비가 점처럼 보인다 —
-       선택한 영역을 카메라로 실제로 잡아준다. '전체'면 원래 시점으로 복귀. */
-    this.frameScope(next);
-    this.renderMeta();
-    this.render();
-  },
-
-  /* 선택 영역의 바운딩 박스로 카메라를 이동 */
-  frameScope(k){
-    if(!this.camera||!this.world) return;
-    if(this.cinema && SIM3D.cinemaOff) SIM3D.cinemaOff();
-    if(k==="all" || k==="asrs"){ this.fitView(); return; }
-    const gm=this.groups||{};
-    const g={agv:gm.gAGF, conv:gm.gConv, dock:gm.gDock}[k];
-    if(!g || !g.children.length){ this.fitView(); return; }
-    const T=this.THREE;
-    /* 바닥 주행 라인처럼 창고 전폭을 덮는 요소는 빼고 잡는다 —
-       포함하면 '전체 보기'와 다를 바 없는 거리가 나온다. */
-    const box=new T.Box3(); const tmp=new T.Box3();
-    g.traverse(n=>{
-      if(!(n.isMesh||n.isInstancedMesh)) return;
-      if(n.userData && n.userData.noFrame) return;
-      tmp.setFromObject(n); box.union(tmp);
-    });
-    if(box.isEmpty()) box.setFromObject(g);
-    if(!isFinite(box.min.x)||box.isEmpty()){ this.fitView(); return; }
-    const c=box.getCenter(new T.Vector3()), sz=box.getSize(new T.Vector3());
-    // 긴 라인(주행 경로 등)은 최장변만 쓰면 화면 밖으로 나가므로 중간값 기준으로 잡는다
-    const dims=[sz.x,sz.y,sz.z].sort((a,b)=>b-a);
-    const rad=Math.max(4.0, (dims[0]*0.42 + dims[1]*0.5));
-    const fovV=this.camera.fov*Math.PI/180;
-    const fovH=2*Math.atan(Math.tan(fovV/2)*Math.max(0.2,this.camera.aspect||1));
-    this.center.set(c.x, Math.max(1.6,c.y), c.z);
-    // 창고 중심 → 설비 방향의 '바깥쪽'에 카메라를 둔다. 안 그러면 랙 구조물 내부에서 보게 된다.
-    const hc=this.homeCenter||this.center;
-    let dx=c.x-hc.x, dz=c.z-hc.z;
-    if(Math.hypot(dx,dz)<1){ dx=-1; dz=-1; }
-    this.sph.theta=Math.atan2(dx,dz);
-    this.sph.phi=0.92;                            // 조금 위에서 내려다본다
-    // 최소 22m — 더 가까우면 카메라가 랙 구조물 내부로 들어간다
-    this.sph.r=Math.max(22, rad/Math.sin(Math.min(fovV,fovH)/2)*1.05);
-    this.vel.t=0; this.vel.p=0;
-  }
 };
 
 /* ============================================================
@@ -5294,7 +5076,6 @@ const SIM3D = {
   fitView(){ if(this.engine) this.engine.fitView(); },
   preset(k){ if(this.engine && this.engine.preset) this.engine.preset(k); else this.fitView(); },
   /* [v2] 제안 영역 하이라이트 — three 엔진 전용(2D 폴백은 무시) */
-  focusScope(k){ if(this.engine && this.engine.focusScope) this.engine.focusScope(k); },
   /* 개념 설명 모드 — 일반랙 압축 → 수직 확장 → 4방향 주행을 자막과 함께 시연 */
   toggleConcept(){
     const e=this.engine;
@@ -5971,6 +5752,6 @@ if("serviceWorker" in navigator){
 }
 </script>
 <script src="./simulation.js?v=3.0.3"></script>
-<script src="./higgsfield.js?v=3.0.3"></script>
+<script src="./higgsfield.js?v=3.0.4"></script>
 </body>
 </html>

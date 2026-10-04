@@ -65,7 +65,6 @@ export function composeWarehouse(e){
     group.add(rolls);e.track(rolls);return group;
   }
   G.add(conveyor(ac.conv.group,A.convStart.x,A.convStart.z-2.8,A.convEnd.z));
-  if(ac.convOut)e.groups.gConv.add(conveyor(ac.convOut.group,D.rackW+2,-5,Math.min(D.totalD,6)));
   const markings=[];
   for(let z=-5;z<D.totalD+2;z+=2)markings.push([-6,.027,z,.10,.018,1.1]);
   for(let x=0;x<D.rackW+3;x+=2)markings.push([x,.027,-5.4,1.1,.018,.10]);
@@ -87,8 +86,6 @@ export function composeWarehouse(e){
   batch('Higgsfield / inspection portal',[[A.convStart.x-.83,1.55,A.convStart.z+.8,.12,3.1,.14],[A.convStart.x+.83,1.55,A.convStart.z+.8,.12,3.1,.14],[A.convStart.x,3.05,A.convStart.z+.8,1.8,.14,.18]],yellow);
   batch('Higgsfield / WCS terminal',[[-4.2,.65,A.convEnd.z-2,.2,1.3,.24],[-4.2,1.5,A.convEnd.z-2,.75,.5,.2]],dark);
   batch('Higgsfield / WCS screen',[[-4.2,1.5,A.convEnd.z-2.11,.63,.36,.02]],mint);
-  // Original optional dock remains available through its scope focus.
-  const dockGround=batch('Dock platform',[[-16,-.36,D.totalD*.5,15,.65,D.totalD+8]],floorM,dock);dockGround.userData.noFrame=true;
   e.scene.background=new T.Color(0x0c1b2a);e.scene.fog=new T.Fog(0x0c1b2a,1000,2000);
   e.scene.children.filter(n=>n.isLight).forEach(n=>e.scene.remove(n));
   e._hemi=new T.HemisphereLight(0xe3f3ff,0x506579,2.1);e.scene.add(e._hemi);
