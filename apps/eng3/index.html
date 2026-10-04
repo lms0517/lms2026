@@ -318,6 +318,8 @@ a.btn{text-decoration:none}
 .share-opt span:last-child{font-size:10.5px;color:var(--muted);text-align:center;line-height:1.3}
 .share-opt:active{transform:scale(.97)}
 .share-qr{margin-top:14px;padding:16px;background:#fff;border-radius:14px;text-align:center}
+.req-pre{white-space:pre-wrap;word-break:keep-all;font-family:inherit;font-size:12px;line-height:1.6;color:var(--ink-soft);
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-sm);padding:12px 13px;max-height:42vh;overflow:auto;margin:0}
 .share-qr canvas{width:220px;height:220px;display:block;margin:0 auto}
 .share-qr .u{font-size:12px;color:#333;margin:10px 0 8px}
 .doc-btn.view{background:rgba(12,68,124,.10);color:var(--accent-2);border:1px solid rgba(12,68,124,.34)}
@@ -511,7 +513,7 @@ body.fs-lock{overflow:hidden}
   <div class="topbar">
     <div class="brand">
       <span class="logo mono"><b>TSPG</b> · LOGISALL ENG</span>
-      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1005.1</span>
+      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1005.2</span>
     </div>
     <div class="prog" id="prog"></div>
   </div>
@@ -3062,7 +3064,7 @@ function renderResult(){
           <div class="cg-title" style="margin:16px 0 8px">확정 견적에 추가로 필요한 자료 <span class="cg-sub">상세 제안 · ${DETAIL_REQ.length}항목</span></div>
           ${DETAIL_REQ.map(([t,w],i)=>`<div class="stage"><div class="sg-n">${String(i+1).padStart(2,"0")}</div><div><div class="sg-t">${t}</div><div class="sg-d">${w}</div></div></div>`).join("")}
           <div class="result-actions" style="margin-top:10px">
-            <button class="btn soft wide" style="flex:1 1 100%" onclick="copyDetailReq()">📋 솔루션 1차 확인 및 필요자료 요청 복사</button>
+            <button class="btn soft wide" style="flex:1 1 100%" onclick="openReqSheet()">📋 솔루션 1차 확인 및 필요자료 요청</button>
           </div>
           <div class="note">이 화면의 수치는 <b>1차 개념 검토 결과</b>입니다. 설비 대수와 처리량 보증, 확정 견적은 위 자료를 받아 상세 시뮬레이션을 거친 뒤 제시합니다.</div>
         </div>
@@ -5626,8 +5628,9 @@ function showScopeModal(k){
   document.getElementById('objModal').classList.add('show');
 }
 
-/* ----- 솔루션 1차 확인 및 필요자료 요청 복사 (고객 전달용) ----- */
-function copyDetailReq(){
+const esc=v=>String(v==null?"":v).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+/* ----- 솔루션 1차 확인 및 필요자료 요청 (고객 전달용) ----- */
+function reqText(){
   const d=window.d_data, est=window.est_data, roi=window.roi_data, sc=window.sc_data;
   const L=[];
   L.push("[솔루션 1차 확인 및 필요자료 요청]");
@@ -5661,7 +5664,72 @@ function copyDetailReq(){
   DETAIL_REQ.forEach(([t,w],i)=>{ L.push(` ${i+1}. ${t}`); L.push(`    → ${w}`); });
   L.push("");
   L.push("※ 위 자료를 받으면 설비 대수·처리량 보증 조건과 확정 견적을 제시해 드립니다.");
-  copyText(L.join("\n"), "솔루션 1차 확인 및 필요자료 요청이 복사되었습니다");
+  return L.join("\n");
+}
+
+
+/* 같은 조건으로 다시 여는 짧은 링크 — QR 에 담을 수 있게 입력값만 넣는다 */
+const REQ_KEYS=[["t","temp"],["b","build"],["a","area"],["h","height"],["v","volume"],["r","inRatio"],
+  ["w","palletW"],["l","palletL"],["ph","palletH"],["kg","palletKg"],["s","stock"],["sd","storeDays"],["c","cells"]];
+function reqLink(){
+  const d=window.d_data||STATE.data;
+  const q=REQ_KEYS.filter(([k,f])=>d[f]!==undefined&&d[f]!==""&&d[f]!==0&&!(f==="inRatio"&&d[f]===50))
+                  .map(([k,f])=>k+":"+d[f]).join(",");
+  const u=new URL(location.href); u.search=""; u.hash="";
+  return u.href+(q?"?p="+q:"")+"#req";    // 값은 영문·숫자·점뿐이라 인코딩 없이 짧게
+}
+/* 링크로 열면 입력칸을 채우고 결과 화면까지 바로 간다 */
+function applyReqLink(){
+  const q=new URLSearchParams(location.search).get("p"); if(!q) return;
+  const m={}; q.split(",").forEach(x=>{const i=x.indexOf(":"); if(i>0) m[x.slice(0,i)]=x.slice(i+1);});
+  const setv=(id,v)=>{const e=$("#"+id); if(e&&v!==undefined) e.value=v;};
+  if(m.t){ STATE.data.temp=m.t; $$("#f_temp .chip").forEach(c=>c.classList.toggle("on",c.dataset.v===m.t)); }
+  setv("f_build",m.b); setv("f_area",m.a); setv("f_height",m.h); setv("f_volume",m.v);
+  if(m.r){ setv("f_inPct",m.r); setv("f_outPct",100-(+m.r)); }
+  setv("f_palletW",m.w); setv("f_palletL",m.l); setv("f_palletH",m.ph); setv("f_palletKg",m.kg);
+  setv("f_stock",m.s); setv("f_storeDays",m.sd); setv("f_cells",m.c);
+  flowLiveCalc(); collect(); renderResult(); showStep(STATE.total-1);
+  if(location.hash==="#req") setTimeout(openReqSheet,400);
+}
+/* 내용을 먼저 보여주고 메일 · QR · 톡으로 전달 */
+function openReqSheet(){
+  const txt=reqText(), link=reqLink();
+  const title="솔루션 1차 확인 및 필요자료 요청";
+  const subject=encodeURIComponent(title), mbody=encodeURIComponent(txt+"\n\n■ 같은 조건으로 열어보기\n"+link);
+  const box=document.getElementById('objModalBox');
+  box.innerHTML=`
+    <div class="cm-title">${title}</div>
+    <div class="cm-sub mono">// 내용을 확인한 뒤 메일 · QR · 톡으로 보냅니다</div>
+    <pre class="req-pre">${esc(txt)}</pre>
+    <div class="share-grid">
+      <a class="share-opt" href="mailto:?subject=${subject}&body=${mbody}">
+        <span class="ic">✉️</span><b>이메일</b><span>메일 앱에 본문이 채워집니다</span></a>
+      <button class="share-opt" onclick="reqQR()">
+        <span class="ic">▦</span><b>QR</b><span>찍으면 같은 조건으로 열림</span></button>
+      <button class="share-opt" onclick="reqShare()">
+        <span class="ic">💬</span><b>톡</b><span>카톡·문자 등 공유창</span></button>
+    </div>
+    <div id="shareQRBox"></div>
+    <button class="doc-btn view" style="width:100%;margin-top:12px" onclick="copyText(reqText(),'내용이 복사되었습니다')">📋 내용 복사</button>
+    <button class="cm-close-btn" onclick="document.getElementById('objModal').classList.remove('show')">닫기</button>`;
+  document.getElementById('objModal').classList.add('show');
+}
+function reqQR(){
+  const url=reqLink(), box=document.getElementById('shareQRBox'); if(!box) return;
+  box.innerHTML=`<div class="share-qr"><canvas id="shareQRCv" width="220" height="220"></canvas>
+    <div class="u">카메라로 찍으면 이 조건 그대로 결과와 요청서가 열립니다</div>
+    <button class="doc-btn view" onclick="copyText(reqLink(),'링크가 복사되었습니다')">링크 복사</button></div>`;
+  if(!drawQR(document.getElementById('shareQRCv'), url))
+    box.innerHTML=`<div class="note">QR 을 만들지 못했습니다 — 링크를 복사해 보내세요.<br><small>${esc(url)}</small></div>`;
+  box.scrollIntoView({block:"nearest"});
+}
+async function reqShare(){
+  const txt=reqText();
+  if(navigator.share){
+    try{ await navigator.share({title:"솔루션 1차 확인 및 필요자료 요청", text:txt}); return; }
+    catch(e){ if(e&&e.name==="AbortError") return; }
+  }
+  copyText(txt,"내용이 복사되었습니다 — 카톡에 붙여 넣으세요");
 }
 
 /* ---- 권장 구축 규모 계산 근거 모달 ---- */
@@ -5766,6 +5834,8 @@ buildProgress();
 showStep(0);
 
 /* ----- PWA: 서비스워커 등록 (오프라인·홈화면 설치) ----- */
+window.addEventListener("load", applyReqLink);
+
 if("serviceWorker" in navigator){
   window.addEventListener("load", ()=>{
     navigator.serviceWorker.register("sw.js").catch(()=>{});
