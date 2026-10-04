@@ -75,7 +75,12 @@
     if(sceneTime>=this.PH.liftEnd&&sceneTime<this.PH.handoff){const k=this.sCurve((sceneTime-this.PH.liftEnd)/(this.PH.handoff-this.PH.liftEnd));ap.position.x=this.anchors.convEnd.x+(this.anchors.railFromX-this.anchors.convEnd.x)*k;}
     if(sh&&sceneTime<this.PH.liftEnd){sh.position.y=this.anchors.liftTopY-.72;sh.position.z=this.anchors.railZ;}
     if(sh&&sceneTime>=this.PH.railEnd&&sceneTime<this.PH.depositEnd){sh.position.z=ap.position.z;sh.position.y=ap.position.y-.72;}
-    else if(sh&&sceneTime>=this.PH.depositEnd){sh.position.z=this.anchors.dropZ+(this.anchors.railZ-this.anchors.dropZ)*this.sCurve((sceneTime-this.PH.depositEnd)/(this.LOOP-this.PH.depositEnd));}
+    else if(sh&&sceneTime>=this.PH.depositEnd){
+      // 4-Way 셔틀은 대각선으로 못 간다 — 먼저 딥 레인에서 통로로 빠져나온 뒤(z) 통로를 따라 복귀(x)
+      const A=this.anchors,k=(sceneTime-this.PH.depositEnd)/(this.LOOP-this.PH.depositEnd);
+      if(k<0.25){sh.position.x=A.railToX;sh.position.z=A.dropZ+(A.railZ-A.dropZ)*this.sCurve(k/0.25);}
+      else{sh.position.z=A.railZ;sh.position.x=A.railToX+(A.railFromX-A.railToX)*this.sCurve((k-0.25)/0.75);}
+    }
     if(state.direction==='out')this.actors.convPallets.forEach(p=>p.visible=false);
     if(this.detailMarker){this.detailMarker.position.copy(ap.position);this.detailMarker.visible=ap.visible&&!this.concept;this.detailMarker.rotation.y=t*.8;}
     SIMDETAIL.update(t);

@@ -600,7 +600,7 @@ body.fs-lock{overflow:hidden}
   <div class="topbar">
     <div class="brand">
       <span class="logo mono"><b>TSPG</b> · LOGISALL ENG</span>
-      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1010.3</span>
+      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1010.4</span>
     </div>
     <div class="prog" id="prog"></div>
   </div>
@@ -706,7 +706,7 @@ body.fs-lock{overflow:hidden}
         <div class="step-kicker mono">STEP 2 / 3</div>
         <h2>운영 정보</h2>
         <p>1차 개념 제안에 필요한 최소 정보입니다. 아래 6가지만 있으면 방향과 개략 투자비가 나옵니다.</p>
-        <p class="def-hint">회색 숫자는 <b>기본값</b>입니다 — 비워 두면 그 값으로 계산하고, 결과와 3D 에 '기본값'으로 표시합니다.</p>
+        <p class="def-hint">칸 안의 회색 <b>'예: ○○'</b>가 기본값입니다 — 입력하지 않은 칸만 그 값으로 계산하고, 결과와 3D 에 '기본값'으로 표시합니다.</p>
       </div>
 
       <div class="card">
@@ -738,18 +738,18 @@ body.fs-lock{overflow:hidden}
       <div class="row2" style="margin-bottom:18px">
         <div class="field">
           <label>창고 면적 (평) <span class="req">*</span></label>
-          <input type="number" id="f_area" placeholder="520" inputmode="numeric">
+          <input type="number" id="f_area" placeholder="예: 520평" inputmode="numeric">
         </div>
         <div class="field">
           <label>유효 층고 (m) <span class="req">*</span></label>
-          <input type="number" id="f_height" placeholder="10" inputmode="decimal">
+          <input type="number" id="f_height" placeholder="예: 10m" inputmode="decimal">
         </div>
       </div>
       <div class="row2 flow-row" style="margin-bottom:6px">
         <div class="field">
           <label>월 물동량 <span class="req">*</span></label>
           <div class="suffix">
-            <input type="number" id="f_volume" placeholder="9000" inputmode="numeric">
+            <input type="number" id="f_volume" placeholder="예: 9,000" inputmode="numeric">
             <span class="u mono">PLT/월</span>
           </div>
         </div>
@@ -776,23 +776,23 @@ body.fs-lock{overflow:hidden}
         </div>
         <div class="field">
           <label>적재높이 <small>m</small></label>
-          <input type="number" id="f_palletH" placeholder="1.5" inputmode="decimal" step="0.1">
+          <input type="number" id="f_palletH" placeholder="예: 1.5" inputmode="decimal" step="0.1">
         </div>
         <div class="field">
           <label>최대중량 <small>kg</small></label>
-          <input type="number" id="f_palletKg" placeholder="1000" inputmode="numeric">
+          <input type="number" id="f_palletKg" placeholder="예: 1000" inputmode="numeric">
         </div>
       </div>
-      <div class="hint" style="margin-bottom:18px">화물을 포함한 파렛트 1매 기준. 적재높이는 단수 계산(미입력 시 1.8m), 중량은 셔틀 적재능력(1.5t) 대비 판정에 사용합니다.</div>
+      <div class="hint" style="margin-bottom:18px">화물을 포함한 파렛트 1매 기준. 적재높이는 단수 계산(비우면 기본 1.5m), 중량은 셔틀 적재능력(1.5t) 대비 판정에 사용합니다.</div>
       <div class="row2">
         <div class="field">
           <label>현 보관 파렛트 수</label>
-          <input type="number" id="f_stock" placeholder="1000" inputmode="numeric">
+          <input type="number" id="f_stock" placeholder="예: 1,000" inputmode="numeric">
         </div>
         <div class="field">
           <label>평균 보관일수</label>
           <div class="suffix">
-            <input type="number" id="f_storeDays" placeholder="15" inputmode="numeric">
+            <input type="number" id="f_storeDays" placeholder="예: 15" inputmode="numeric">
             <span class="u mono">일</span>
           </div>
         </div>
@@ -1598,8 +1598,7 @@ const CAPEX = {
     const liftH = ctx.rackH>0 ? +((ctx.rackH*(tier-1)/tier) + 0.72).toFixed(2) : 0;
     const overLift = liftH > 6.9;                     // 6.65m급 허용 오차 포함
     const lifterUnit = overLift ? Math.round(C.lifter3 * liftH / 6.65) : (tier<=2 ? C.lifter2 : C.lifter3);
-    const lifterSpec = overLift ? `설치높이 ${liftH.toFixed(1)}m급 (${tier}단)`
-                     : (tier<=2 ? "2단 (설치높이 5.8m급)" : "3단 (설치높이 6.65m급)");
+    const lifterSpec = (overLift ? `설치높이 ${liftH.toFixed(1)}m급` : (tier<=2 ? "설치높이 5.8m급" : "설치높이 6.65m급")) + ` · 랙 ${tier}단`;
     const convQty    = 4 * lifterQty;                 // 3건 평균 4/리프트 — 추정
     const convRackQty= lifterQty * tier;              // 3건 정확히 일치 — 실측
     const rackUnit   = Math.round(M.rackA * Math.pow(cells, -M.rackExp));
@@ -6012,7 +6011,7 @@ if("serviceWorker" in navigator){
   });
 }
 </script>
-<script src="./simulation.js?v=3.2.2"></script>
+<script src="./simulation.js?v=3.2.3"></script>
 <script src="./higgsfield.js?v=3.1.2"></script>
 </body>
 </html>
