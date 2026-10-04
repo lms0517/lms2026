@@ -502,7 +502,7 @@ body.fs-lock{overflow:hidden}
   .app{box-shadow:0 0 60px rgba(12,68,124,.10)}
 }
 </style>
-<link rel="stylesheet" href="./simulation.css?v=3.0.3">
+<link rel="stylesheet" href="./simulation.css?v=3.0.5">
 </head>
 <body>
 <div class="app">
@@ -511,7 +511,7 @@ body.fs-lock{overflow:hidden}
   <div class="topbar">
     <div class="brand">
       <span class="logo mono"><b>TSPG</b> · LOGISALL ENG</span>
-      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1004.6</span>
+      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1004.8</span>
     </div>
     <div class="prog" id="prog"></div>
   </div>
@@ -2991,6 +2991,18 @@ function renderResult(){
       </div></div>
     </div>
 
+    <div class="card">
+      <div class="h mono obj-toggle" onclick="toggleCardPanel(this)" style="cursor:pointer">개선 예상 (현재 → 목표)<span class="ln"></span><span class="obj-caret mono">▼</span></div>
+      <div class="roi-panel">
+        <div class="roi-panel-inner kpi2">
+          <div class="kpi2-head"><span>현재</span><span style="min-width:10px"></span><span>목표</span></div>
+          ${improveRows}
+          ${roi.capped?`<div class="note" style="border-color:#E8B21F;color:#E8B21F;margin-bottom:8px">현 공간 한계로 <b>보관량이 현재보다 줄어듭니다</b>. 이 표는 개선안이 아니라 <b>현 조건의 한계</b>를 보여줍니다. 면적·층고 확보가 선행돼야 합니다. (보관 바닥면적 비교는 성립하지 않아 생략)</div>`:""}
+          <div class="note">현재값은 일반 랙 ${CONFIG.CONV_RACK_TIERS}단 운영을 기준으로 환산한 비교치입니다. 작업 인원은 물동량·면적에서 추정한 값이며 실제 인원과 다를 수 있습니다. <b>절감 금액과 투자 회수기간은 임대료·인건비 가정에 크게 좌우되므로 이 화면에서는 제시하지 않습니다</b> — 상세 제안 단계에서 고객사 실제 단가로 산출합니다.</div>
+        </div>
+      </div>
+    </div>
+
     <div class="card" id="simCard">
       <div class="h mono obj-toggle" id="simToggle" onclick="toggleSim3D(this)" style="cursor:pointer">자동창고 3D 시뮬레이션<span class="ln"></span><span class="obj-caret mono">▼</span></div>
       <div id="simPanel" class="roi-panel">
@@ -3001,7 +3013,6 @@ function renderResult(){
           </div>
           <div class="sim-bar">
             <button class="sim-btn" id="simConcept" onclick="SIM3D.toggleConcept()">📐 개념 설명</button>
-            <button class="sim-btn" id="simPlay" onclick="SIM3D.togglePlay()">▶ 데모 재생</button>
             <button class="sim-btn" onclick="SIM3D.fitView()">⟳ 시점 초기화</button>
             <button class="sim-btn" id="simCine" onclick="SIM3D.toggleCinema()">🎬 영상 모드</button>
             <button class="sim-btn" id="simFsBtn" onclick="SIM3D.toggleFull()">⛶ 전체화면</button>
@@ -3032,18 +3043,6 @@ function renderResult(){
           ${capexMeta}
           ${capexScope}
           <div class="note" style="margin-top:10px">단가·요율은 실제 공급 견적서 ${QUOTES.length}건(${CAPEX.calibratedFrom.join(" · ")}) 역산값입니다. 규모별 랙 단가·수량 규칙은 견적서 사이 보간 추정이며, 현장 실사·도면 없이 산출한 개략값입니다. 정밀 견적은 요청서 8개 섹션 데이터 수집 후 별도 제출합니다.</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="h mono obj-toggle" onclick="toggleCardPanel(this)" style="cursor:pointer">개선 예상 (현재 → 목표)<span class="ln"></span><span class="obj-caret mono">▼</span></div>
-      <div class="roi-panel">
-        <div class="roi-panel-inner kpi2">
-          <div class="kpi2-head"><span>현재</span><span style="min-width:10px"></span><span>목표</span></div>
-          ${improveRows}
-          ${roi.capped?`<div class="note" style="border-color:#E8B21F;color:#E8B21F;margin-bottom:8px">현 공간 한계로 <b>보관량이 현재보다 줄어듭니다</b>. 이 표는 개선안이 아니라 <b>현 조건의 한계</b>를 보여줍니다. 면적·층고 확보가 선행돼야 합니다. (보관 바닥면적 비교는 성립하지 않아 생략)</div>`:""}
-          <div class="note">현재값은 일반 랙 ${CONFIG.CONV_RACK_TIERS}단 운영을 기준으로 환산한 비교치입니다. 작업 인원은 물동량·면적에서 추정한 값이며 실제 인원과 다를 수 있습니다. <b>절감 금액과 투자 회수기간은 임대료·인건비 가정에 크게 좌우되므로 이 화면에서는 제시하지 않습니다</b> — 상세 제안 단계에서 고객사 실제 단가로 산출합니다.</div>
         </div>
       </div>
     </div>
@@ -5774,7 +5773,7 @@ if("serviceWorker" in navigator){
   });
 }
 </script>
-<script src="./simulation.js?v=3.0.3"></script>
+<script src="./simulation.js?v=3.0.6"></script>
 <script src="./higgsfield.js?v=3.0.4"></script>
 </body>
 </html>

@@ -33,3 +33,4 @@
 
 /* v3: 입고·출고 시연 두 버튼을 한 줄에 반씩 */
 .sim-dir{flex-wrap:nowrap}.sim-dir button{flex:1;font-size:12px;font-weight:700;min-height:38px}
+.sim-dir button.playing{background:var(--accent);border-color:var(--accent);color:#fff}

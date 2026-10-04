@@ -17,14 +17,14 @@
     inner.insertAdjacentHTML('afterbegin',`<div class="sim-kpis">
       <div class="sim-kpi"><span>구축 규모 · 계산 결과 연동</span><b>${fmt(L.cellsBuilt)} 셀</b><small>${L.aisles}통로 · ${L.bay}Bay · ${L.tier}단</small></div>
       <div class="sim-kpi"><span>랙 외곽 치수</span><b>${L.rackW.toFixed(1)} × ${(L.footD-6).toFixed(1)} m</b><small>랙 높이 ${L.rackH.toFixed(1)}m · 입력 층고 ${d.height}m</small></div>
-      <div class="sim-kpi"><span>보관 화물 · ${d.stock>0?'입력 재고 반영':'미입력: 85% 예시'}</span><b>${fmt(occupied)} 매</b><small>${(occupied/L.cellsBuilt*100).toFixed(1)}% 점유${d.stock>L.cellsBuilt?' · 공간 초과 '+fmt(d.stock-L.cellsBuilt)+'매':''}</small></div>
+      <div class="sim-kpi"><span>${d.stock>0?'현재 보관 화물':'보관 화물 · 재고 미입력(85% 예시)'}</span><b>${fmt(occupied)} 매</b><small>${(occupied/L.cellsBuilt*100).toFixed(1)}% 점유${d.stock>L.cellsBuilt?' · 공간 초과 '+fmt(d.stock-L.cellsBuilt)+'매':''}</small></div>
       <div class="sim-kpi"><span>시간당 필요 처리량 · 입력 기준</span><b>${fmt(tp.perHr)} PLT/h</b><small>입 ${tp.inHr} · 출 ${tp.outHr} (입${tp.inRatio}:출${100-tp.inRatio}) · ${tp.opHours}시간 운영</small></div></div>`);
     const wrap=inner.querySelector('.sim-wrap');
     wrap.insertAdjacentHTML('beforeend','<div class="sim-live" id="simLive"><b>배치 준비 중</b><span>입력한 규모로 장면을 생성합니다.</span></div>');
     const controls=document.createElement('div');controls.className='sim-controls';
     wrap.after(controls);
     controls.innerHTML=`<div class="sim-tools" aria-label="3D 시점"><button data-view="iso" aria-pressed="true">조감도</button><button data-view="top" aria-pressed="false">평면 보기</button><button data-view="aisle" aria-pressed="false">통로 내부</button><button data-view="lift" aria-pressed="false">입출고 설비</button></div>
-      <div class="sim-tools sim-dir"><button id="simDirectionIn" aria-pressed="true">입고 시연</button><button id="simDirectionOut" aria-pressed="false">출고 시연</button></div>
+      <div class="sim-tools sim-dir"><button id="simDirectionIn" aria-pressed="true">▶ 입고 시연</button><button id="simDirectionOut" aria-pressed="false">▶ 출고 시연</button></div>
       <div class="sim-sequence"><div class="sim-seq-head"><strong id="simSequenceTitle">화물 이동 과정 · 입고</strong><span>20초 반복 시연 · 실제 처리 시간과 무관</span></div><div class="sim-stages" id="simStages"></div><div class="sim-scrub"><input id="simTimeline" type="range" min="0" max="19.99" step="0.01" value="0" aria-label="공정 시연 위치"><output id="simTime">0.0 / 20s</output></div><p class="sim-explain" id="simExplain"></p></div>`;
     const bar=inner.querySelector('.sim-bar');controls.appendChild(bar);
     controls.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>SIMDETAIL.view(b.dataset.view));
@@ -66,23 +66,48 @@
     SIMDETAIL.update(t);
   };
   // Pause retains positions and simulation time, so scrubbing and resume are consistent.
-  GL3D.stop=function(){this.playing=false;if(this.raf){cancelAnimationFrame(this.raf);this.raf=0;}const b=byId('simPlay');if(b){b.classList.remove('on');b.textContent='▶ 데모 재생';}if(this.renderer)this.render();};
+  GL3D.stop=function(){this.playing=false;if(this.raf){cancelAnimationFrame(this.raf);this.raf=0;}if(window.SIMDETAIL)SIMDETAIL.dirLabels();if(this.renderer)this.render();};
+  // 재생이 시작되면(시연 버튼·영상 모드·개념 설명) 시연 버튼 문구를 맞춘다
+  const basePlay=GL3D.togglePlay;
+  GL3D.togglePlay=function(){basePlay.call(this);if(window.SIMDETAIL)SIMDETAIL.dirLabels();};
   const baseReset=GL3D.reset;
   GL3D.reset=function(){if(this._detailResize)this._detailResize.disconnect();this._detailResize=null;this._detailW=this._detailH=null;baseReset.call(this);this.detailRoutes=this.detailDimensions=this.detailMarker=this.storageMeshes=this.detailArrows=null;};
   const initSim=SIM3D.init;
-  SIM3D.init=async function(){await initSim.call(this);const badge=byId('simRenderer');if(!this.engine)return;if(badge)badge.textContent=this.engine===GL3D?'3D · 입력값 반영':'2D · 호환 모드';if(this.engine!==GL3D){document.querySelectorAll('.sim-controls button,.sim-controls select,.sim-controls input').forEach(b=>{if(!['simPlay','simFsBtn'].includes(b.id))b.disabled=true;});byId('simLive').innerHTML='<b>2D 호환 모드</b><span>이 환경에서 WebGL을 사용할 수 없습니다.</span>';byId('simExplain').textContent='공정별 제어와 단면 보기는 WebGL 지원 브라우저에서 사용할 수 있습니다.';}};
+  SIM3D.init=async function(){await initSim.call(this);const badge=byId('simRenderer');if(!this.engine)return;if(badge)badge.textContent=this.engine===GL3D?'3D · 입력값 반영':'2D · 호환 모드';if(this.engine!==GL3D){document.querySelectorAll('.sim-controls button,.sim-controls select,.sim-controls input').forEach(b=>{if(!['simDirectionIn','simDirectionOut','simFsBtn'].includes(b.id))b.disabled=true;});byId('simLive').innerHTML='<b>2D 호환 모드</b><span>이 환경에서 WebGL을 사용할 수 없습니다.</span>';byId('simExplain').textContent='공정별 제어와 단면 보기는 WebGL 지원 브라우저에서 사용할 수 있습니다.';}};
   // Move the canvas together with captions and controls when entering fullscreen.
   const enterFull=SIM3D.enterFull,exitFull=SIM3D.exitFull;
   SIM3D.enterFull=function(){if(this.full||!this.engine)return;const wrap=byId('simCanvas').parentNode,controls=document.querySelector('#simPanel .sim-controls');enterFull.call(this);if(!this.full)return;this._detailHome={wrap,parent:wrap.parentNode,next:wrap.nextSibling,controls,cp:controls.parentNode,cn:controls.nextSibling};wrap.appendChild(byId('simCanvas'));wrap.insertBefore(byId('simCanvas'),wrap.firstChild);byId('simFS').querySelector('.fs-cv').appendChild(wrap);controls.appendChild(byId('simFS').querySelector('.sim-bar'));byId('simFS').appendChild(controls);};
   SIM3D.exitFull=function(skip){if(!this.full)return;const h=this._detailHome;if(h){h.cp.insertBefore(h.controls,h.cn&&h.cn.parentNode===h.cp?h.cn:null);h.parent.insertBefore(h.wrap,h.next&&h.next.parentNode===h.parent?h.next:null);const bar=h.controls.querySelector('.sim-bar');if(bar)byId('simFS').appendChild(bar);this._detailHome=null;}exitFull.call(this,skip);};
   const baseConcept=SIM3D.toggleConcept,baseCinema=SIM3D.toggleCinema;
   SIM3D.toggleConcept=function(){if(GL3D.concept){baseConcept.call(this);SIMDETAIL.normal();GL3D.tick(0);return;}SIMDETAIL.normal();baseConcept.call(this);byId('simLive').style.display='none';};
-  SIM3D.toggleCinema=function(){SIMDETAIL.direction('in');baseCinema.call(this);};
+  SIM3D.toggleCinema=function(){
+    // 켤 때만 입고 방향으로 맞춘다. 끌 때 setDirection 을 부르면 normal() 이 먼저 끄고
+    // 이어서 baseCinema 가 다시 켜 버려 영상 모드를 끌 수 없었다.
+    if(!(this.engine&&this.engine.cinema))SIMDETAIL.setDirection('in');
+    baseCinema.call(this);SIMDETAIL.dirLabels();};
   window.SIMDETAIL={
     normal(){if(GL3D.concept){GL3D.setConcept(false);const b=byId('simConcept');b.classList.remove('on');b.textContent='📐 개념 설명';}SIM3D.cinemaOff();if(byId('simLive'))byId('simLive').style.display='';},
     stageButtons(){byId('simStages').innerHTML=steps().map((s,i)=>`<button class="sim-stage" data-stage="${i}" aria-current="${i===0?'step':'false'}"><b>0${i+1}</b>${s[0]}</button>`).join('');byId('simStages').querySelectorAll('button').forEach(b=>b.onclick=()=>this.seek(steps()[+b.dataset.stage][2]));},
     seek(t){if(SIM3D.engine!==GL3D)return;this.normal();GL3D.stop();GL3D.animT=t;GL3D.tick(t);GL3D.render();},
-    direction(k){if(SIM3D.engine!==GL3D)return;this.normal();state.direction=k;(GL3D.detailArrows||[]).forEach(a=>a.arrow.setDirection(a.direction.clone().multiplyScalar(k==='in'?1:-1)));byId('simDirectionIn').setAttribute('aria-pressed',k==='in');byId('simDirectionOut').setAttribute('aria-pressed',k==='out');byId('simSequenceTitle').textContent='화물 이동 과정 · '+(k==='in'?'입고':'출고 · 공용 스테이션');this.stageButtons();this.seek(0);},
+    /* 시연 버튼 — 누르면 그 방향으로 처음부터 재생, 재생 중 같은 버튼을 다시 누르면 일시정지 */
+    direction(k){
+      const e=SIM3D.engine; if(!e)return;
+      if(e!==GL3D){e.togglePlay();this.dirLabels();return;}            // 2D 호환 모드: 재생/정지만
+      if(state.direction===k&&GL3D.playing&&!GL3D.cinema&&!GL3D.concept){GL3D.stop();return;}
+      const resume=state.direction===k&&!GL3D.cinema&&!GL3D.concept&&GL3D.animT>0;
+      if(state.direction!==k||!resume)this.setDirection(k); else this.normal();
+      GL3D.togglePlay();
+    },
+    dirLabels(){
+      const on=SIM3D.engine&&SIM3D.engine.playing;
+      [['in','simDirectionIn','입고 시연'],['out','simDirectionOut','출고 시연']].forEach(([k,id,t])=>{
+        const b=byId(id); if(!b)return;
+        const act=state.direction===k, run=on&&act;
+        b.textContent=(run?'❚❚ ':'▶ ')+t+(run?' 중':'');
+        b.classList.toggle('playing',run);
+      });
+    },
+    setDirection(k){if(SIM3D.engine!==GL3D)return;this.normal();state.direction=k;(GL3D.detailArrows||[]).forEach(a=>a.arrow.setDirection(a.direction.clone().multiplyScalar(k==='in'?1:-1)));byId('simDirectionIn').setAttribute('aria-pressed',k==='in');byId('simDirectionOut').setAttribute('aria-pressed',k==='out');byId('simSequenceTitle').textContent='화물 이동 과정 · '+(k==='in'?'입고':'출고 · 공용 스테이션');this.stageButtons();this.seek(0);},
     view(k){if(SIM3D.engine!==GL3D)return;this.normal();state.view=k;document.querySelectorAll('[data-view]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.view===k));if(k==='top'){GL3D.center.copy(GL3D.homeCenter);GL3D.sph.theta=0;GL3D.sph.phi=.03;GL3D.sph.r=GL3D.fitRadius(GL3D.bbox,0,.03,GL3D.camera.aspect);GL3D.vel.t=GL3D.vel.p=0;GL3D.render();}else SIM3D.preset(k);},
     update(t){if(!byId('simTime')||!GL3D.D)return;const s=steps();let index=0;s.forEach((x,i)=>{if(t>=x[2])index=i;});byId('simTime').textContent=t.toFixed(1)+' / 20s';byId('simTimeline').value=t;byId('simStages').querySelectorAll('button').forEach((b,i)=>b.setAttribute('aria-current',i===index?'step':'false'));byId('simExplain').textContent=s[index][1];const live=byId('simLive');const text=`<b>${state.direction==='in'?'입고':'출고'} · ${s[index][0]}</b><span>${fmt(GL3D.D.cellsShown)}셀 · ${GL3D.D.sTier}단 · 설명용 동작</span>`;if(live.innerHTML!==text)live.innerHTML=text;},
     build(e){
