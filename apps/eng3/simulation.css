@@ -30,7 +30,7 @@
 #simFS .sim-controls .sim-bar{padding:8px 0}
 #simFS .sim-sequence{margin:6px 0}
 @media(min-width:900px){#simCanvas{height:540px}}
-@media(max-width:520px){#simCanvas{height:330px}.sim-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.sim-stage{font-size:9px}.sim-seq-head{flex-wrap:wrap}}
+@media(max-width:520px){#simCanvas{height:470px}.sim-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.sim-stage{font-size:9px}.sim-seq-head{flex-wrap:wrap}}
 
 /* v3: 입고·출고 시연 두 버튼을 한 줄에 반씩 */
 .sim-dir{flex-wrap:nowrap}.sim-dir button{flex:1;font-size:12px;font-weight:700;min-height:38px}

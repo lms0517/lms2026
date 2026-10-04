@@ -457,6 +457,17 @@ a.btn{text-decoration:none}
 #simFS .fs-cv{flex:1;position:relative;min-height:0}
 #simFS #simCanvas{width:100%!important;height:100%!important;border-radius:0;border:none}
 #simFS .sim-bar{padding:10px 14px calc(10px + env(safe-area-inset-bottom));margin:0;border-top:1px solid var(--line)}
+/* 가로 전체화면: 3D 는 왼쪽 가득, 제목·조작 버튼은 오른쪽 세로 패널 */
+#simFS.land{display:grid;grid-template-columns:minmax(0,1fr) clamp(210px,32%,300px);grid-template-rows:auto minmax(0,1fr);
+  grid-template-areas:"cv head" "cv ctl"}
+#simFS.land .fs-head{grid-area:head;border-left:1px solid var(--line);padding:10px 12px}
+#simFS.land .fs-cv{grid-area:cv;min-width:0}
+#simFS.land .sim-controls{grid-area:ctl;max-height:none!important;overflow:auto;border-left:1px solid var(--line);padding:0 10px!important}
+#simFS.land .sim-controls .sim-tools,#simFS.land .sim-controls .sim-modes,#simFS.land .sim-controls .sim-dir{flex-wrap:wrap}
+#simFS.land .sim-seq-head span{display:none}
+#simFS.land .fs-title{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* 세로로 든 휴대폰: 오버레이를 90° 돌려 가로 화면으로 */
+#simFS.rot{inset:auto;top:50%;left:50%;width:100vh;height:100vw;width:100dvh;transform:translate(-50%,-50%) rotate(90deg);transform-origin:center}
 body.fs-lock{overflow:hidden}
 
 /* 투자비 항목별 */
@@ -558,7 +569,7 @@ body.fs-lock{overflow:hidden}
   .app{box-shadow:0 0 60px rgba(12,68,124,.10)}
 }
 </style>
-<link rel="stylesheet" href="./simulation.css?v=3.1.5">
+<link rel="stylesheet" href="./simulation.css?v=3.1.6">
 </head>
 <body>
 <div class="app">
@@ -567,7 +578,7 @@ body.fs-lock{overflow:hidden}
   <div class="topbar">
     <div class="brand">
       <span class="logo mono"><b>TSPG</b> · LOGISALL ENG</span>
-      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1007.1</span>
+      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1007.2</span>
     </div>
     <div class="prog" id="prog"></div>
   </div>
@@ -2447,7 +2458,7 @@ function toast(msg){
 }
 
 /* ============================================================
-   회사소개서 — 앱에 저장된 PDF 2종 (보기 / 전달: 이메일·QR·톡)
+   회사소개서 — 앱에 저장된 PDF 2종 (보기 / 전달: QR·톡)
    ============================================================ */
 const DOCS = {
   logisall: {
@@ -2673,18 +2684,14 @@ function drawQR(canvas,text){
   return true;
 }
 
-/* '전달' — 이메일 / QR / 톡 중 고르는 시트 */
+/* '전달' — QR / 톡 중 고르는 시트 */
 function shareMenu(key){
   const doc = DOCS[key]; if(!doc) return;
-  const url = docUrl(key);
   const box = document.getElementById('objModalBox');
-  const subject = encodeURIComponent(doc.title), body = encodeURIComponent(`${doc.title} 링크입니다.\n${url}\n\n링크를 누르면 바로 열람·저장할 수 있습니다.`);
   box.innerHTML = `
     <div class="cm-title">${doc.label} 전달</div>
     <div class="cm-sub mono">// 링크로 보냅니다 — 받는 분이 눌러 열람·저장</div>
-    <div class="share-grid">
-      <a class="share-opt" href="mailto:?subject=${subject}&body=${body}">
-        <span class="ic">✉️</span><b>이메일</b><span>메일 앱이 열립니다</span></a>
+    <div class="share-grid two">
       <button class="share-opt" onclick="shareQR('${key}')">
         <span class="ic">▦</span><b>QR</b><span>화면을 보여 주고 찍게</span></button>
       <button class="share-opt" onclick="shareDoc('${key}')">
@@ -2843,7 +2850,7 @@ function renderDocList(){
     </div>`;
   }).join("");
   el.innerHTML = rows +
-    `<div class="note">‘보기’는 앱 안에서 바로 소개서를 펼칩니다. ‘전달’은 이메일·QR·톡 중 골라 소개서 링크를 보냅니다. 받는 분이 링크를 눌러 열람·저장할 수 있습니다.</div>`;
+    `<div class="note">‘보기’는 앱 안에서 바로 소개서를 펼칩니다. ‘전달’은 QR·톡 중 골라 소개서를 보냅니다. 받는 분이 링크를 눌러 열람·저장할 수 있습니다.</div>`;
 }
 
 const TEMP_LABEL={ambient:"상온",chilled:"냉장 0~10℃",frozen:"냉동 -20℃↓",hot:"항온/고온",clean:"클린/방폭"};
@@ -4793,11 +4800,13 @@ const GL3D = {
   attachGestures(){
     const cv=this.canvas, ptrs=new Map(); let rot=false, lx=0, ly=0, pinch0=0, r0=0, lastTap=0;
     const clampR=v=>Math.max(8, Math.min(this.bound*4, v));
+    // 90° 돌린 전체화면에서는 화면 좌표를 돌린 화면 기준으로 바꿔야 손가락 방향대로 돈다
+    const P=e=>{ const ov=cv.closest("#simFS.rot"); return ov ? {x:e.clientY, y:-e.clientX} : {x:e.clientX, y:e.clientY}; };
     cv.addEventListener("pointerdown",e=>{
       // 직접 조작하면 영상 모드 해제 (카메라 소유권을 사용자에게)
       if(this.cinema && SIM3D.cinemaOff) SIM3D.cinemaOff();
-      ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
-      lx=e.clientX; ly=e.clientY; rot=false; this.vel.t=0; this.vel.p=0;
+      const q=P(e); ptrs.set(e.pointerId,q);
+      lx=q.x; ly=q.y; rot=false; this.vel.t=0; this.vel.p=0;
       if(ptrs.size===2){ const a=[...ptrs.values()]; pinch0=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y); r0=this.sph.r; }
       const now=Date.now();
       if(now-lastTap<300 && ptrs.size===1) this.fitView();
@@ -4805,16 +4814,17 @@ const GL3D = {
     });
     cv.addEventListener("pointermove",e=>{
       if(!ptrs.has(e.pointerId)) return;
-      ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+      const q=P(e); ptrs.set(e.pointerId,q);
       if(ptrs.size===2){
         const a=[...ptrs.values()];
         const dnow=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y);
         if(pinch0>0){ this.sph.r=clampR(r0*pinch0/dnow); this.render(); }
         e.preventDefault(); return;
       }
-      const dx=e.clientX-lx, dy=e.clientY-ly;
+      const dx=q.x-lx, dy=q.y-ly;
       if(!rot){
-        if(Math.abs(dx)>Math.abs(dy)+4){ rot=true; cv.setPointerCapture(e.pointerId); cv.classList.add("dragging"); }
+        // 전체화면에서는 페이지 스크롤이 없으니 위아래로 끌어도 시점 높이를 바꾼다
+        if(SIM3D.full ? Math.hypot(dx,dy)>4 : Math.abs(dx)>Math.abs(dy)+4){ rot=true; cv.setPointerCapture(e.pointerId); cv.classList.add("dragging"); }
         else if(Math.abs(dy)>10){ ptrs.delete(e.pointerId); return; }
         else return;
       }
@@ -4826,7 +4836,7 @@ const GL3D = {
       const cap=v=>Math.max(-0.03,Math.min(0.03,v));
       this.vel.t=cap(this.vel.t*0.6 + (-dx*ROT)*0.4);
       this.vel.p=cap(this.vel.p*0.6 + (-dy*PIT)*0.4);
-      lx=e.clientX; ly=e.clientY;
+      lx=q.x; ly=q.y;
       this.render();
       e.preventDefault();
     },{passive:false});
@@ -5227,7 +5237,7 @@ const SIM3D = {
     if(!cv||!bar) return;
     this._home={cvNext:cv.nextSibling, cvParent:cv.parentNode, barParent:bar.parentNode, barNext:bar.nextSibling};
     const ov=document.createElement("div"); ov.id="simFS";
-    ov.innerHTML=`<div class="fs-head"><div class="fs-title">자동창고 3D 시뮬레이션</div>
+    ov.innerHTML=`<div class="fs-head"><div class="fs-title">자동창고 3D</div>
         <button class="sim-btn" style="flex:0 0 auto;padding:7px 14px" onclick="SIM3D.exitFull()">✕ 닫기</button></div>
       <div class="fs-cv"></div>`;
     document.body.appendChild(ov);
@@ -5239,11 +5249,19 @@ const SIM3D = {
     /* 브라우저 Fullscreen API 는 쓰지 않는다 — 크롬이 '전체 화면을 종료하려면…' 알림을 강제로 띄운다.
        오버레이(#simFS)가 화면을 꽉 채우고, 뒤로 가기·닫기로 빠져나온다. */
     try{ history.pushState({simFS:1},""); this._popped=false; }catch(_){}
+    this.fsOrient();
     requestAnimationFrame(()=>this.resize());
     if(!this._onPop){ this._onPop=()=>{ if(this.full){ this._popped=true; this.exitFull(); } };
       window.addEventListener("popstate", this._onPop); }
-    if(!this._onRz){ this._onRz=()=>{ if(this.full) this.resize(); };
+    if(!this._onRz){ this._onRz=()=>{ if(this.full){ this.fsOrient(); this.resize(); } };
       window.addEventListener("resize", this._onRz); }
+  },
+  /* 전체화면은 늘 가로로 — 휴대폰을 세로로 들고 있으면 화면을 90° 돌려 그린다.
+     (screen.orientation.lock 은 브라우저 전체화면이 필요해 크롬 '종료' 알림이 뜨므로 쓰지 않는다) */
+  fsOrient(){
+    const ov=document.getElementById("simFS"); if(!ov) return;
+    ov.classList.add("land");
+    ov.classList.toggle("rot", window.innerHeight>window.innerWidth);
   },
   exitFull(skipHistory){
     if(!this.full) return;
@@ -6031,7 +6049,7 @@ if("serviceWorker" in navigator){
   });
 }
 </script>
-<script src="./simulation.js?v=3.1.5"></script>
-<script src="./higgsfield.js?v=3.1.0"></script>
+<script src="./simulation.js?v=3.1.6"></script>
+<script src="./higgsfield.js?v=3.1.1"></script>
 </body>
 </html>
