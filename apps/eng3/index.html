@@ -583,7 +583,7 @@ body.fs-lock{overflow:hidden}
   <div class="topbar">
     <div class="brand">
       <span class="logo mono"><b>TSPG</b> · LOGISALL ENG</span>
-      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1008.2</span>
+      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1008.3</span>
     </div>
     <div class="prog" id="prog"></div>
   </div>
@@ -849,9 +849,9 @@ const CONFIG = {
      [실측] 견적서의 파렛트 규격은 1,100~1,200mm. 셀 1칸 = 파렛트 + 시공여유 0.2m
             → 1.4m × 1.4m = 1.96㎡. 3D 렌더러도 이미 같은 값(cellW=cellD=1.4)을 쓴다.
      [검증] 견적 3건 실측 밀도(랙+통로 면적 대비)
-              대한냉동 4-Way  22Bay×15Deep×2단   536셀 / 214평 → 1.25 셀/평/단
-              영풍    4-Way  21Bay×54Deep×4단  4,256셀 / 708평 → 1.50 셀/평/단
-              제품창고 2-Way  39Bay×10Deep×5단  1,760셀 / 268평 → 1.31 셀/평/단
+              A 냉동 4-Way  22Bay×15Deep×2단   536셀 / 214평 → 1.25 셀/평/단
+              B 상온 4-Way  21Bay×54Deep×4단  4,256셀 / 708평 → 1.50 셀/평/단
+              C 상온 2-Way  39Bay×10Deep×5단  1,760셀 / 268평 → 1.31 셀/평/단
             평균 1.35 셀/평/단.
             본 모델: 3.305 ÷ 1.96 × (1−0.20) = 1.35 셀/평/단 — 실측 평균과 일치.
      ※ v1은 CELL_FOOTPRINT_M2 = 0.45㎡(=67cm×67cm, 파렛트보다 작음)로
@@ -1377,139 +1377,18 @@ const STATE = {
 };
 
 /* ============================================================
-   [QUOTES] 실제 견적서 DB — CAPEX 단가의 유일한 근거
+   [QUOTES] 단가 보정에 쓴 공급 견적 5건 — 익명 요약
    ------------------------------------------------------------
-   ★ 견적서 추가 시 이 배열에 넣고, CAPEX.MODELS의 계수를 재역산한다.
-   ★ 금액은 모두 '원' 단위, VAT 별도.
-   ★ CAPEX.selfCheck() / CAPEX.backtest() 로 재현 오차를 확인할 것.
+   ★ 공개 페이지라 현장명·계약금액·품목별 내역·이윤율은 넣지 않는다.
+     (원본 견적서는 사내 보관. 아래 CAPEX 계수는 원본에서 역산해 둔 값)
+   ★ 규모(spec)는 셀 밀도·셔틀 대수 규칙의 근거로만 남긴다.
    ============================================================ */
 const QUOTES = [
-  {
-    id:"LAE26-0529-Y1", model:"4way",
-    project:"대한냉동 자동창고 구축공사", vendor:"로지스올엔지니어링㈜", date:"2026-05-29",
-    temp:"frozen", contract:800000000, total:800171380,
-    overhead:[["기업 이윤 (일반 관리비 외)",0.15]],
-    spec:{ bay:22, deep:15, tier:2, minusCells:124, cells:536,
-           loadW:1200, loadL:1200, loadH:1800, loadKg:1000, installH:5.8, term:"계약 후 12개월" },
-    items:[
-      {g:"기구설비",n:"4-Way Shuttle 본체",s:"기구&제어",u:"Set",q:2,p:53900000},
-      {g:"기구설비",n:"4-Way Shuttle 지상 제어반",s:"Touch Panel 포함",u:"Set",q:1,p:5170000},
-      {g:"기구설비",n:"Lifter",s:"2단 / 2,170mmST / 설치높이 5.8m",u:"Set",q:1,p:50600000},
-      {g:"기구설비",n:"Conveyor",s:"Chain Type",u:"Set",q:4,p:3740000},
-      {g:"기구설비",n:"Conveyor",s:"Chain Type (Rack내 설치)",u:"Set",q:2,p:4290000},
-      {g:"기구설비",n:"Size Checker",s:"Over Size Check",u:"Set",q:1,p:1100000},
-      {g:"기구설비",n:"Loading Guide",s:"-",u:"Set",q:1,p:1100000},
-      {g:"기구설비",n:"입/출고 설비_제어",s:"Main & OP Panel, 전장품, 센서 외",u:"Lot",q:1,p:55000000},
-      {g:"랙·구조",n:"Storage Rack 설비",s:"Post, Rail Beam, Bracing, Bracket, 점검계단 외",u:"Cells",q:536,p:423500},
-      {g:"랙·구조",n:"주행통로 Structure",s:"주행Rail, 통로발판, Bracket, 안전난간 외",u:"EA",q:108,p:224400},
-      {g:"정보시스템",n:"창고운영 정보시스템(WCS)",s:"Server, S/W개발비",u:"Lot",q:1,p:66000000},
-      {g:"정보시스템",n:"현장용 PC",s:"-",u:"Set",q:1,p:4290000},
-      {g:"정보시스템",n:"Barcode Scanner",s:"-",u:"Set",q:1,p:3410000},
-      {g:"정보시스템",n:"Barcode Printer",s:"-",u:"Set",q:1,p:1760000},
-      {g:"부대비용",n:"포장비, 운반비 및 장비비",s:"포장비, 운반비, 고소작업차, 지게차, 크레인 외",u:"Lot",q:1,p:15400000},
-      {g:"부대비용",n:"설치, 시운전 & 교육",s:"기구, 제어 및 정보시스템",u:"Lot",q:1,p:103400000},
-      {g:"부대비용",n:"자율안전인증(KCS)",s:"컨베이어 설비 일체",u:"Lot",q:1,p:6000000}
-    ]
-  },
-  {
-    id:"YP-1CAMPUS", model:"4way",
-    project:"영풍 1캠퍼스 물류창고 구축공사", vendor:"로지스올엔지니어링㈜", date:"2026",
-    temp:"ambient", contract:2090000000, total:2090763940,
-    overhead:[["일반 관리비",0.10],["기업 이윤",0.05]],
-    spec:{ bay:21, deep:54, tier:4, minusCells:280, cells:4256,
-           loadW:1200, loadL:1200, loadH:1800, loadKg:600, installH:6.65 },
-    items:[
-      {g:"기구설비",n:"4-Way Shuttle 본체",s:"기구&제어",u:"Set",q:3,p:53900000},
-      {g:"기구설비",n:"4-Way Shuttle 지상 제어반",s:"Touch Panel 포함",u:"Set",q:1,p:5170000},
-      {g:"기구설비",n:"Lifter",s:"3단 / 3,440mmST / 설치높이 6.65m",u:"Set",q:2,p:66000000},
-      {g:"기구설비",n:"Conveyor",s:"Chain Type",u:"Set",q:10,p:3740000},
-      {g:"기구설비",n:"Conveyor",s:"Chain Type (Rack내 설치)",u:"Set",q:8,p:4290000},
-      {g:"기구설비",n:"Size Checker",s:"Over Size Check",u:"Set",q:1,p:1100000},
-      {g:"기구설비",n:"Loading Guide",s:"-",u:"Set",q:2,p:1100000},
-      {g:"기구설비",n:"입/출고 설비_제어",s:"Main & OP Panel, 전장품, 센서 외",u:"Lot",q:1,p:137500000},
-      {g:"랙·구조",n:"Storage Rack 설비",s:"Post, Rail Beam, Bracing, Bracket, 점검계단 외",u:"Cells",q:4256,p:168300},
-      {g:"랙·구조",n:"주행통로 Structure",s:"주행Rail, 통로발판, Bracket, 안전난간 외",u:"EA",q:532,p:224400},
-      {g:"정보시스템",n:"창고운영 정보시스템(WCS)",s:"Server, S/W개발비",u:"Lot",q:1,p:113500000},
-      {g:"정보시스템",n:"현장용 PC",s:"-",u:"Set",q:2,p:4290000},
-      {g:"정보시스템",n:"Barcode Scanner",s:"-",u:"Set",q:2,p:3410000},
-      {g:"부대비용",n:"포장비, 운반비 및 장비비",s:"포장비, 운반비, 고소작업차, 지게차, 크레인 외",u:"Lot",q:1,p:53900000},
-      {g:"부대비용",n:"설치, 시운전 & 교육",s:"기구, 제어 및 정보시스템",u:"Lot",q:1,p:282700000},
-      {g:"부대비용",n:"자율안전인증(KCS)",s:"컨베이어 설비 일체",u:"Lot",q:1,p:5500000}
-    ]
-  },
-  {
-    id:"PROD-2WAY-C1", model:"2way",
-    project:"제품창고 2-Way Shuttle 시스템 (CASE.1)", vendor:"로지스올엔지니어링㈜", date:"2026",
-    temp:"ambient", contract:1876000000, total:1876073200,
-    overhead:[["일반 관리비",0.10],["기업 이윤",0.05]],
-    spec:{ row:10, bay:39, tier:5, minusCells:190, cells:1760,
-           loadW:1100, loadL:1350, loadH:1300, loadKg:300, installH:6.65,
-           alt:"CASE.2 구축 시 1,737,000,000" },
-    items:[
-      {g:"기구설비",n:"2-Way Shuttle 본체",s:"기구&제어",u:"Set",q:5,p:68200000},
-      {g:"기구설비",n:"2-Way Shuttle 지상 제어반",s:"Touch Panel 포함",u:"Set",q:1,p:5170000},
-      {g:"기구설비",n:"Lifter",s:"3단 / 3,440mmST / 설치높이 6.65m",u:"Set",q:2,p:66000000},
-      {g:"기구설비",n:"Conveyor",s:"Chain Type",u:"Set",q:6,p:3740000},
-      {g:"기구설비",n:"Conveyor",s:"Chain Type (Rack내 설치)",u:"Set",q:10,p:4290000},
-      {g:"기구설비",n:"Size Checker",s:"Over Size Check",u:"Set",q:1,p:1100000},
-      {g:"기구설비",n:"Loading Guide",s:"혼용 파렛트 정렬 포함",u:"Set",q:1,p:3300000},
-      {g:"기구설비",n:"Loading Guide",s:"-",u:"Set",q:1,p:1100000},
-      {g:"기구설비",n:"입/출고 설비_제어",s:"Main & OP Panel, 전장품, 센서 외",u:"Lot",q:1,p:134200000},
-      {g:"랙·구조",n:"Storage Rack 설비",s:"Post, Rail Beam, Bracing, Bracket, 점검계단 외",u:"Cells",q:1760,p:293700},
-      {g:"랙·구조",n:"주행통로 Structure",s:"주행Rail, 통로발판, Bracket, 안전난간 외",u:"EA",q:190,p:224400},
-      {g:"정보시스템",n:"창고운영 정보시스템(WCS)",s:"Server, S/W개발비",u:"Lot",q:1,p:104700000},
-      {g:"정보시스템",n:"현장용 PC",s:"-",u:"Set",q:1,p:4290000},
-      {g:"정보시스템",n:"Barcode Scanner",s:"-",u:"Set",q:2,p:3410000},
-      {g:"부대비용",n:"포장비, 운반비 및 장비비",s:"포장비, 운반비, 고소작업차, 지게차, 크레인 외",u:"Lot",q:1,p:50600000},
-      {g:"부대비용",n:"설치, 시운전 & 교육",s:"기구, 제어 및 정보시스템",u:"Lot",q:1,p:216700000},
-      {g:"부대비용",n:"자율안전인증(KCS)",s:"컨베이어 설비 일체",u:"Lot",q:1,p:5500000}
-    ]
-  },
-  {
-    id:"FORKLIFTER-AGV", model:"agf",
-    project:"FORK LIFTER SYSTEM (무인지게차)", vendor:"로지스올엔지니어링㈜", date:"2026",
-    temp:"ambient", contract:550000000, total:550792000,
-    overhead:[["일반 관리비 및 기업 이윤",0.10]],
-    spec:{ units:2, payloadKg:1500, liftH:3000, wms:false },
-    items:[
-      {g:"설비 재료비",n:"AGV 본체",s:"Payload 1,500kg, 리프터 높이 3,000mm",u:"Set",q:2,p:184000000},
-      {g:"설비 재료비",n:"AGV Charger",s:"자동 충전기 80V 200A (KC 인증)",u:"Set",q:2,p:8100000},
-      {g:"설비 재료비",n:"AGV Charger",s:"수동 충전기 80V 100A (KC 인증)",u:"Set",q:1,p:3500000},
-      {g:"설비 재료비",n:"ROBOT CONTROLLER",s:"서버/모니터/RACK, DELL R260, Xeon E-2434, 2×2TB",u:"EA",q:1,p:13800000},
-      {g:"제작 노무비",n:"ACS 프로그램 및 라이선스",s:"AGV CONTROL SYSTEM (RCS) — WMS 견적 제외",u:"Set",q:1,p:20700000},
-      {g:"제작 노무비",n:"설계 및 ENGINEERING",s:"AGV 운영안 협의 (MD 20 × 300,000)",u:"MD",q:20,p:300000},
-      {g:"설치·시운전",n:"운반 및 포장",s:"수입 및 내륙 운송",u:"EA",q:1,p:13800000},
-      {g:"설치·시운전",n:"AGV 현장 설치 및 티칭",s:"MD 40 × 1,200,000",u:"MD",q:40,p:1200000},
-      {g:"설치·시운전",n:"ACS 구축 비용",s:"MD 15 × 500,000",u:"MD",q:15,p:500000},
-      {g:"설치·시운전",n:"설치 부자재",s:"-",u:"Set",q:1,p:1100000},
-      {g:"설치·시운전",n:"안전 관리비",s:"(설치 인건비 × 3.11%) × 1.2",u:"Lot",q:1,p:2120000}
-    ]
-  },
-  {
-    id:"AGF-SYSTEM", model:"agf",
-    project:"AGF SYSTEM (무인지게차)", vendor:"로지스올엔지니어링㈜", date:"2026",
-    temp:"ambient", contract:1370000000, total:1370210000,
-    overhead:[["일반 관리비 및 기업 이윤",0.10]],
-    spec:{ units:5, payloadKg:1000, loadW:1100, loadL:1100, loadH:1310,
-           drive:"DD", guide:"Laser", ctrl:"PLC", top:"Fork", wms:true },
-    items:[
-      {g:"설비 재료비",n:"AGF 본체",s:"실내·캐노피 공간 운행, 1,000kg, DD·Laser·PLC·Fork",u:"Set",q:5,p:161000000},
-      {g:"설비 재료비",n:"AGF Charger",s:"접촉식",u:"Set",q:5,p:6900000},
-      {g:"설비 재료비",n:"AP & AP BOX",s:"-",u:"Set",q:3,p:1730000},
-      {g:"설비 재료비",n:"조작 팬던트",s:"-",u:"EA",q:5,p:1150000},
-      {g:"설비 재료비",n:"AGF SERVER PC + RACK",s:"i6, 16GB, 2×2TB, 모니터·키보드",u:"EA",q:1,p:28750000},
-      {g:"설비 재료비",n:"CLIENT PC",s:"PC Rack, 17인치 모니터",u:"EA",q:1,p:6900000},
-      {g:"설비 재료비",n:"이중화 솔루션",s:"미러링",u:"Set",q:1,p:1150000},
-      {g:"제작 노무비",n:"AGF RCS",s:"작업 할당, 맵과 동선 설정, 교통 관리 등",u:"Set",q:1,p:34500000},
-      {g:"제작 노무비",n:"창고 관리 시스템 (WMS)",s:"화물 위치 및 정보 연동 관리",u:"Set",q:1,p:69000000},
-      {g:"제작 노무비",n:"AGF 운영안 협의",s:"MD 60 × 500,000",u:"MD",q:60,p:500000},
-      {g:"제작 노무비",n:"AGF 설계 (기구/전장/제어/SW)",s:"MD 95 × 500,000",u:"MD",q:95,p:500000},
-      {g:"설치·시운전",n:"설비 FAT / OLT",s:"설치·시운전 기계/제어/SW MD 57 + 운반해체",u:"Lot",q:1,p:29700000},
-      {g:"설치·시운전",n:"운반 및 포장",s:"김포 - 구미",u:"Lot",q:2,p:700000},
-      {g:"설치·시운전",n:"AGF & ACS 설치",s:"현장 설치·티칭 MD 50, ACS 구축 MD 30, 장비비, 안전관리비",u:"Lot",q:1,p:51800000},
-      {g:"설치·시운전",n:"이벤트 대응",s:"양산 대응 MD 75 + 작업자 교육 (3명×10일)",u:"Lot",q:1,p:94500000}
-    ]
-  }
+  { id:"A", label:"냉동 4-Way",  model:"4way", temp:"frozen",  spec:{ bay:22, deep:15, tier:2, cells:536 } },
+  { id:"B", label:"상온 4-Way",  model:"4way", temp:"ambient", spec:{ bay:21, deep:54, tier:4, cells:4256 } },
+  { id:"C", label:"상온 2-Way",  model:"2way", temp:"ambient", spec:{ row:10, bay:39, tier:5, cells:1760 } },
+  { id:"D", label:"무인지게차(AGV)", model:"agf", temp:"ambient", spec:{ units:2, payloadKg:1500 } },
+  { id:"E", label:"무인지게차(AGF)", model:"agf", temp:"ambient", spec:{ units:5, payloadKg:1000 } }
 ];
 
 /* 견적 제외 범위 — 제안 시 반드시 고지 */
@@ -1550,7 +1429,6 @@ const QUOTE_EXCLUDED = {
      분리 불가. 동일 규모 상온·냉동 견적 1쌍 확보 시 반영 가능.
    ============================================================ */
 const CAPEX = {
-  calibratedFrom: QUOTES.map(q=>q.id),
 
   /* ── 공통 단가 (모든 셔틀 견적에서 동일하게 확인된 값) ────────── */
   COMMON: {
@@ -1591,7 +1469,7 @@ const CAPEX = {
       //   qty = 2 + 0.4826 × ln(셀수/536)   ※ 두 점을 정확히 통과
       shuttleQty: (t, cells) => Math.max(1, Math.min(8,
                     Math.round(2 + 0.4826*Math.log(Math.max(1,cells)/536)))),
-      calib:["LAE26-0529-Y1","YP-1CAMPUS"]
+      calib:["A","B"]
     },
     "2way":{
       label:"2-Way Shuttle System (MDPS 멀티딥)",
@@ -1600,7 +1478,7 @@ const CAPEX = {
       aisleA: 0.60414,
       // 2-Way 셔틀은 층 간 이동 불가 → 층당 1대 (5층→5대)  — 실측(1건) + 물리적 타당
       shuttleQty: (t, cells) => Math.max(1,t),
-      calib:["PROD-2WAY-C1"]
+      calib:["C"]
     }
   },
 
@@ -1888,27 +1766,6 @@ const CAPEX = {
     const r = this.estimateShuttle(ctx,key);
     if(this.NO_QUOTE[ctx.sysKey]) r.warn = this.NO_QUOTE[ctx.sysKey];
     return r;
-  },
-
-  /* 견적서 DB 내부 정합성 검증 (내역 합 + 간접비 = 견적서 합계?) */
-  selfCheck(){
-    return QUOTES.map(q=>{
-      const sub = q.items.reduce((a,i)=>a+i.q*i.p,0);
-      const oh  = q.overhead.reduce((a,[,r])=>a+Math.round(sub*r),0);
-      return {id:q.id, 소계:sub, 간접비:oh, 계산합:sub+oh, 견적서:q.total, 오차:sub+oh-q.total};
-    });
-  },
-
-  /* 모델 역검증: 각 견적의 조건을 넣어 재현 오차 확인 */
-  backtest(){
-    const sysOf = {"4way":"shuttle4way","2way":"mdps","agf":null};
-    return QUOTES.map(q=>{
-      let r;
-      if(q.model==="agf") r = this.estimateAGF({units:q.spec.units, payloadKg:q.spec.payloadKg, wms:q.spec.wms});
-      else r = this.estimateShuttle({cells:q.spec.cells, tiers:q.spec.tier, perHr:0}, q.model);
-      return {id:q.id, 모델:(r.total).toLocaleString(), 실제:(q.total).toLocaleString(),
-              오차율:((r.total/q.total-1)*100).toFixed(2)+"%"};
-    });
   }
 };
 
@@ -1959,7 +1816,7 @@ const Engine = {
   layout(d, est, targetCells, sysKey, capCells){
     sysKey = sysKey || Engine.matchSystem(d);
     const { cellW, cellD } = Engine.cellDims(d, sysKey);
-    const cellH = Math.max(1.2, (d.palletH||1.8) + 0.25);
+    const cellH = Engine.cellH(d);
     const DEEP = {shuttle4way:[4,4], mdps:[6,6], stc:[2,2], mini:[3,3], hybrid:[3,3]};
     const [dF, dB] = DEEP[sysKey] || [4,4];
     const tier = Math.max(1, est.tiers||3);
@@ -1983,6 +1840,12 @@ const Engine = {
              rackW: bay*cellW, rackH: tier*cellH,
              footW: bay*cellW + 6, footD: aisles*modD + (aisles-1)*0.15 + 6 };
   },
+  /* 셀 1단 높이 = 적재높이 + 빔 0.25m, 최소 1.2m (셔틀·빔 구조상 더 낮게는 못 짓는다).
+     단수·랙 높이·필요 층고가 모두 이 값을 쓴다 — 따로 계산하면 랙이 층고보다 높게 나온다. */
+  cellH(d){
+    const loadH = d.palletH>0 ? d.palletH : CONFIG.DEFAULT_PALLET_LOAD_H;
+    return Math.max(1.2, loadH + CONFIG.RACK_BEAM_M);
+  },
   // 보관 가능 셀 수 추정 (면적·층고·파렛트 규격 기반)
   estimateCells(d){
     // 파렛트 적재높이: STEP1 입력값 사용, 미입력 시 폴백
@@ -1992,7 +1855,7 @@ const Engine = {
     const sysKey = Engine.matchSystem(d);
     const { cellW, cellD, aisleLoss, kind } = Engine.cellDims(d, sysKey);
     const cellM2 = cellW * cellD;
-    const tiers = Math.max(1, Math.floor((d.height||0) / (loadH + CONFIG.RACK_BEAM_M)));
+    const tiers = Math.max(0, Math.floor((d.height||0) / Engine.cellH(d)));   // 0 = 1단도 안 들어감(산출 불가)
     const grossCells = (areaM2 / cellM2) * tiers;
     const cells = Math.round(grossCells * (1 - aisleLoss));
     return { cells: Math.max(0,cells), tiers, areaM2:Math.round(areaM2), loadH, cellW, cellD, cellM2, aisleLoss, kind, sysKey };
@@ -2040,7 +1903,7 @@ const Engine = {
     const perHr  = Math.round(perDay / H);
     // 입·출고를 나눠 넣지 않았으면 절반씩으로 가정(리프트·스테이션 방향 참고용)
     // 일 입출고를 나눠 넣지 않았으면 입·출고 비율(기본 50:50)로 나눈다
-    const r      = (d.inRatio>0 && d.inRatio<100) ? d.inRatio/100 : 0.5;
+    const r      = (Number.isFinite(d.inRatio) && d.inRatio>=0 && d.inRatio<=100) ? d.inRatio/100 : 0.5;
     // 시간당 취급(perHr)을 비율로 나눈다 — 입+출이 표시되는 시간당 취급과 정확히 같게
     const inHr   = split ? +(inDay/H).toFixed(1) : +(perHr*r).toFixed(1);
     const outHr  = split ? +(outDay/H).toFixed(1) : +(perHr - inHr).toFixed(1);
@@ -2077,10 +1940,12 @@ const Engine = {
     const isFrozen = (d.temp==="frozen");
     // 보관 수요 기반 목표 셀: 실제 보관할 양으로 규모 결정 (CAPEX 과대 방지)
     //  - 현 재고(stock) 입력 시: 재고 × 1.2 (성장 여유)
-    //  - 미입력 시: 월 물동량 × 평균 보관일수(7일 ÷ 30일) 환산 ≈ 회전 기반 수요
+    //  - 미입력 시: 월 물동량 × 입고 비율 × (평균 보관일수 ÷ 30일) ≈ 동시 재고
     const storeDays = d.storeDays>0 ? d.storeDays : CONFIG.DEFAULT_AVG_STORE_DAYS;
     const demandFromStock = d.stock ? Math.round(d.stock * 1.2) : 0;
-    const demandFromVolume = vol ? Math.round(vol * (storeDays / 30) * 1.2) : 0;
+    // 월 물동량은 입·출고 합산 → 쌓이는 양은 입고분 × 평균 체류일 (합산량을 그대로 쓰면 2배로 과장)
+    const inShare = tp.inRatio/100;
+    const demandFromVolume = vol ? Math.round(vol * inShare * (storeDays / 30) * 1.2) : 0;
     // 정밀 모드면 입력한 셀이 곧 실제 구축 규모 → 랙 블록 비율 미적용
     const buildRatio = Engine.buildRatio(d, est);
     const areaCapacity = Math.round(est.cells * buildRatio);
@@ -2088,12 +1953,12 @@ const Engine = {
        (재고·물동량 기반 값은 아래에서 '권장' 참고치로만 따로 낸다) */
     const cellsOver = d.cells>0 && d.cells>areaCapacity;   // 면적 한도 초과 입력
     let targetCells = d.cells>0 ? Math.min(d.cells, areaCapacity) : areaCapacity;
-    targetCells = Math.max(targetCells, 100);            // 하한
+
     // 격자는 Bay 단위로만 지어지므로 실제 구축 수(cellsBuilt)로 맞춘다 — 3D·투자비·요약이 같은 수
     const layout = Engine.layout(d, est, targetCells, undefined, areaCapacity);
     targetCells = layout.cellsBuilt;
     // 재고 기반 / 물동량 기반 권장 규모를 각각 산출 (둘 다 면적 한도 내 · 최소 100, 미입력 시 0)
-    const clampTarget = v => v>0 ? Math.max(100, Math.min(v, areaCapacity)) : 0;
+    const clampTarget = v => v>0 ? Math.min(Math.max(100, v), areaCapacity) : 0;
     const targetFromStock  = clampTarget(demandFromStock);
     const targetFromVolume = clampTarget(demandFromVolume);
     // 재무 계산에 적용된 기준: 재고 우선 → 물동량 → 면적
@@ -2143,12 +2008,20 @@ const Engine = {
     // 현 면적을 유지할 때 필요한 단수·유효 층고(m)
     const needTier  = capped && d.area>0
       ? Math.ceil(needCells/(d.area*perPyTier*buildRatio)) : 0;
-    const needHeight= needTier ? +(needTier*(est.loadH+CONFIG.RACK_BEAM_M)).toFixed(1) : 0;
+    const needHeight= needTier ? +(needTier*Engine.cellH(d)).toFixed(1) : 0;
     // 현 면적·층고를 그대로 두고 랙 비율만 올릴 때 필요한 비율
     const needRackRatio = capped && est.cells>0
       ? Math.min(0.95, Math.ceil(needCells/est.cells*100)/100) : 0;
 
+    /* 산출 불가 — 필수 입력이 없거나, 최소 구성(통로 1열 × 3 Bay)도 면적·층고에 안 들어가면
+       규모·투자비 숫자를 내지 않는다 (빈 입력에 104셀·4.6억이 나오던 문제) */
+    const missing = [!(d.area>0)&&"창고\u00a0면적", !(d.height>0)&&"유효\u00a0층고", !(vol>0)&&"월\u00a0물동량"].filter(Boolean);
+    const infeasible = missing.length ? "필수 입력이 비어 있습니다 — "+missing.join(" · ")
+      : est.tiers<1 ? `유효 층고 ${d.height}m 가 셀 1단 높이(${Engine.cellH(d).toFixed(2)}m)보다 낮습니다`
+      : layout.cellsBuilt>areaCapacity ? `면적 ${fmt(d.area)}평에는 자동창고 최소 구성(통로 1열 × 3 Bay = ${fmt(layout.cellsBuilt)}셀)이 들어가지 않습니다`
+      : "";
     return {
+      infeasible, missing,
       laborSaveMan, spaceSaveMan, energySaveMan, savedPyeong, capexMan, opexMan, capex,
       benefitMan, netMan, payback, targetCells, staff, reducibleFTE,
       targetFromStock, targetFromVolume, targetDriver, storeDays, areaCapacity, cellsOver, cellsInput:d.cells||0, layout, buildRatio,
@@ -2439,8 +2312,8 @@ function collect(){
   /* v3: 월 물동량 한 칸 + 입·출고 비율(선택). 일 입출고 칸은 없앴다. */
   d.inDay=0; d.outDay=0;
   d.volume=+$("#f_volume").value||0;
-  const ip=Number($("#f_inPct").value);
-  d.inRatio=(ip>0&&ip<100)?ip:50;
+  const ipRaw=$("#f_inPct").value, ip=Number(ipRaw);
+  d.inRatio=(ipRaw!==""&&ip>=0&&ip<=100)?ip:50;     // 0%·100% 도 그대로 (빈칸만 기본 50)
   d.palletW=Number($("#f_palletW").value)||0;
   d.palletL=Number($("#f_palletL").value)||0;
   d.cells=0;   // v3: 구축 셀규모 입력 삭제 — 항상 면적이 허용하는 최대로 계산
@@ -2751,7 +2624,7 @@ async function shareDoc(key){
   copyText(url, "소개서 링크가 복사되었습니다");   // 공유 미지원(PC 등) → 링크 복사
 }
 /* ---- 앱 내장 PDF 뷰어 (외부 앱·브라우저 없이 바로 열람) ---- */
-let PDF_DOC = null, PDF_KEY = null, PDF_IO = null;
+let PDF_DOC = null, PDF_KEY = null, PDF_IO = null, PDF_TASK = null, PDF_GEN = 0;
 async function viewDoc(key){
   const doc = DOCS[key]; if(!doc) return;
   PDF_KEY = key;
@@ -2762,12 +2635,19 @@ async function viewDoc(key){
   body.innerHTML = '<div class="pv-msg">소개서를 불러오는 중…</div>';
   v.classList.add('show');
   document.body.style.overflow = 'hidden';
+  if(PDF_TASK){ try{ PDF_TASK.destroy(); }catch(_){} }
+  const my = ++PDF_GEN;                                // 이 요청의 번호 — 늦게 온 이전 응답은 버린다
   try{
     if(typeof pdfjsLib === 'undefined') throw new Error('pdfjs 미로드');
     pdfjsLib.GlobalWorkerOptions.workerSrc = './pdfjs/pdf.worker.min.js';
-    PDF_DOC = await pdfjsLib.getDocument(doc.url).promise;
+    // isEvalSupported:false — PDF.js 3.x 글꼴 처리의 코드 실행 취약점(CVE-2024-4367) 차단
+    const task = PDF_TASK = pdfjsLib.getDocument({url:doc.url, isEvalSupported:false});
+    const pdf = await task.promise;
+    if(my!==PDF_GEN){ try{ pdf.destroy(); }catch(_){} return; }   // 그새 닫았거나 다른 소개서를 열었다
+    PDF_DOC = pdf;
     await layoutPdfPages();
   }catch(e){
+    if(my!==PDF_GEN) return;                          // 취소된(닫았거나 바뀐) 요청
     body.innerHTML = `<div class="pv-msg">소개서를 표시하지 못했습니다.<br><a href="${docUrl(key)}" target="_blank" rel="noopener">브라우저에서 열기</a></div>`;
   }
 }
@@ -2832,6 +2712,8 @@ async function renderPdfPage(num, el, cssW){
   }catch(e){ /* 개별 페이지 실패는 무시 */ }
 }
 function closePdf(){
+  PDF_GEN++;                                            // 진행 중인 로딩 결과는 버린다
+  if(PDF_TASK){ try{ PDF_TASK.destroy(); }catch(_){} PDF_TASK=null; }
   document.getElementById('pdfViewer').classList.remove('show');
   document.getElementById('pvBody').innerHTML = '';
   document.body.style.overflow = '';
@@ -2883,6 +2765,28 @@ function renderResult(){
     d.height?`유효 ${d.height}m`:null,
     tp.perDay?`일 ${fmt(tp.perDay)} PL (시간당 ${fmt(tp.perHr)})`:null
   ].filter(Boolean).map(x=>`<span>${x}</span>`).join("");
+
+  /* 산출 불가: 숫자(규모·투자비)를 지어내지 않고, 무엇이 모자란지만 알려 준다 */
+  if(roi.infeasible){
+    $("#result").innerHTML = `
+    <div class="result-hero">
+      <div class="co">TSPG · LOGISALL ENGINEERING</div>
+      <h3>산출 불가</h3>
+      <div class="env">${envChips}</div>
+    </div>
+    <div class="card">
+      <div class="h mono">아직 규모·투자비를 낼 수 없습니다<span class="ln"></span></div>
+      <p style="font-size:14px;line-height:1.7;color:var(--ink)">${esc(roi.infeasible)}</p>
+      <div class="note">면적·유효 층고·월 물동량을 넣으면 규모 추정, 제안 가능 범위, 3D, 개략 투자비가 나옵니다.</div>
+    </div>
+    <div class="result-actions">
+      <button class="btn primary" id="btnEdit">← 입력 수정</button>
+      <button class="btn ghost" id="btnRestart">초기화</button>
+    </div>`;
+    $("#btnEdit").onclick=()=>showStep(STATE.step-1);
+    $("#btnRestart").onclick=resetMeeting;
+    return;
+  }
 
   // 솔루션 포인트(문제점 강조 반영)
   const pts=sys.points.map(p=>`<div class="pt"><span class="ck">✓</span><span>${p[0]}<b>${p[1]}</b></span></div>`).join("");
@@ -2969,7 +2873,7 @@ function renderResult(){
   const cappedWarn = roi.capped ? `
     <div class="card" style="border-color:#E8B21F">
       <div class="h mono" style="color:#E8B21F">⚠ ${roi.overMax?'현 공간으로는 수요를 담을 수 없습니다':'권장 배치 비율로는 수요를 다 담지 못합니다'}<span class="ln" style="background:#E8B21F"></span></div>
-      <div class="li"><span class="k">필요 보관량 ${roi.targetDriver==='stock'?'(현 재고 ×1.2)':'(물동량 × 보관일수)'}</span><span class="v">${fmt(roi.needCells)} Cells</span></div>
+      <div class="li"><span class="k">필요 보관량 ${roi.demandFromStock>0?'(현 재고 × 1.2)':'(입고량 × 보관일수)'}</span><span class="v">${fmt(roi.needCells)} Cells</span></div>
       <div class="li"><span class="k">랙 블록 기준 수용 (랙 ${Math.round(roi.buildRatio*100)}% · 스테이션·이격 제외)</span><span class="v" style="color:#E8B21F">${fmt(roi.areaCapacity)} Cells</span></div>
       <div class="li"><span class="k">면적 전부를 랙으로 쓸 때</span><span class="v"${roi.overMax?' style="color:#E8B21F"':''}>${fmt(est.cells)} Cells</span></div>
       <div class="li total"><span class="k">부족분</span><span class="v" style="color:#E8B21F">${fmt(roi.needCells-roi.areaCapacity)} Cells</span></div>
@@ -3115,7 +3019,7 @@ function renderResult(){
           </div>
           ${capexMeta}
           ${capexScope}
-          <div class="note" style="margin-top:10px">단가·요율은 실제 공급 견적서 ${QUOTES.length}건(${CAPEX.calibratedFrom.join(" · ")}) 역산값입니다. 규모별 랙 단가·수량 규칙은 견적서 사이 보간 추정이며, 현장 실사·도면 없이 산출한 개략값입니다. 정밀 견적은 요청서 8개 섹션 데이터 수집 후 별도 제출합니다.</div>
+          <div class="note" style="margin-top:10px">단가·요율은 실제 공급 견적서 ${QUOTES.length}건에서 역산한 값입니다. 규모별 랙 단가·수량 규칙은 견적서 사이 보간 추정이며, 현장 실사·도면 없이 산출한 개략값입니다. 정밀 견적은 요청서 8개 섹션 데이터 수집 후 별도 제출합니다.</div>
         </div>
       </div>
     </div>
@@ -3161,7 +3065,13 @@ function renderResult(){
   `;
 
   $("#btnEdit").onclick=()=>showStep(STATE.step-1);
-  $("#btnRestart").onclick=()=>{ if(confirm("입력을 초기화하고 새 미팅을 시작할까요?")) location.reload(); };
+  $("#btnRestart").onclick=resetMeeting;
+}
+/* 새 미팅 — 주소 뒤에 붙은 공유 입력(?p=)·소개서(?doc=)·내려받기(#dl) 표시를 지우고 다시 연다.
+   그냥 새로고침하면 공유 링크의 입력이 다시 채워지고 PDF 가 또 내려받아진다. */
+function resetMeeting(){
+  if(!confirm("입력을 초기화하고 새 미팅을 시작할까요?")) return;
+  location.replace(location.pathname);
 }
 
 /* 추천 근거 — 실제로 판정에 쓰인 입력값을 그대로 인용해 설명한다
@@ -3181,25 +3091,6 @@ function matchReason(d,key){
   if(key==="mini") return `물동량 대비 품목 수가 많고 재고 정확도가 현안입니다. 박스·토트 단위 미니셔틀 + GTP(Goods-to-Person)로 피킹 생산성과 재고 정확도를 함께 올리는 구성이 적합합니다. ${ctx}`;
   if(key==="hybrid") return `기존 건물 + 단계적 확장 조건입니다. Unit Rack으로 부분 적용하고 무인지게차(AGF)로 저위험 진입 후 셔틀로 확장하는 구성이 초기 투자와 공사 리스크를 모두 낮춥니다. ${ctx}`;
   return `물동량·확장 가능성이 핵심 조건입니다. 4-Way 셔틀은 전후좌우 주행으로 리프트 의존도가 낮아 확장이 유연하고, 파렛트당 1.5t 적재로 고밀도 보관이 가능합니다. ${ctx}`;
-}
-
-function copySummary(d,est,tp,sys,roi){
-  const lines=[
-    `[TSPG 현장 솔루션 제안 요약]`,
-    `창고: ${TEMP_LABEL[d.temp]} · ${BUILD_LABEL[d.build]} · ${fmt(d.area)}평 · 유효 ${d.height}m`,
-    `물동량: 일 ${fmt(tp.perDay)} PL (시간당 ${fmt(tp.perHr)} · 주6일 8시간 · 월 ${fmt(tp.volMonth)} PLT)`,
-    ``,
-    `■ 개략 규모: 약 ${fmt(est.cells)} Cells (${est.tiers}단 적재)`,
-    `■ 권장 구축 규모: ${fmt(roi.targetCells)} Cells`,
-    `■ 추천 시스템: ${sys.name}`,
-    `■ 개략 투자비(CAPEX): ${won(roi.capexMan)}원 (VAT 별도)`,
-    ...roi.capex.groupOrder.map(g=>`   - ${g}  ${won(Math.round(roi.capex.sums[g]/10000))}원`),
-    ...roi.capex.overheadLines.map(o=>`   - ${o.n} ${(o.r*100).toFixed(0)}%  ${won(Math.round(o.amt/10000))}원`),
-    `   ※ 건축공사·Utility 인입 등 견적 제외 (별도 부담)`,
-    ``,
-    `※ 개략 추정값. 정밀 설계는 시뮬레이션으로 확정.`
-  ].join("\n");
-  copyText(lines, "제안 요약이 복사되었습니다");
 }
 
 /* ============================================================
@@ -5134,7 +5025,7 @@ const GL3D = {
         ` = 총 ${fmt(totBay)}Bay · 셀 ${D.cellW}×${D.cellD}m`+
         (D.sysKey==="mini" ? ` (미니로드 박스·토트 셀)` :
           (D.d.palletW||D.d.palletL ? ` (파렛트 ${D.d.palletW||'?'}×${D.d.palletL||'?'}mm + 여유 0.2m)` : ` (파렛트 미입력 → 1,200mm 기준)`))+
-        `<br>셔틀 ${D.qty.shuttleQty||0}대 · 리프트 ${D.qty.lifterQty||0}대 · 창고 약 ${fw}m × ${fd}m × H${D.rackH.toFixed(1)}m`+
+        `<br>셔틀 ${D.qty.shuttleQty||0}대${(D.qty.shuttleQty||0)>12?' (3D 에는 12대만 표시)':''} · 리프트 ${D.qty.lifterQty||0}대 · 창고 약 ${fw}m × ${fd}m × H${D.rackH.toFixed(1)}m`+
         /* 격자는 Bay 단위로만 만들 수 있어 권장 셀 수와 정확히 같아지지 않는다.
            '권장 N셀을 표시'라고 쓰면 화면(240)과 숫자(223)가 어긋나 보인다. */
         ((window.roi_data&&window.roi_data.layout&&window.roi_data.layout.target!==D.cellsShown)
@@ -5178,7 +5069,9 @@ const SIM3D = {
     let eng=null;
     if(this.threeMod){
       try{ GL3D.THREE=this.threeMod; GL3D.init(); eng=GL3D; }
-      catch(e){ console.warn("WebGL 초기화 실패 — 2D 폴백:",e); try{ GL3D.reset(); }catch(_){} eng=null; }
+      catch(e){ console.warn("WebGL 초기화 실패 — 2D 폴백:",e); try{ GL3D.reset(); }catch(_){} eng=null;
+        // WebGL 을 한 번 연 캔버스에서는 2D 그리기를 얻을 수 없다 → 같은 자리에 새 캔버스로 바꾼다
+        const old=document.getElementById("simCanvas"); if(old){ const fresh=old.cloneNode(false); old.replaceWith(fresh); } }
     }
     if(!eng){ SIM2D.init(); eng=SIM2D; }
     this.engine=eng; this.inited=true; this.loading=false;
@@ -5453,77 +5346,6 @@ function showCopyModal(text){
   setTimeout(()=>{ t.focus(); t.select(); }, 100);
 }
 
-/* ----- PDF 제안서 (feature 1) : 인쇄 기반, 외부 라이브러리 불필요 ----- */
-function generatePDF(d,est,tp,sys,sysKey,roi,refs){
-  const today=new Date().toLocaleDateString('ko-KR');
-  const ptRows=sys.points.map(p=>`<li>${p[0]}<b>${p[1]}</b></li>`).join("");
-  const refHtml=refs.map(r=>`<tr><td>${r.co} (${r.loc})</td><td>${r.cells>0?fmt(r.cells)+" Cells":"분류설비"}${r.height>0?" · "+r.height+"m":""}</td><td>${r.sys}</td></tr>`).join("");
-
-  const html=`<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><title>TSPG 자동화창고 제안서</title>
-<style>
-@page{size:A4;margin:16mm}
-*{margin:0;padding:0;box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-body{font-family:'Malgun Gothic','맑은 고딕',sans-serif;color:#1a1a1a;font-size:11px;line-height:1.5}
-.hd{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid #1F3A78;padding-bottom:10px;margin-bottom:6px}
-.hd .l b{font-size:18px;color:#16181C}.hd .l .s{font-size:10px;color:#1F3A78;letter-spacing:.05em;font-weight:bold}
-.hd .r{text-align:right;font-size:9px;color:#666}
-h1{font-size:16px;margin:14px 0 4px;color:#16181C}
-.meta{font-size:10px;color:#555;margin-bottom:12px}
-.sec{margin:14px 0 6px;font-size:12px;font-weight:bold;color:#1F3A78;border-left:4px solid #1F3A78;padding-left:8px}
-table{width:100%;border-collapse:collapse;margin-top:4px}
-td,th{border:1px solid #ccc;padding:5px 8px;font-size:10.5px;text-align:left;vertical-align:top}
-th{background:#16181C;color:#fff;font-weight:600}
-td.r{text-align:right;font-family:monospace}
-.kpi{display:flex;gap:10px;margin:8px 0}
-.kpi .b{flex:1;border:1px solid #ccc;border-radius:6px;padding:10px;text-align:center}
-.kpi .b .l{font-size:9px;color:#666}.kpi .b .v{font-size:20px;font-weight:bold;color:#16181C;margin-top:3px}
-.kpi .b.hl .v{color:#1F3A78}.kpi .b.g .v{color:#15803d}
-ul{margin:4px 0 4px 16px}li{margin-bottom:3px;font-size:10.5px}
-.foot{margin-top:18px;padding-top:8px;border-top:1px solid #ddd;font-size:8.5px;color:#888;line-height:1.6}
-@media print{.noprint{display:none}}
-.noprint{position:fixed;top:10px;right:10px;background:#1F3A78;color:#fff;border:none;padding:10px 16px;border-radius:6px;font-size:13px;cursor:pointer}
-</style></head><body>
-<button class="noprint" onclick="window.print()">PDF로 저장 / 인쇄</button>
-<div class="hd"><div class="l"><div class="s">LOGISALL ENGINEERING · TSPG</div><b>자동화창고 솔루션 제안서</b></div>
-<div class="r">작성일 ${today}<br>※ 개략 추정 — 정밀 설계는 시뮬레이션으로 확정</div></div>
-<h1>맞춤 솔루션 제안서</h1>
-<div class="meta">창고: ${TEMP_LABEL[d.temp]} / ${BUILD_LABEL[d.build]} / ${fmt(d.area)}평 / 유효 ${d.height}m / 일 ${fmt(tp.perDay)}PL</div>
-
-<div class="kpi">
-<div class="b hl"><div class="l">권장 구축 규모</div><div class="v">${fmt(roi.targetCells)} Cells</div></div>
-<div class="b"><div class="l">개략 투자비(CAPEX)</div><div class="v">${won(roi.capexMan)}원</div></div>
-<div class="b g"><div class="l">일 물동량</div><div class="v">${fmt(tp.perDay)} PLT</div></div>
-</div>
-
-<div class="sec">1. 추천 솔루션</div>
-<b style="font-size:13px">${sys.name}</b>
-<div style="font-size:10px;color:#555;margin:3px 0">${matchReason(d,sysKey)}</div>
-<ul>${ptRows}</ul>
-
-<div class="sec">2. 개략 규모</div>
-<table>
-<tr><td>공간 최대 수용</td><td class="r">${fmt(est.cells)} Cells (${est.tiers}단)</td></tr>
-<tr><td>권장 구축 규모</td><td class="r">${fmt(roi.targetCells)} Cells</td></tr>
-<tr><td>일 물동량 / 시간당 처리</td><td class="r">${fmt(tp.perDay)} PLT / ${fmt(tp.perHr)} PLT·h</td></tr>
-</table>
-
-<div class="sec">3. 유사 구축 레퍼런스</div>
-<table><tr><th>고객사</th><th>규모</th><th>시스템</th></tr>${refHtml}</table>
-<div style="font-size:9px;color:#666;margin-top:5px">▷ 현장 영상: YouTube @namuckKim (TSPG 공식)  ·  자료: blog.naver.com/uck2000</div>
-
-<div class="foot">
-본 제안서는 LOGISALL ENGINEERING · TSPG 영업 핸드북 로직 기반의 현장용 개략 추정입니다.
-투자비·절감액·회수기간은 입력값 기반 추정치이며, 정밀 설계·확정 견적은 컨설팅 물동량 분석 및 디지털 트윈 시뮬레이션으로 확정됩니다.
-큰 투자의 경우 NPV·IRR 분석을 병행합니다. · TSPG 충남 서천 본사·공장 자체 설계·제작·설치·AS 일괄 수행 (전 구성원 91% 엔지니어).
-</div>
-</body></html>`;
-
-  const w=window.open("","_blank");
-  if(!w){ toast("팝업이 차단되었습니다. 허용 후 다시 시도하세요"); return; }
-  w.document.write(html); w.document.close();
-  setTimeout(()=>{ try{w.focus();}catch(e){} }, 300);
-}
-
 
 /* ----- chip / option interactions ----- */
 $("#needChips").addEventListener("click",e=>{
@@ -5538,7 +5360,7 @@ $("#f_temp").addEventListener("click",e=>{
 });
 /* 월 물동량 + 입·출고 비율 → 일·시간당 취급량 실시간 표시 */
 function flowLiveCalc(){
-  const ip=Number($("#f_inPct").value), v=+$("#f_volume").value||0, r=((ip>0&&ip<100)?ip:50)/100, el=$("#flowLive");
+  const ipRaw=$("#f_inPct").value, ip=Number(ipRaw), v=+$("#f_volume").value||0, r=((ipRaw!==""&&ip>=0&&ip<=100)?ip:50)/100, el=$("#flowLive");
   if(!el) return;
   if(v<=0){
     el.innerHTML='입·출고 합산 월간 파렛트 수. 운영 기준 <b>주 6일(월 26일) · 1일 8시간</b> → 시간당 취급량이 설비 대수 산정의 기준입니다.';
@@ -5627,7 +5449,7 @@ function showCalcModal(){
     <div class="cs">
       <span class="cs-num">③</span>
       <div class="cs-body">
-        <div class="cs-expr">floor(${height}m ÷ (${est.loadH}m + ${CONFIG.RACK_BEAM_M}m)) = ${est.tiers}단</div>
+        <div class="cs-expr">floor(${height}m ÷ ${(est.loadH+CONFIG.RACK_BEAM_M)>=1.2?`(${est.loadH}m + ${CONFIG.RACK_BEAM_M}m)`:'최소 1.2m'}) = ${est.tiers}단</div>
         <div class="cs-desc">유효층고 ÷ (파렛트 적재높이 + 빔 여유) = 적재 단수</div>
       </div>
       <span class="cs-result">${est.tiers}단</span>
@@ -5820,22 +5642,13 @@ function reqText(){
 }
 
 
-/* 같은 조건으로 다시 여는 짧은 링크 — QR 에 담을 수 있게 입력값만 넣는다 */
-const REQ_KEYS=[["t","temp"],["b","build"],["a","area"],["h","height"],["v","volume"],["r","inRatio"],
-  ["w","palletW"],["l","palletL"],["ph","palletH"],["kg","palletKg"],["s","stock"],["sd","storeDays"]];
-function reqLink(hash){
-  const d=window.d_data||STATE.data;
-  const q=REQ_KEYS.filter(([k,f])=>d[f]!==undefined&&d[f]!==""&&d[f]!==0&&!(f==="inRatio"&&d[f]===50))
-                  .map(([k,f])=>k+":"+d[f]).join(",");
-  const u=new URL(location.href); u.search=""; u.hash="";
-  return u.href+(q?"?p="+q:"")+(hash||"#req");    // 값은 영문·숫자·점뿐이라 인코딩 없이 짧게
-}
 /* 링크로 열면 입력칸을 채우고 결과 화면까지 바로 간다 */
 function applyReqLink(){
   const q=new URLSearchParams(location.search).get("p"); if(!q) return;
   const m={}; q.split(",").forEach(x=>{const i=x.indexOf(":"); if(i>0) m[x.slice(0,i)]=x.slice(i+1);});
   const setv=(id,v)=>{const e=$("#"+id); if(e&&v!==undefined) e.value=v;};
-  if(m.t){ STATE.data.temp=m.t; $$("#f_temp .chip").forEach(c=>c.classList.toggle("on",c.dataset.v===m.t)); }
+  // 온도대는 정해진 값만 받는다(링크에 임의 문자열이 들어와도 화면에 쓰이지 않게)
+  if(m.t && TEMP_LABEL[m.t]){ STATE.data.temp=m.t; $$("#f_temp .chip").forEach(c=>c.classList.toggle("on",c.dataset.v===m.t)); }
   setv("f_build",m.b); setv("f_area",m.a); setv("f_height",m.h); setv("f_volume",m.v);
   if(m.r){ setv("f_inPct",m.r); setv("f_outPct",100-(+m.r)); }
   setv("f_palletW",m.w); setv("f_palletL",m.l); setv("f_palletH",m.ph); setv("f_palletKg",m.kg);
@@ -5931,7 +5744,8 @@ function showTargetModal(){
   const storeDays = d.storeDays>0 ? d.storeDays : CONFIG.DEFAULT_AVG_STORE_DAYS;
   const dS  = d.stock ? Math.round(d.stock*1.2) : 0;
   const vm  = roi.volMonth || Engine.volMonth(d);
-  const dV  = vm ? Math.round(vm*(storeDays/30)*1.2) : 0;
+  const ir  = Engine.throughput(d).inRatio;
+  const dV  = roi.demandFromVolume || 0;
   const br  = roi.buildRatio || Engine.buildRatio(d, est);
   const cap = Math.round(est.cells * br);
   const tc  = roi.targetCells;
@@ -5975,7 +5789,7 @@ function showTargetModal(){
       <div class="cs-body">
         <div class="cs-expr">물동량 기반 수요</div>
         ${vm
-          ? `<div class="cs-desc">월 ${fmt(vm)}PLT × (${storeDays}일 ÷ 30일) × 1.2 = <b>${fmt(dV)}셀</b></div>
+          ? `<div class="cs-desc">월 ${fmt(vm)}PLT × 입고 ${ir}% × (${storeDays}일 ÷ 30일) × 1.2 = <b>${fmt(dV)}셀</b></div>
              <div class="cs-desc" style="margin-top:2px">평균 보관일수(${storeDays}일${d.storeDays>0?'':' · 기본값'}) 기준 동시 재고량</div>`
           : `<div class="cs-desc">물동량 미입력 → 물동량 기반 수요 산출 불가 (0)</div>`
         }
@@ -6080,7 +5894,7 @@ if("serviceWorker" in navigator){
   });
 }
 </script>
-<script src="./simulation.js?v=3.1.6"></script>
+<script src="./simulation.js?v=3.1.7"></script>
 <script src="./higgsfield.js?v=3.1.1"></script>
 </body>
 </html>

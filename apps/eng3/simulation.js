@@ -10,6 +10,7 @@
   const baseResult=renderResult;
   renderResult=function(){
     baseResult();
+    if(window.roi_data&&window.roi_data.infeasible)return;   // 산출 불가 화면에는 3D 카드가 없다
     Object.assign(state,{direction:'in',view:'iso'});
     const panel=byId('simPanel'), inner=panel.querySelector('.roi-panel-inner');
     const L=window.roi_data.layout,d=window.d_data||STATE.data,tp=Engine.throughput(d);
