@@ -70,7 +70,9 @@
     if(g){A.railToX=g.x;A.liftTopY=g.t*A.cellH+0.72;A.dropZ=g.z;}else if(H){A.railToX=H.railToX;A.liftTopY=H.liftTopY;A.dropZ=H.dropZ;}
     if(this.drawRoutes&&this.detailRoutes)this.drawRoutes();};
   GL3D.commitDemo=function(){const A=this.anchors,ap=this.actors&&this.actors.animPallet;if(!ap||!this.demoTargets)return;
-    const c=ap.clone();c.position.set(A.railToX,A.liftTopY,A.dropZ);c.visible=true;(ap.parent||this.world).add(c);
+    const g=this.demoTargets[this.demoIdx];
+    const restY=g ? g.t*A.cellH+0.055 : A.liftTopY-0.665;   // 보관 화물과 같은 높이(빔 위)
+    const c=ap.clone();c.position.set(A.railToX,restY,A.dropZ);c.visible=true;(ap.parent||this.world).add(c);
     (this.demoStored=this.demoStored||[]).push({mesh:c,g:this.demoTargets[this.demoIdx]||null});
     this.demoIdx=Math.min(this.demoTargets.length,this.demoIdx+1);this.setDemoTarget(this.demoTargets[this.demoIdx]);};
   GL3D.popDemo=function(){const st=this.demoStored||[],last=st.pop();
@@ -178,8 +180,11 @@
       // Tubes retain a visible width when the entire warehouse is framed.
       for(let i=0;i<pts.length-1;i++){
         const a=vec(pts[i]),b=vec(pts[i+1]),v=b.clone().sub(a),length=v.length();if(length<.01)continue;
-        const tube=new T.Mesh(e.geo(new T.TubeGeometry(new T.LineCurve3(a,b),1,.12,6,false)),e.track(new T.MeshBasicMaterial({color:0x20eab0,depthTest:false,transparent:true,opacity:.85})));tube.renderOrder=20;routes.add(tube);
-        const arrow=new T.ArrowHelper(v.normalize(),a.clone().lerp(b,.55),Math.min(2.2,length*.45),0x9dffe1,.9,.6);arrow.line.material.depthTest=arrow.cone.material.depthTest=false;arrow.line.renderOrder=arrow.cone.renderOrder=21;e.track(arrow.line.material);e.track(arrow.cone.material);routes.add(arrow);e.detailArrows.push({arrow,direction:v.clone()});
+        // 진한 선은 랙에 가려진다(통로 안을 지나는 게 보이게), 흐린 선은 가려져도 길을 잃지 않게 항상 보인다
+        const tg=e.geo(new T.TubeGeometry(new T.LineCurve3(a,b),1,.12,6,false));
+        const tube=new T.Mesh(tg,e.track(new T.MeshBasicMaterial({color:0x20eab0,transparent:true,opacity:.95})));tube.renderOrder=20;routes.add(tube);
+        const ghost=new T.Mesh(tg,e.track(new T.MeshBasicMaterial({color:0x20eab0,depthTest:false,transparent:true,opacity:.3})));ghost.renderOrder=19;routes.add(ghost);
+        const arrow=new T.ArrowHelper(v.normalize(),a.clone().lerp(b,.55),Math.min(2.2,length*.45),0x9dffe1,.9,.6);arrow.line.material.depthTest=arrow.cone.material.depthTest=true;arrow.line.renderOrder=arrow.cone.renderOrder=21;e.track(arrow.line.material);e.track(arrow.cone.material);routes.add(arrow);e.detailArrows.push({arrow,direction:v.clone()});
       }
       pts.forEach(p=>{const dot=new T.Mesh(e.geo(new T.SphereGeometry(.16,12,8)),e.track(new T.MeshBasicMaterial({color:0x6fffd7,depthTest:false})));dot.position.copy(vec(p));dot.renderOrder=21;routes.add(dot);});
         if(state.direction==='out')e.detailArrows.forEach(x=>x.arrow.setDirection(x.direction.clone().multiplyScalar(-1)));
