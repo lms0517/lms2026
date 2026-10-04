@@ -570,6 +570,9 @@ body.fs-lock{overflow:hidden}
 @media (min-width:600px){
   .app{box-shadow:0 0 60px rgba(90,162,255,.10)}
 }
+#updBar{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:10000;
+  border:none;border-radius:24px;padding:12px 20px;font:600 14px inherit;font-family:inherit;color:#fff;background:var(--grad-btn);
+  box-shadow:0 8px 24px rgba(0,0,0,.45);cursor:pointer;white-space:nowrap}
 </style>
 <link rel="stylesheet" href="./simulation.css?v=3.1.6">
 </head>
@@ -580,7 +583,7 @@ body.fs-lock{overflow:hidden}
   <div class="topbar">
     <div class="brand">
       <span class="logo mono"><b>TSPG</b> · LOGISALL ENG</span>
-      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1008.1</span>
+      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1008.2</span>
     </div>
     <div class="prog" id="prog"></div>
   </div>
@@ -6061,8 +6064,19 @@ window.addEventListener("load", applyReqLink);
 window.addEventListener("load", applyDocLink);
 
 if("serviceWorker" in navigator){
+  /* 홈 화면 앱은 닫지 않고 다시 열면 예전 화면이 그대로 이어진다(새로고침이 일어나지 않음).
+     화면으로 돌아올 때마다 새 버전을 확인하고, 있으면 아래에 '눌러서 적용' 안내를 띄운다. */
+  const hadCtl=!!navigator.serviceWorker.controller;
   window.addEventListener("load", ()=>{
-    navigator.serviceWorker.register("sw.js").catch(()=>{});
+    navigator.serviceWorker.register("sw.js").then(reg=>{
+      document.addEventListener("visibilitychange", ()=>{ if(!document.hidden) reg.update().catch(()=>{}); });
+    }).catch(()=>{});
+  });
+  navigator.serviceWorker.addEventListener("controllerchange", ()=>{
+    if(!hadCtl || document.getElementById("updBar")) return;
+    const b=document.createElement("button"); b.id="updBar"; b.type="button";
+    b.textContent="새 버전이 나왔습니다 · 눌러서 적용"; b.onclick=()=>location.reload();
+    document.body.appendChild(b);
   });
 }
 </script>
