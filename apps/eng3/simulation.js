@@ -23,12 +23,14 @@
     const panel=byId('simPanel'), inner=panel.querySelector('.roi-panel-inner');
     const L=window.roi_data.layout,d=window.d_data||STATE.data,tp=Engine.throughput(d);
     const occupied=d.stock>0?Math.min(L.cellsBuilt,Math.round(d.stock)):Math.round(L.cellsBuilt*.85);
+    // 시연용 현재 재고 — 입고 적입이 끝나면 +1, 출고 인출이 끝나면 -1
+    Object.assign(state,{stockNow:occupied,stockCap:L.cellsBuilt,lastIdx:0,skipCount:true,flash:'',flashUntil:0});
     // 기본값으로 계산한 장면이면 3D 위에 분명히 적는다
     const dm=(typeof defMain==='function')?defMain(d):[];
     inner.insertAdjacentHTML('afterbegin',(dm.length?`<div class="sim-def">기본값 예시 3D — ${defSummary(d).filter(t=>/면적|층고|물동량|보유/.test(t)).join(' · ')} 기준 (실제 값을 넣으면 바뀝니다)</div>`:'')+`<div class="sim-kpis">
       <div class="sim-kpi"><span>구축 규모</span><b>${fmt(L.cellsBuilt)} 셀</b><small>${L.aisles}통로 · ${L.bay}Bay · ${L.tier}단</small></div>
       <div class="sim-kpi"><span>랙 외곽 치수</span><b>${L.rackW.toFixed(1)} × ${(L.footD-6).toFixed(1)} m</b><small>랙 높이 ${L.rackH.toFixed(1)}m · 층고 ${d.height}m</small></div>
-      <div class="sim-kpi"><span>${d.stock>0?'현재 보관 화물':'보관 화물 (85% 예시)'}</span><b>${fmt(occupied)} 매</b><small>${(occupied/L.cellsBuilt*100).toFixed(1)}% 점유${d.stock>L.cellsBuilt?' · 공간 초과 '+fmt(d.stock-L.cellsBuilt)+'매':''}</small></div>
+      <div class="sim-kpi"><span>${d.stock>0?'현재 보관 화물':'보관 화물 (85% 예시)'}</span><b id="simStockNow">${fmt(occupied)} 매</b><small><span id="simStockPct">${(occupied/L.cellsBuilt*100).toFixed(1)}</span>% 점유${d.stock>L.cellsBuilt?' · 공간 초과 '+fmt(d.stock-L.cellsBuilt)+'매':''}</small></div>
       <div class="sim-kpi"><span>시간당 처리량</span><b>${fmt(tp.perHr)} PLT/h</b><small>입 ${tp.inHr} · 출 ${tp.outHr} (${tp.inRatio}:${100-tp.inRatio})</small></div></div>`);
     const wrap=inner.querySelector('.sim-wrap');
     wrap.insertAdjacentHTML('beforeend','<div class="sim-live" id="simLive"><b>배치 준비 중</b><span>입력한 규모로 장면을 생성합니다.</span></div>');
@@ -103,7 +105,7 @@
   window.SIMDETAIL={
     normal(){if(GL3D.concept){GL3D.setConcept(false);const b=byId('simConcept');b.classList.remove('on');b.textContent='📐 개념 설명';}SIM3D.cinemaOff();if(byId('simLive'))byId('simLive').style.display='';},
     stageButtons(){byId('simStages').innerHTML=steps().map((s,i)=>`<button class="sim-stage" data-stage="${i}" aria-current="${i===0?'step':'false'}"><b>0${i+1}</b>${s[0].replace(' ','<br>')}</button>`).join('');byId('simStages').querySelectorAll('button').forEach(b=>b.onclick=()=>this.seek(steps()[+b.dataset.stage][2]));},
-    seek(t){if(SIM3D.engine!==GL3D)return;this.normal();GL3D.stop();GL3D.animT=t;GL3D.tick(t);GL3D.render();},
+    seek(t){if(SIM3D.engine!==GL3D)return;this.normal();GL3D.stop();GL3D.animT=t;state.skipCount=true;GL3D.tick(t);GL3D.render();},
     /* 시연 버튼 — 누르면 그 방향으로 처음부터 재생, 재생 중 같은 버튼을 다시 누르면 일시정지 */
     direction(k){
       const e=SIM3D.engine; if(!e)return;
@@ -122,9 +124,21 @@
         b.classList.toggle('playing',run);
       });
     },
-    setDirection(k){if(SIM3D.engine!==GL3D)return;this.normal();state.direction=k;(GL3D.detailArrows||[]).forEach(a=>a.arrow.setDirection(a.direction.clone().multiplyScalar(k==='in'?1:-1)));byId('simDirectionIn').setAttribute('aria-pressed',k==='in');byId('simDirectionOut').setAttribute('aria-pressed',k==='out');byId('simSequenceTitle').textContent='화물 이동 과정 · '+(k==='in'?'입고':'출고 · 공용 스테이션');this.stageButtons();this.seek(0);},
+    setDirection(k){if(SIM3D.engine!==GL3D)return;this.normal();state.direction=k;state.skipCount=true;(GL3D.detailArrows||[]).forEach(a=>a.arrow.setDirection(a.direction.clone().multiplyScalar(k==='in'?1:-1)));byId('simDirectionIn').setAttribute('aria-pressed',k==='in');byId('simDirectionOut').setAttribute('aria-pressed',k==='out');byId('simSequenceTitle').textContent='화물 이동 과정 · '+(k==='in'?'입고':'출고 · 공용 스테이션');this.stageButtons();this.seek(0);},
     view(k){if(SIM3D.engine!==GL3D)return;this.normal();state.view=k;document.querySelectorAll('[data-view]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.view===k));if(k==='top'){GL3D.center.copy(GL3D.homeCenter);GL3D.sph.theta=Math.PI;GL3D.sph.phi=.03;GL3D.sph.r=GL3D.fitRadius(GL3D.bbox,Math.PI,.03,GL3D.camera.aspect);GL3D.vel.t=GL3D.vel.p=0;GL3D.render();}else if(k==='iso'&&GL3D.overview)GL3D.overview();else SIM3D.preset(k);},
-    update(t){if(!byId('simTime')||!GL3D.D)return;const s=steps();let index=0;s.forEach((x,i)=>{if(t>=x[2])index=i;});byId('simTime').textContent=t.toFixed(1)+' / 20s';byId('simTimeline').value=t;byId('simStages').querySelectorAll('button').forEach((b,i)=>b.setAttribute('aria-current',i===index?'step':'false'));byId('simExplain').textContent=s[index][1];const live=byId('simLive');const text=`<b>${state.direction==='in'?'입고':'출고'} · ${s[index][0]}</b><span>${fmt(GL3D.D.cellsShown)}셀 · ${GL3D.D.sTier}단 · ${(typeof defMain==='function'&&defMain(window.d_data).length)?'기본값 예시':'설명용 동작'}</span>`;if(live.innerHTML!==text)live.innerHTML=text;},
+    update(t){if(!byId('simTime')||!GL3D.D)return;const s=steps();let index=0;s.forEach((x,i)=>{if(t>=x[2])index=i;});byId('simTime').textContent=t.toFixed(1)+' / 20s';byId('simTimeline').value=t;byId('simStages').querySelectorAll('button').forEach((b,i)=>b.setAttribute('aria-current',i===index?'step':'false'));byId('simExplain').textContent=s[index][1];// 현재 재고: 입고는 '설비 복귀'(적입 완료)로 넘어갈 때 +1, 출고는 '통로 복귀'(셀 인출 완료)로 넘어갈 때 -1
+    if(state.stockNow!=null){
+      if(!state.skipCount&&index!==state.lastIdx){
+        if(state.direction==='in'&&index===4&&state.lastIdx===3&&state.stockNow<state.stockCap){state.stockNow++;state.flash='+1 입고';state.flashUntil=performance.now()+2200;}
+        if(state.direction==='out'&&index===1&&state.lastIdx===0&&state.stockNow>0){state.stockNow--;state.flash='−1 출고';state.flashUntil=performance.now()+2200;}
+        const sn=byId('simStockNow'),sp=byId('simStockPct');
+        if(sn)sn.textContent=fmt(state.stockNow)+' 매';if(sp)sp.textContent=(state.stockNow/state.stockCap*100).toFixed(1);
+      }
+      state.lastIdx=index;state.skipCount=false;
+    }
+    const fl=performance.now()<state.flashUntil?` <em class="stock-flash">${state.flash}</em>`:'';
+    const def=(typeof defMain==='function'&&defMain(window.d_data).length)?' · 기본값 예시':'';
+    const live=byId('simLive');const text=`<b>${state.direction==='in'?'입고':'출고'} · ${s[index][0]}</b><span>현재 재고 <strong>${fmt(state.stockNow??0)}</strong> / ${fmt(GL3D.D.cellsShown)} PL${fl}${def}</span>`;if(live.innerHTML!==text)live.innerHTML=text;},
     build(e){
       const T=e.THREE,D=e.D,A=e.anchors;
       const routes=e.detailRoutes=new T.Group(),dims=e.detailDimensions=new T.Group();e.world.add(routes,dims);

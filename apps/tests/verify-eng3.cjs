@@ -31,12 +31,15 @@ assert.equal(run({area:2000,height:12,volume:10000,inRatio:20,storeDays:15}).roi
 {const {tp}=run({area:800,height:10,volume:6000,inRatio:100});assert.equal(tp.inRatio,100);assert.equal(tp.outHr,0);}
 {const {tp}=run({area:800,height:10,volume:6000,inRatio:0});assert.equal(tp.inRatio,0);assert.equal(tp.inHr,0);}
 
-// 4-b) 권장 구축 규모 = 같은 공간 일반 랙 보관량 × 4-Way 밀도 비율 (개선 예상 4-Way 값과 같다), +40~67%(업계 범위)
-{const {roi}=run({area:520,height:10,volume:10000,stock:1000,storeDays:15,palletW:1100,palletL:1100,palletH:1.5});
+// 4-b) 권장 구축 규모 = 같은 공간 일반 랙(카운터 지게차) 보관량 × 4-Way 밀도 비율 (= 개선 예상 4-Way 값)
+{const {roi}=run({area:520,height:10,volume:9000,stock:1000,storeDays:15,palletW:1100,palletL:1100,palletH:1.5});
  assert.equal(roi.conv.autoCap,roi.targetCells,'개선 예상 4-Way 값 ≠ 권장 구축 규모');
  assert.ok(roi.targetCells<=Math.round(roi.conv.cap*roi.conv.densityX)+1,'권장 규모가 일반 랙 × 밀도 비율을 넘음');
- assert.ok(roi.conv.gain>=0.40&&roi.conv.gain<=0.67,`일반 랙 대비 ${Math.round(roi.conv.gain*100)}% — 업계 범위 밖`);
+ assert.equal(roi.conv.tiers,4,'카운터 지게차 최상단 6m → 10m 창고는 4단');
  assert.ok(roi.layout.rackW*(roi.layout.footD-6)<=520*3.305,'랙 블록이 면적보다 큼');}
+// 같은 단수(8m)면 Mecalux 카운터 지게차 랙 대비 +82% 근처
+{const {roi}=run({area:520,height:8,volume:9000,stock:1000,storeDays:15,palletW:1100,palletL:1100,palletH:1.5});
+ assert.ok(roi.conv.gain>=0.70&&roi.conv.gain<=0.95,`같은 단수 카운터 랙 대비 ${Math.round(roi.conv.gain*100)}% — 근거(+82%)와 차이 큼`);}
 
 // 5) 공개 페이지에 원본 견적 정보(현장명·계약금액·견적서 번호)를 넣지 않는다
 for(const bad of ['대한냉동','영풍','LAE26','YP-1CAMPUS','PROD-2WAY','contract:','vendor:'])

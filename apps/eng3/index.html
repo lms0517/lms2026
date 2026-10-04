@@ -591,7 +591,7 @@ body.fs-lock{overflow:hidden}
   border:none;border-radius:24px;padding:12px 20px;font:600 14px inherit;font-family:inherit;color:#fff;background:var(--grad-btn);
   box-shadow:0 8px 24px rgba(0,0,0,.45);cursor:pointer;white-space:nowrap}
 </style>
-<link rel="stylesheet" href="./simulation.css?v=3.2.0">
+<link rel="stylesheet" href="./simulation.css?v=3.2.2">
 </head>
 <body>
 <div class="app">
@@ -600,7 +600,7 @@ body.fs-lock{overflow:hidden}
   <div class="topbar">
     <div class="brand">
       <span class="logo mono"><b>TSPG</b> · LOGISALL ENG</span>
-      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1010.1</span>
+      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1010.3</span>
     </div>
     <div class="prog" id="prog"></div>
   </div>
@@ -878,20 +878,21 @@ const CONFIG = {
                                //   1Deep 랙 1.4m + 지게차 통로 3.5m를 2열이 공유
                                //   → (1.4×2 + 3.5) ÷ 2 = 3.15m 깊이 × 1.4m 폭 ≈ 4.4㎡
   CONV_RACK_TIERS: 3,          // (구) 일반 창고 평균 적재 단수 — 공간 절감 환산용
-  /* 같은 면적·층고 '일반 선반형 랙(리치트럭)' 비교 기준 — 개선 예상의 '현재' 값.
-     파렛트 한 칸 = (가로+0.25m 기둥·여유) × (세로+0.1m 등간격 + 통로/2), 리치트럭 통로 3.0m.
-     단 높이 = 적재높이+빔 0.25+지게차 여유 0.10m, 최상단 빔 10.5m 이하(리치트럭 인상 한계).
+  /* 같은 면적·층고 '일반 랙(카운터 지게차)' 비교 기준 — 개선 예상의 '일반 랙' 값.
+     파렛트 한 칸 = (가로+0.25m 기둥·여유) × (세로+0.1m 등간격 + 통로/2), 카운터 지게차 직각 적치 통로 3.8m
+       (Mecalux 같은 바닥 비교: 카운터 594 / 리치 678 PL/층 → 리치 3.0m 대비 칸 면적 1.14배 = 통로 3.8m 와 일치).
+     단 높이 = 적재높이+빔 0.25+지게차 여유 0.10m, 최상단 빔 6.0m 이하(카운터 지게차 인상 한계).
      실사용률: 선반형 95% / 멀티딥(4-Way) 90% — 딥 레인은 품목이 섞이면 빈칸이 생긴다.
      업계 비교치: 4-Way 셔틀은 일반 랙 대비 보관량 +40~67% (최대 2배) */
-  REACH_AISLE_M: 3.0, CONV_LIFT_CLEAR_M: 0.10, CONV_MAX_BEAM_M: 10.5,
+  CONV_AISLE_M: 3.8, CONV_LIFT_CLEAR_M: 0.10, CONV_MAX_BEAM_M: 6.0,
   UTIL_SELECTIVE: 0.95, UTIL_MULTIDEEP: 0.90,
   CELL_FOOTPRINT_M2: 1.96,     // 자동창고 셀 1칸 바닥 점유 = 1.4m × 1.4m  [실측 견적 기준]
   RACK_BEAM_M: 0.25,           // 단 간 빔/여유
   /* 입력 기본값 — 칸을 비워 두면 이 값으로 계산하고 결과·3D 에 '기본값'으로 표시한다.
      520평 · 유효 10m · 적재 1.5m(T11 1100×1100, 일반 박스 화물) · 월 9,000PLT(입고 50% · 보관 15일) · 현 보유 1,000PL
-       → 같은 공간 일반 랙(리치트럭) 5단 1,698PL × 4-Way 밀도 비율 1.63 = 권장 2,760셀(+63%)
+       → 같은 공간 일반 랙(카운터 지게차, 최상단 6m → 4단) 1,183PL × 4-Way 밀도 비율 2.35 = 권장 2,760셀(+133%)
        → 물동량 기준 필요 2,700셀(여유 60셀) · 시간당 43 필요 ▶ 75 능력
-     업계 비교: Mecalux 같은 바닥 리치트럭 랙 678 → 파렛트 셔틀 1,080 PL/층(+59%), 일반적으로 +40~67% */
+     업계 비교: Mecalux 같은 바닥 카운터 지게차 랙 594 → 파렛트 셔틀 1,080 PL/층(+82%, 같은 높이) — 앱도 같은 단수면 +85~87% */
   DEFAULT_INPUT: { area:520, height:10, volume:9000, stock:1000, palletW:1100, palletL:1100, palletH:1.5, palletKg:1000, storeDays:15 },
   DEFAULT_PALLET_LOAD_H: 1.5,  // 파렛트 적재높이(m) 폴백값 — DEFAULT_INPUT.palletH 와 같게
   AISLE_LOSS: 0.20,            // 주행통로·리프트·입출고 설비 점유 차감율 [견적 3건 역산]
@@ -1991,9 +1992,9 @@ const Engine = {
     /* 구축 셀규모 — 사용자가 넣은 값이 곧 규모. 비우면 면적이 허용하는 최대.
        (재고·물동량 기반 값은 아래에서 '권장' 참고치로만 따로 낸다) */
     const cellsOver = d.cells>0 && d.cells>areaCapacity;   // 면적 한도 초과 입력
-    /* 같은 면적·층고에 일반 선반형 랙(리치트럭)을 놓았을 때의 보관량 — 개선 예상 '일반 랙' 값 */
+    /* 같은 면적·층고에 일반 랙(카운터 지게차)을 놓았을 때의 보관량 — 개선 예상 '일반 랙' 값 */
     const W = (d.palletW>0?d.palletW:1100)/1000, Lp=(d.palletL>0?d.palletL:1100)/1000;
-    const convPosM2 = (W+0.25) * (Lp+0.10+CONFIG.REACH_AISLE_M/2);
+    const convPosM2 = (W+0.25) * (Lp+0.10+CONFIG.CONV_AISLE_M/2);
     const convLevelH = (d.palletH>0?d.palletH:CONFIG.DEFAULT_PALLET_LOAD_H) + CONFIG.RACK_BEAM_M + CONFIG.CONV_LIFT_CLEAR_M;
     const convTiers = Math.max(0, Math.min(Math.floor(((d.height||0)-0.3)/convLevelH), Math.floor(CONFIG.CONV_MAX_BEAM_M/convLevelH)+1));
     const convCap  = Math.round((d.area||0)*CONFIG.PYEONG_M2*buildRatio/convPosM2*convTiers*CONFIG.UTIL_SELECTIVE);
@@ -3044,9 +3045,9 @@ function renderResult(){
       <div class="basis-fold">
         <div class="basis-h obj-toggle" onclick="toggleCardPanel(this)">근거 설명<span class="obj-caret mono">▼</span></div>
         <div class="roi-panel"><div class="roi-panel-inner">
-<div class="note">같은 ${fmt(d.area)}평·유효 ${d.height}m 에 <b>일반 선반형 랙(리치트럭 통로 ${CONFIG.REACH_AISLE_M}m, ${cv.tiers}단)</b>을 놓았을 때와 비교한 값입니다.
+<div class="note">같은 ${fmt(d.area)}평·유효 ${d.height}m 에 <b>일반 랙(카운터 지게차 통로 ${CONFIG.CONV_AISLE_M}m · 최상단 빔 ${CONFIG.CONV_MAX_BEAM_M}m 이하, ${cv.tiers}단)</b>을 놓았을 때와 비교한 값입니다.
             4-Way 값(= 권장 구축 규모)은 일반 랙 보관량 × 밀도 비율 ${cv.densityX} — 면적 한도에 멀티딥 실사용 ${Math.round(CONFIG.UTIL_MULTIDEEP*100)}%(일반 랙 ${Math.round(CONFIG.UTIL_SELECTIVE*100)}%)를 반영한 값입니다.
-            업계 비교치는 일반 랙 대비 +40~67%입니다.${d.stock?` 현 보유 ${fmt(d.stock)} PL 은 4-Way 보관 가능량의 ${Math.round(d.stock/Math.max(1,cv.autoCap)*100)}%입니다.`:''}
+            참고: Mecalux 같은 바닥 비교에서 카운터 지게차 랙 594 → 파렛트 셔틀 1,080 PL/층(+82%, 같은 높이 기준)이며, 지게차 인상 한계(약 6m)로 일반 랙 단수가 줄면 차이는 더 커집니다.${d.stock?` 현 보유 ${fmt(d.stock)} PL 은 4-Way 보관 가능량의 ${Math.round(d.stock/Math.max(1,cv.autoCap)*100)}%입니다.`:''}
             <b>절감 금액과 투자 회수기간은 임대료·인건비 가정에 크게 좌우되므로 이 화면에서는 제시하지 않습니다</b> — 상세 제안 단계에서 고객사 실제 단가로 산출합니다.</div>
 <div class="note">'공간 최대 수용'은 면적·층고를 가득 채울 때의 한도입니다. '권장 구축 규모'는 공간 최대 수용에서 입출고 스테이션·벽 이격 공간을 뺀 실제 구축 셀 수로, 3D 배치와 투자비가 이 수로 계산됩니다. 재고·물동량 기반 값은 필요 규모 참고치이며, 모두 개략값으로 Bay×(앞+뒤Deep)×Tier 설계·시뮬레이션으로 확정합니다.</div>
         </div></div>
@@ -6011,7 +6012,7 @@ if("serviceWorker" in navigator){
   });
 }
 </script>
-<script src="./simulation.js?v=3.2.1"></script>
+<script src="./simulation.js?v=3.2.2"></script>
 <script src="./higgsfield.js?v=3.1.2"></script>
 </body>
 </html>
