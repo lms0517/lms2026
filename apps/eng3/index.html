@@ -616,7 +616,7 @@ body.fs-lock{overflow:hidden}
   <div class="topbar">
     <div class="brand">
       <span class="logo mono"><b>TSPG</b> · LOGISALL ENG</span>
-      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1011.8</span>
+      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1011.9</span>
     </div>
     <div class="prog" id="prog"></div>
   </div>
@@ -2389,7 +2389,8 @@ function collect(){
   d.cells=0;   // v3: 구축 셀규모 입력 삭제 — 항상 면적이 허용하는 최대로 계산
   d.palletKg=num("f_palletKg","palletKg");
   d.palletH=num("f_palletH","palletH");
-  d.stock=num("f_stock","stock");
+  // 현 보관 파렛트 0매 = '기존 재고 없음'으로 그대로 쓴다 (빈칸일 때만 기본값)
+  { const raw=String($("#f_stock").value).trim(); d.stock = (raw!=="" && +raw===0) ? 0 : num("f_stock","stock"); }
   d.storeDays=num("f_storeDays","storeDays");
   d.defaulted=used;                                   // 기본값으로 채운 칸 (결과·3D·요청서에 표시)
   // 현 운영 인력 입력은 v2에서 제거 — Engine.roi 의 staffRaw 폴백이 물동량·면적으로 추정
@@ -3005,8 +3006,13 @@ function renderResult(){
        <span class="tgt"${worse?' style="color:#E8B21F"':''}>${tgt}${worse?' <small style="font-weight:400">미달</small>':''}</span></span></div>`;
   const capOk  = Math.min((cx.qty&&cx.qty.shuttleQty||1)*25, (cx.qty&&cx.qty.lifterQty||1)*45);
   const cv=roi.conv, gainPct=Math.round(cv.gain*100);
+  // 현 보유 재고를 실제로 입력했으면 '현재 대비'를 먼저 보여 준다 (기본값 재고는 실제가 아니므로 제외)
+  const stockReal = d.stock>0 && !isDef(d,"stock");
+  const stockPct  = stockReal ? Math.round((cv.autoCap/d.stock-1)*100) : 0;
+  const impSum    = (stockReal && cv.autoCap>d.stock) ? `현재 대비 +${stockPct}%` : `보관 ${gainPct>=0?'+':''}${gainPct}%`;
   const improveRows =
-      kpiRow("보관 가능량 (PL)",   fmt(cv.cap), fmt(cv.autoCap)+` <small style="font-weight:600">${gainPct>=0?'+':''}${gainPct}%</small>`, cv.autoCap < cv.cap)
+      (stockReal ? kpiRow("현 재고 (PL)", fmt(d.stock), fmt(cv.autoCap)+` <small style="font-weight:600">${stockPct>=0?'+':''}${stockPct}%</small>`, cv.autoCap < d.stock) : "")
+    + kpiRow(stockReal ? "일반 랙 보관 (PL)" : "보관 가능량 (PL)", fmt(cv.cap), fmt(cv.autoCap)+` <small style="font-weight:600">${gainPct>=0?'+':''}${gainPct}%</small>`, cv.autoCap < cv.cap)
     + kpiRow("적재 단수",         cv.tiers+"단", est.tiers+"단", est.tiers < cv.tiers)
     + kpiRow("보관 밀도 (PL/평)", (cv.cap/Math.max(1,d.area)).toFixed(1), (cv.autoCap/Math.max(1,d.area)).toFixed(1), cv.autoCap < cv.cap)
     + kpiRow("시간당 취급 (PL/h)", fmt(tp.perHr)+" 필요", fmt(capOk)+" 능력", capOk < tp.perHr);
@@ -3050,9 +3056,9 @@ function renderResult(){
       </div>
       <!-- 개선 예상 — 같은 면적·층고 일반 랙 대비 (취급량 바로 아래). 기본은 접고 제목에 증가율만 보인다 -->
       <div class="kpi2 imp-in">
-        <div class="basis-h imp-t obj-toggle" onclick="toggleCardPanel(this)"><span>개선 예상 · 일반 랙 → 4-Way</span><span class="imp-sum"><b>보관 ${gainPct>=0?'+':''}${gainPct}%</b><span class="obj-caret mono">▼</span></span></div>
+        <div class="basis-h imp-t obj-toggle" onclick="toggleCardPanel(this)"><span>개선 예상 · ${stockReal?'현재':'일반 랙'} → 4-Way</span><span class="imp-sum"><b>${impSum}</b><span class="obj-caret mono">▼</span></span></div>
         <div class="roi-panel"><div class="roi-panel-inner">
-          <div class="kpi2-head"><span>일반 랙</span><span style="min-width:10px"></span><span>4-Way</span></div>
+          <div class="kpi2-head"><span>${stockReal?'현재 · 일반 랙':'일반 랙'}</span><span style="min-width:10px"></span><span>4-Way</span></div>
           ${improveRows}
         </div></div>
           ${roi.capped?`<div class="note" style="border-color:#E8B21F;color:#E8B21F;margin-bottom:8px">필요 보관량(재고·물동량 기준)이 <b>이 공간의 최대 구축 규모를 넘습니다</b>. 면적·층고 확보가 선행돼야 합니다.</div>`:""}
@@ -3658,7 +3664,7 @@ const GL3D = {
     const real={bay:bay*aisles,dF,dB,tier,cells:cellsBuilt};
     const bayM=bay, sTier=tier, lod=false, exact=true, cellsShown=cellsBuilt;
     // 파렛트 점유율 = 현 재고 / 구축 규모
-    const fillRate = d.stock>0 ? Math.min(1, d.stock/Math.max(1,target)) : 0.85;
+    const fillRate = d.stock>=0 ? Math.min(1, d.stock/Math.max(1,target)) : 0.85;   // 0매면 빈 랙
     return { d, sysKey, qty, cellW, cellD, cellH, real, lod, exact, layout:L,
              occ:fillRate,
              sBay:bayM, sDF:dF, sDB:dB, sTier, aisles, cellsShown,
@@ -5790,6 +5796,7 @@ function reqText(){
     L.push(`  - 규모 : ${fmt(d.area)}평${df("area")} · 유효 층고 ${d.height}m${df("height")}`);
     L.push(`  - 물동량 : 월 ${fmt(d.volume)} PL${df("volume")} → 일 ${fmt(tp.perDay)} PL (시간당 ${fmt(tp.perHr)} PL/h · 주6일 8시간)`);
     if(d.stock) L.push(`  - 현 보관량 : ${fmt(d.stock)} PL${df("stock")}`);
+    else if(d.stock===0) L.push(`  - 현 보관량 : 0 PL (기존 재고 없음)`);
     if(d.palletW||d.palletL||d.palletKg||d.palletH){
       const ps=[]; if(d.palletW||d.palletL) ps.push((d.palletW||"?")+"×"+(d.palletL||"?")+"mm");
       if(d.palletKg) ps.push(fmt(d.palletKg)+"kg"); if(d.palletH) ps.push("적재 "+d.palletH+"m");
@@ -5800,6 +5807,7 @@ function reqText(){
       L.push("■ 1차 개념 제안 결과");
       L.push(`  - 보관량 : ${fmt(roi.targetCells)} PL (${fmt(roi.targetCells)} Cells)`);
       L.push(`  - 적재 단수 : ${est.tiers}단`);
+      if(roi.conv&&d.stock>0&&!isDef(d,"stock")&&roi.conv.autoCap>d.stock) L.push(`  - 현 보유 재고 대비 : ${fmt(d.stock)} → ${fmt(roi.conv.autoCap)} PL (+${Math.round((roi.conv.autoCap/d.stock-1)*100)}%)`);
       if(roi.conv&&roi.conv.cap>0) L.push(`  - 같은 공간 일반 랙 대비 : 보관 가능량 ${fmt(roi.conv.cap)} → ${fmt(roi.conv.autoCap)} PL (+${Math.round(roi.conv.gain*100)}%)`);
       L.push(`  - 시간당 취급 : ${fmt(tp.perHr)} PL/h (입고 ${tp.inHr} · 출고 ${tp.outHr})`);
       /* 판정이 '적용 가능'인 영역만 적는다 — 조건부·확인 필요·부적합은 상세 제안에서 다룬다 */
@@ -6071,7 +6079,7 @@ if("serviceWorker" in navigator){
   });
 }
 </script>
-<script src="./simulation.js?v=3.2.5"></script>
+<script src="./simulation.js?v=3.2.6"></script>
 <script src="./higgsfield.js?v=3.1.2"></script>
 </body>
 </html>

@@ -22,7 +22,7 @@
     Object.assign(state,{direction:'in',view:'iso'});
     const panel=byId('simPanel'), inner=panel.querySelector('.roi-panel-inner');
     const L=window.roi_data.layout,d=window.d_data||STATE.data,tp=Engine.throughput(d);
-    const occupied=d.stock>0?Math.min(L.cellsBuilt,Math.round(d.stock)):Math.round(L.cellsBuilt*.85);
+    const occupied=d.stock>=0?Math.min(L.cellsBuilt,Math.round(d.stock)):Math.round(L.cellsBuilt*.85);   // 0매 = 빈 창고
     // 시연용 현재 재고 — 입고 적입이 끝나면 +1, 출고 인출이 끝나면 -1
     Object.assign(state,{stockNow:occupied,stockCap:L.cellsBuilt,lastIdx:0,skipCount:true,flash:'',flashUntil:0,inDeposited:false,popped:null,lastT:null});
     // 기본값으로 계산한 장면이면 3D 위에 분명히 적는다

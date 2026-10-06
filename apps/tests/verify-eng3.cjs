@@ -52,4 +52,11 @@ assert.ok(/isEvalSupported:\s*false/.test(html),'PDF.js isEvalSupported:false �
 // 8) 새 미팅은 공유 링크 입력을 지우고 연다
 assert.ok(/location\.replace\(location\.pathname\)/.test(html),'초기화가 주소 뒤 입력을 지우지 않음');
 
+// 9) 현 보관 파렛트 0매는 '재고 없음' (기본값 1,000으로 바꾸지 않음) · 3D도 0매면 빈 랙
+assert.ok(/\+raw===0\) \? 0 : num\("f_stock","stock"\)/.test(html),'재고 0매가 기본값으로 바뀜');
+assert.ok(/fillRate = d\.stock>=0/.test(html),'3D 점유율이 재고 0매를 기본 85%로 채움');
+assert.ok(/occupied=d\.stock>=0/.test(fs.readFileSync('apps/eng3/simulation.js','utf8')),'3D 현재 재고가 0매를 85%로 표시');
+// 10) 개선 예상: 실제 입력한 현 재고가 있으면 '현 재고 → 4-Way' 줄과 '현재 대비' 요약
+assert.ok(html.includes('kpiRow("현 재고 (PL)"')&&html.includes('현재 대비 +'),'개선 예상에 현 재고 대비 줄 없음');
+
 console.log('eng3 회귀 검사 통과');
