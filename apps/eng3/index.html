@@ -301,6 +301,7 @@ a.btn{text-decoration:none}
 .basis-fold .note{margin-top:8px}
 .imp-in{margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
 .imp-in .imp-t{font-size:12px;font-weight:700;color:var(--ink);margin-bottom:6px}
+.imp-in .imp-t{margin-bottom:0;gap:8px}.imp-in .imp-sum{display:flex;align-items:center;gap:8px;flex-shrink:0}.imp-in .imp-sum b{color:var(--hi);font-family:'IBM Plex Mono',monospace;font-size:13px}.imp-in .roi-panel-inner{padding-top:8px}
 /* [v2] 초동 질문 탭 · 입력 포커스 강조 */
 .intake-tap{cursor:pointer;transition:.15s}
 .intake-tap:active{transform:scale(.99)}
@@ -600,7 +601,7 @@ body.fs-lock{overflow:hidden}
   <div class="topbar">
     <div class="brand">
       <span class="logo mono"><b>TSPG</b> · LOGISALL ENG</span>
-      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1010.8</span>
+      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1010.9</span>
     </div>
     <div class="prog" id="prog"></div>
   </div>
@@ -3032,11 +3033,13 @@ function renderResult(){
           <div class="sub">월 ${fmt(roi.volMonth)} ÷ ${tp.workDays}일 · 입${tp.inRatio}:출${100-tp.inRatio} · ${tp.opHours}h</div>
         </div>
       </div>
-      <!-- 개선 예상 — 같은 면적·층고 일반 랙 대비 (취급량 바로 아래, 따로 접지 않음) -->
+      <!-- 개선 예상 — 같은 면적·층고 일반 랙 대비 (취급량 바로 아래). 기본은 접고 제목에 증가율만 보인다 -->
       <div class="kpi2 imp-in">
-        <div class="imp-t">개선 예상 · 같은 공간 일반 랙 → 4-Way</div>
+        <div class="basis-h imp-t obj-toggle" onclick="toggleCardPanel(this)"><span>개선 예상 · 일반 랙 → 4-Way</span><span class="imp-sum"><b>보관 ${gainPct>=0?'+':''}${gainPct}%</b><span class="obj-caret mono">▼</span></span></div>
+        <div class="roi-panel"><div class="roi-panel-inner">
           <div class="kpi2-head"><span>일반 랙</span><span style="min-width:10px"></span><span>4-Way</span></div>
           ${improveRows}
+        </div></div>
           ${roi.capped?`<div class="note" style="border-color:#E8B21F;color:#E8B21F;margin-bottom:8px">필요 보관량(재고·물동량 기준)이 <b>이 공간의 최대 구축 규모를 넘습니다</b>. 면적·층고 확보가 선행돼야 합니다.</div>`:""}
 
       </div>
