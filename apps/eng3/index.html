@@ -387,6 +387,11 @@ a.btn{text-decoration:none}
   #ytFS iframe{max-height:none;width:100%;height:100%}
   #ytFS .yt-x{display:flex}
 }
+/* 쇼츠(세로 9:16): 돌리지 않고 화면 높이에 맞춰 꽉 */
+#ytFS.short .yt-head{display:none}
+#ytFS.short .yt-stage{position:fixed;inset:0;width:auto;height:auto;transform:none;padding:0}
+#ytFS.short iframe{max-height:none;height:100%;width:min(100%,calc(100dvh*9/16))}
+#ytFS.short .yt-x{display:flex}
 #ytFS .yt-x{position:absolute;top:10px;right:10px;z-index:2;width:38px;height:38px;border-radius:50%;
   align-items:center;justify-content:center;border:none;background:rgba(0,0,0,.55);color:#fff;font-size:18px;cursor:pointer}
 /* 전달 시트 3칸이 좁은 화면에서 밖으로 밀려나지 않게 */
@@ -611,7 +616,7 @@ body.fs-lock{overflow:hidden}
   <div class="topbar">
     <div class="brand">
       <span class="logo mono"><b>TSPG</b> · LOGISALL ENG</span>
-      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1011.7</span>
+      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1011.8</span>
     </div>
     <div class="prog" id="prog"></div>
   </div>
@@ -5736,14 +5741,15 @@ function ytId(u){
   const m=String(u||"").match(/(?:youtu\.be\/|[?&]v=|\/shorts\/|\/embed\/)([A-Za-z0-9_-]{11})/);
   return m?m[1]:null;
 }
-function openOfficialVideo(){
-  const v=window.solu_video||{url:"https://youtu.be/k1Yhm2fbgD4",t:"4-Way Shuttle System"};
+function openOfficialVideo(vv){
+  const v=vv||window.solu_video||{url:"https://youtu.be/k1Yhm2fbgD4",t:"4-Way Shuttle System"};
   const id=ytId(v.url);
   if(!id){ window.open(v.url,"_blank","noopener"); return; }   // 채널 링크 등은 새 창
   closeOfficialVideo(true);
   /* 화면 전체를 덮는 앱 오버레이 — 브라우저 Fullscreen API 는 쓰지 않는다(크롬 종료 안내가 뜸).
      가로로 돌리면 영상이 화면을 꽉 채운다. 닫기·뒤로 가기로 빠져나온다. */
   const ov=document.createElement("div"); ov.id="ytFS";
+  if(/\/shorts\//.test(v.url)) ov.classList.add("short");   // 쇼츠는 세로 영상 — 돌리지 않고 세로로 꽉
   ov.innerHTML=`<div class="yt-head"><b>${esc(v.t)} · 공식 영상</b>
       <button class="sim-btn" onclick="closeOfficialVideo()">✕ 닫기</button></div>
     <div class="yt-stage"><button class="yt-x" onclick="closeOfficialVideo()" aria-label="닫기">✕</button><iframe src="https://www.youtube-nocookie.com/embed/${id}?rel=0&playsinline=1&autoplay=1"
@@ -5755,6 +5761,13 @@ function openOfficialVideo(){
   if(!window._ytPop){ window._ytPop=()=>{ if(document.getElementById("ytFS")) closeOfficialVideo(true); };
     window.addEventListener("popstate", window._ytPop); }
 }
+/* 시스템 라인업의 ▶ 대표 영상 · ▶ 쇼츠 — 유튜브로 나가지 않고 앱 안 전체화면 플레이어에서 바로 재생 */
+document.addEventListener("click",e=>{
+  const a=e.target.closest&&e.target.closest(".isys a.iv"); if(!a||!ytId(a.href)) return;
+  e.preventDefault();
+  const sys=a.closest(".isys"), t=(sys&&sys.querySelector("b")?sys.querySelector("b").textContent:"")+(/shorts/.test(a.href)?" · 쇼츠":"");
+  openOfficialVideo({url:a.href,t});
+});
 /* 닫으면 플레이어째 지워 소리를 멈춘다 */
 function closeOfficialVideo(fromPop){
   const ov=document.getElementById("ytFS"); if(!ov) return;
