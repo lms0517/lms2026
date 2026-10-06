@@ -116,7 +116,8 @@ input,textarea,select,[contenteditable]{-webkit-user-select:text;user-select:tex
 .isys{display:flex;flex-direction:column;gap:3px;padding:11px 13px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--grad-stat);box-shadow:var(--sh-sm),var(--hl)}
 .isys b{font-size:14px;color:var(--ink)}
 .isys span{font-size:11.5px;color:var(--muted);line-height:1.5}
-.isys a.iv{font-size:11px;color:var(--accent-2);text-decoration:none;margin-top:4px;font-weight:600}
+.isys .ivs{display:flex;justify-content:flex-end;gap:12px;margin-top:4px}
+.isys a.iv{font-size:11.5px;color:var(--hi);text-decoration:none;font-weight:700}
 .isys a.iv:active{opacity:.7}
 /* 라인업 안에 직접 재생되는 쇼츠 플레이어 (세로 9:16) */
 .intro-btn:hover{background:linear-gradient(180deg,rgba(143,176,220,.24),rgba(143,176,220,.1))}
@@ -610,7 +611,7 @@ body.fs-lock{overflow:hidden}
   <div class="topbar">
     <div class="brand">
       <span class="logo mono"><b>TSPG</b> · LOGISALL ENG</span>
-      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1011.6</span>
+      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1011.7</span>
     </div>
     <div class="prog" id="prog"></div>
   </div>
@@ -658,15 +659,15 @@ body.fs-lock{overflow:hidden}
         <div class="roi-panel tall">
           <div class="roi-panel-inner">
             <div class="intro-list">
-              <div class="isys"><b>MDPS 멀티딥 셔틀</b><span>국내 최초 셔틀랙 자동창고 · 냉동·냉장 고밀도 · 결로·제상 설계</span><a class="iv" href="https://youtu.be/xzMS0WD3L-Q" target="_blank" rel="noopener">▶ 대표 영상</a></div>
-              <div class="isys"><b>4-Way Shuttle</b><span>전후좌우 4방향 주행 · 파렛트당 1.5t 적재 · 리프트 절감·확장성</span><a class="iv" href="https://youtu.be/k1Yhm2fbgD4" target="_blank" rel="noopener">▶ 대표 영상</a><a class="iv" href="https://www.youtube.com/shorts/-P2G_wDHnZk" target="_blank" rel="noopener">▶ 쇼츠</a></div>
-              <div class="isys"><b>Stacker Crane AS/RS</b><span>최대 30m급 고단 · 소품종 대량·장기보관</span><a class="iv" href="https://youtu.be/MLz6X1eK5no" target="_blank" rel="noopener">▶ 대표 영상</a></div>
-              <div class="isys"><b>Mini Shuttle · GTP</b><span>박스·토트 단위 · 다품종 피킹 생산성</span><a class="iv" href="https://youtu.be/XFRkj8hrS3Y" target="_blank" rel="noopener">▶ 대표 영상</a></div>
-              <div class="isys"><b>무인지게차 AGF · AMR</b><span>LOGIQ 자율주행 이송 (최대 1.5t) · 단계적 자동화 진입</span><a class="iv" href="https://www.youtube.com/shorts/4WLB5J8pMqo" target="_blank" rel="noopener">▶ 쇼츠</a></div>
-              <div class="isys"><b>상하차 자동화</b><span>자동 상하차 로봇 · 하역 인력 대체</span><a class="iv" href="https://www.youtube.com/shorts/x_LbCA_UY1s" target="_blank" rel="noopener">▶ 쇼츠</a></div>
-              <div class="isys"><b>로봇 파렛타이저</b><span>자동 적재·팔레타이징 · 반복 중량작업 자동화</span><a class="iv" href="https://www.youtube.com/shorts/q6KXSYNOgjs" target="_blank" rel="noopener">▶ 쇼츠</a></div>
-              <div class="isys"><b>모노레일</b><span>천장 반송 시스템 · 바닥 동선 간섭 없음</span><a class="iv" href="https://www.youtube.com/shorts/EmVdLjH9CdI" target="_blank" rel="noopener">▶ 쇼츠</a></div>
-              <div class="isys"><b>키오스크</b><span>무인 접수·출고 · 현장 운영 무인화</span><a class="iv" href="https://www.youtube.com/shorts/vCLHkuQ_jZI" target="_blank" rel="noopener">▶ 쇼츠</a></div>
+              <div class="isys"><b>MDPS 멀티딥 셔틀</b><span>국내 최초 셔틀랙 자동창고 · 냉동·냉장 고밀도 · 결로·제상 설계</span><div class="ivs"><a class="iv" href="https://youtu.be/xzMS0WD3L-Q" target="_blank" rel="noopener">▶ 대표 영상</a></div></div>
+              <div class="isys"><b>4-Way Shuttle</b><span>전후좌우 4방향 주행 · 파렛트당 1.5t 적재 · 리프트 절감·확장성</span><div class="ivs"><a class="iv" href="https://youtu.be/k1Yhm2fbgD4" target="_blank" rel="noopener">▶ 대표 영상</a><a class="iv" href="https://www.youtube.com/shorts/-P2G_wDHnZk" target="_blank" rel="noopener">▶ 쇼츠</a></div></div>
+              <div class="isys"><b>Stacker Crane AS/RS</b><span>최대 30m급 고단 · 소품종 대량·장기보관</span><div class="ivs"><a class="iv" href="https://youtu.be/MLz6X1eK5no" target="_blank" rel="noopener">▶ 대표 영상</a></div></div>
+              <div class="isys"><b>Mini Shuttle · GTP</b><span>박스·토트 단위 · 다품종 피킹 생산성</span><div class="ivs"><a class="iv" href="https://youtu.be/XFRkj8hrS3Y" target="_blank" rel="noopener">▶ 대표 영상</a></div></div>
+              <div class="isys"><b>무인지게차 AGF · AMR</b><span>LOGIQ 자율주행 이송 (최대 1.5t) · 단계적 자동화 진입</span><div class="ivs"><a class="iv" href="https://www.youtube.com/shorts/4WLB5J8pMqo" target="_blank" rel="noopener">▶ 쇼츠</a></div></div>
+              <div class="isys"><b>상하차 자동화</b><span>자동 상하차 로봇 · 하역 인력 대체</span><div class="ivs"><a class="iv" href="https://www.youtube.com/shorts/x_LbCA_UY1s" target="_blank" rel="noopener">▶ 쇼츠</a></div></div>
+              <div class="isys"><b>로봇 파렛타이저</b><span>자동 적재·팔레타이징 · 반복 중량작업 자동화</span><div class="ivs"><a class="iv" href="https://www.youtube.com/shorts/q6KXSYNOgjs" target="_blank" rel="noopener">▶ 쇼츠</a></div></div>
+              <div class="isys"><b>모노레일</b><span>천장 반송 시스템 · 바닥 동선 간섭 없음</span><div class="ivs"><a class="iv" href="https://www.youtube.com/shorts/EmVdLjH9CdI" target="_blank" rel="noopener">▶ 쇼츠</a></div></div>
+              <div class="isys"><b>키오스크</b><span>무인 접수·출고 · 현장 운영 무인화</span><div class="ivs"><a class="iv" href="https://www.youtube.com/shorts/vCLHkuQ_jZI" target="_blank" rel="noopener">▶ 쇼츠</a></div></div>
             </div>
             <div class="result-actions" style="margin-top:10px">
               <button class="btn soft wide" style="flex:1 1 100%" onclick="window.open('https://www.youtube.com/@logisallgroup/shorts','_blank')">🎬 로지스올그룹 쇼츠 전체보기</button>
