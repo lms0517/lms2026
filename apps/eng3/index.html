@@ -177,6 +177,11 @@ a.btn{text-decoration:none}
 .card{background:var(--grad-panel);border:1px solid var(--line);border-radius:var(--radius);padding:17px;margin-bottom:14px;box-shadow:var(--sh-md),var(--hl)}
 .card>.h{display:flex;align-items:center;gap:8px;font-size:11px;font-family:'IBM Plex Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin-bottom:13px}
 .card>.h .ln{flex:1;height:1px;background:var(--line)}
+/* 접이식 카드 제목 — 흰색 + 왼쪽 흰 막대(강조색 없이 시인성), 접혀 있으면 아래 여백 없음 */
+.card>.h.obj-toggle{color:#fff;font-weight:600;padding-left:12px;position:relative}
+.card>.h.obj-toggle::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:2px;background:#fff}
+.card>.h.obj-toggle .obj-caret,.duo-h.obj-toggle .obj-caret{color:#fff}
+.card>.h.obj-toggle:not(.open){margin-bottom:0}
 .pal-size{display:flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel);box-shadow:var(--inset);padding:0 12px;transition:.15s}
 .pal-size:focus-within{border-color:var(--accent);background:var(--panel-2);box-shadow:0 0 0 3px rgba(143,176,220,.12)}
 .pal-size input{flex:1;min-width:0;border:none!important;background:transparent!important;box-shadow:none!important;padding:13px 2px!important;text-align:center}
@@ -601,7 +606,7 @@ body.fs-lock{overflow:hidden}
   <div class="topbar">
     <div class="brand">
       <span class="logo mono"><b>TSPG</b> · LOGISALL ENG</span>
-      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1010.9</span>
+      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1011.0</span>
     </div>
     <div class="prog" id="prog"></div>
   </div>
