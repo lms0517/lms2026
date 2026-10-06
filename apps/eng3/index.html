@@ -182,6 +182,7 @@ a.btn{text-decoration:none}
 .card>.h.obj-toggle::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:2px;background:#fff}
 .card>.h.obj-toggle .obj-caret,.duo-h.obj-toggle .obj-caret{color:#fff}
 .card>.h.obj-toggle:not(.open){margin-bottom:0}
+.card>.h .h-sum{flex:0 0 auto;font:700 12px 'IBM Plex Mono',monospace;letter-spacing:0;color:#fff;text-transform:none}
 .pal-size{display:flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel);box-shadow:var(--inset);padding:0 12px;transition:.15s}
 .pal-size:focus-within{border-color:var(--accent);background:var(--panel-2);box-shadow:0 0 0 3px rgba(143,176,220,.12)}
 .pal-size input{flex:1;min-width:0;border:none!important;background:transparent!important;box-shadow:none!important;padding:13px 2px!important;text-align:center}
@@ -434,7 +435,8 @@ a.btn{text-decoration:none}
 
 .note{font-size:11px;color:var(--muted);line-height:1.6;margin-top:6px;padding:11px 13px;background:var(--bg-2);border:1px solid var(--line);border-radius:var(--radius-sm)}
 
-.disclaimer{font-size:10.5px;color:var(--muted);line-height:1.6;margin-top:14px;text-align:center;padding:0 6px}
+.disclaimer{font-size:10.5px;color:var(--muted);line-height:1.65;margin-top:16px;text-align:left;padding:12px 4px 0;border-top:1px solid var(--line);word-break:keep-all}
+.disclaimer p{margin:0 0 4px}.disclaimer .nw{display:inline-block}
 
 /* result action row */
 .result-actions{display:flex;gap:8px;margin-top:6px;margin-bottom:8px}
@@ -606,7 +608,7 @@ body.fs-lock{overflow:hidden}
   <div class="topbar">
     <div class="brand">
       <span class="logo mono"><b>TSPG</b> · LOGISALL ENG</span>
-      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1011.0</span>
+      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1011.2</span>
     </div>
     <div class="prog" id="prog"></div>
   </div>
@@ -629,7 +631,8 @@ body.fs-lock{overflow:hidden}
           <span>로지스올그룹 계열</span>
           <span>국산 원천기술</span>
           <span>설계·제작·설치·AS 일괄</span>
-          <span>충남 서천 공장</span>
+          <span>전 온도대 구축</span>
+          <span>운영 중단 최소화</span>
         </div>
       </div>
 
@@ -2811,7 +2814,7 @@ function defSummary(d){
   if(isDef(d,"height")) out.push(`유효 층고 ${DF.height}m`);
   if(isDef(d,"volume")) out.push(`월 물동량 ${fmt(DF.volume)} PLT`);
   if(isDef(d,"stock")) out.push(`현 보유 ${fmt(DF.stock)} 파렛트`);
-  if(isDef(d,"palletW")||isDef(d,"palletL")) out.push(`파렛트 ${DF.palletW}×${DF.palletL}`);
+  // 파렛트 규격(1100×1100)은 표준이라 미입력 경고에서 뺀다 — 계산에는 그대로 쓴다
   if(isDef(d,"palletH")) out.push(`적재높이 ${DF.palletH}m`);
   if(isDef(d,"palletKg")) out.push(`최대중량 ${fmt(DF.palletKg)}kg`);
   if(isDef(d,"storeDays")) out.push(`보관일수 ${DF.storeDays}일`);
@@ -3092,7 +3095,8 @@ function renderResult(){
     </div>
 
     <div class="card" id="roiCard">
-      <div class="h mono">개략 투자비 (CAPEX)<span class="ln"></span></div>
+      <div class="h mono obj-toggle" onclick="toggleCardPanel(this)" style="cursor:pointer">개략 투자비 (CAPEX)<span class="ln"></span><span class="h-sum">${won(roi.capexMan)}원</span><span class="obj-caret mono">▼</span></div>
+      <div class="roi-panel"><div class="roi-panel-inner">
       <div class="stat hl roi-tab" id="capexKpi" onclick="toggleCapex()" style="cursor:pointer">
         <div class="l">총 개략 투자비 (VAT 별도) <span class="tab-hint">탭하면 항목별 ▼</span></div>
         <div class="v">${won(roi.capexMan)}<small>원</small></div>
@@ -3113,6 +3117,7 @@ function renderResult(){
           <div class="note" style="margin-top:10px">단가·요율은 실제 공급 견적서 ${QUOTES.length}건에서 역산한 값입니다. 규모별 랙 단가·수량 규칙은 견적서 사이 보간 추정이며, 현장 실사·도면 없이 산출한 개략값입니다. 정밀 견적은 요청서 8개 섹션 데이터 수집 후 별도 제출합니다.</div>
         </div>
       </div>
+      </div></div>
     </div>
 
     <div class="card">
@@ -3150,8 +3155,8 @@ function renderResult(){
     </div>
 
     <div class="disclaimer">
-      본 분석은 LOGISALL ENGINEERING · TSPG 영업 핸드북 로직 기반 현장용 개략 추정 도구입니다.<br>
-      정밀 설계·견적은 컨설팅 물동량 분석 및 디지털 트윈 시뮬레이션으로 확정됩니다.
+      <p>본 분석은 <span class="nw">LOGISALL ENGINEERING · TSPG</span> <span class="nw">영업 핸드북 로직 기반</span> <span class="nw">현장용 개략 추정 도구입니다.</span></p>
+      <p><span class="nw">정밀 설계·견적은</span> <span class="nw">컨설팅 물동량 분석 및</span> <span class="nw">디지털 트윈 시뮬레이션으로</span> <span class="nw">확정됩니다.</span></p>
     </div>
   `;
 
@@ -4804,13 +4809,17 @@ const GL3D = {
     if(!this.renderer||!this.camera) return;
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio||1, 2));
     this.renderer.setSize(w,h,false);
-    this.camera.aspect=w/Math.max(1,h);
+    const a0=this.camera.aspect, a1=w/Math.max(1,h);
+    this.camera.aspect=a1;
     this.camera.updateProjectionMatrix();
-    this.fitView();
+    // 비율이 크게 바뀔 때(전체화면 전환·화면 회전)만 시점을 다시 맞춘다.
+    // 주소창·툴바가 숨거나 나타나는 정도면 확대·이동한 시점을 그대로 둔다.
+    if(!a0 || Math.abs(Math.log(a1/a0))>0.2) this.fitView(); else this.render();
   },
 
   attachGestures(){
     const cv=this.canvas, ptrs=new Map(), raws=new Map(); let rot=false, lx=0, ly=0, pinch0=0, r0=0, lastTap=0, anchor=null;
+    let downT=0, downX=0, downY=0, multi=false, tapX=0, tapY=0;
     const clampR=v=>Math.max(4, Math.min(this.bound*4, v));
     /* 손가락(커서)이 가리킨 바닥 지점을 기준으로 확대·이동한다 — 그 지점이 손가락 아래에 계속 머문다.
        (예전에는 화면 중심 고정 확대라 보고 싶은 곳을 키울 수 없었다) */
@@ -4832,10 +4841,8 @@ const GL3D = {
       if(this.cinema && SIM3D.cinemaOff) SIM3D.cinemaOff();
       const q=P(e); ptrs.set(e.pointerId,q); raws.set(e.pointerId,{x:e.clientX,y:e.clientY});
       lx=q.x; ly=q.y; rot=false; this.vel.t=0; this.vel.p=0;
-      if(ptrs.size===2){ const a=[...ptrs.values()]; pinch0=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y); r0=this.sph.r; anchor=ground(mid()); }
-      const now=Date.now();
-      if(now-lastTap<300 && ptrs.size===1) this.fitView();
-      lastTap=now;
+      if(ptrs.size===2){ multi=true; const a=[...ptrs.values()]; pinch0=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y); r0=this.sph.r; anchor=ground(mid()); }
+      if(ptrs.size===1){ multi=false; downT=Date.now(); downX=e.clientX; downY=e.clientY; }
     });
     cv.addEventListener("pointermove",e=>{
       if(!ptrs.has(e.pointerId)) return;
@@ -4867,6 +4874,14 @@ const GL3D = {
       e.preventDefault();
     },{passive:false});
     const up=e=>{
+      // 짧고(0.25초) 거의 움직이지 않은 한 손가락 탭이 0.35초 안에 같은 자리에서 두 번 → 시점 초기화
+      if(ptrs.size===1 && ptrs.has(e.pointerId) && !multi && !rot && e.type==="pointerup"){
+        const now=Date.now(), still=Math.hypot(e.clientX-downX,e.clientY-downY)<10;
+        if(still && now-downT<250){
+          if(now-lastTap<350 && Math.hypot(e.clientX-tapX,e.clientY-tapY)<30){ lastTap=0; this.fitView(); }
+          else { lastTap=now; tapX=e.clientX; tapY=e.clientY; }
+        } else lastTap=0;
+      } else if(e.type==="pointerup") lastTap=0;
       ptrs.delete(e.pointerId); raws.delete(e.pointerId);
       if(ptrs.size<2){ pinch0=0; anchor=null; }
       if(ptrs.size===1){ const rem=[...ptrs.values()][0]; lx=rem.x; ly=rem.y; }   // 한 손가락만 남아도 화면이 튀지 않게
