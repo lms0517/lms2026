@@ -173,6 +173,8 @@ a.btn{text-decoration:none}
 .result-hero h3{color:#fff;font-size:21px;font-weight:700;margin-top:4px;letter-spacing:-.02em;position:relative}
 .result-hero .env{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}
 .result-hero .env span{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.04em;border:1px solid rgba(255,255,255,.45);color:#fff;padding:4px 9px;border-radius:20px;background:rgba(255,255,255,.12)}
+.result-hero .env span{white-space:nowrap}
+@media(max-width:410px){.result-hero .env{gap:5px}.result-hero .env span{font-size:9.5px;letter-spacing:0;padding:4px 7px}}
 
 .card{background:var(--grad-panel);border:1px solid var(--line);border-radius:var(--radius);padding:17px;margin-bottom:14px;box-shadow:var(--sh-md),var(--hl)}
 .card>.h{display:flex;align-items:center;gap:8px;font-size:11px;font-family:'IBM Plex Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin-bottom:13px}
@@ -608,7 +610,7 @@ body.fs-lock{overflow:hidden}
   <div class="topbar">
     <div class="brand">
       <span class="logo mono"><b>TSPG</b> · LOGISALL ENG</span>
-      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1011.5</span>
+      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1011.6</span>
     </div>
     <div class="prog" id="prog"></div>
   </div>
@@ -629,9 +631,9 @@ body.fs-lock{overflow:hidden}
         <h3>물류 자동화 토탈 솔루션</h3>
         <div class="env">
           <span>로지스올그룹 계열</span>
+          <span>전 온도대 구축 · 운영 중단 최소화</span>
           <span>국산 원천기술</span>
           <span>설계·제작·설치·AS 일괄</span>
-          <span>전 온도대 구축 · 운영 중단 최소화</span>
         </div>
       </div>
 
