@@ -608,7 +608,7 @@ body.fs-lock{overflow:hidden}
   <div class="topbar">
     <div class="brand">
       <span class="logo mono"><b>TSPG</b> · LOGISALL ENG</span>
-      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1011.4</span>
+      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1011.5</span>
     </div>
     <div class="prog" id="prog"></div>
   </div>
@@ -2815,7 +2815,7 @@ function defSummary(d){
   if(isDef(d,"stock")) out.push(`현 보유 ${fmt(DF.stock)} 파렛트`);
   // 파렛트 규격(1100×1100)은 표준이라 미입력 경고에서 뺀다 — 계산에는 그대로 쓴다
   if(isDef(d,"palletH")) out.push(`적재높이 ${DF.palletH}m`);
-  if(isDef(d,"palletKg")) out.push(`최대중량 ${fmt(DF.palletKg)}kg`);
+  // 최대중량(1,000kg)도 표준값이라 미입력 경고에서 뺀다 — 계산에는 그대로 쓴다
   if(isDef(d,"storeDays")) out.push(`보관일수 ${DF.storeDays}일`);
   return out;
 }
