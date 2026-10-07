@@ -59,4 +59,9 @@ assert.ok(/occupied=d\.stock>=0/.test(fs.readFileSync('apps/eng3/simulation.js',
 // 10) 개선 예상: 실제 입력한 현 재고가 있으면 '현 재고 → 4-Way' 줄과 '현재 대비' 요약
 assert.ok(html.includes('kpiRow("현 재고 (PL)"')&&html.includes('현재 대비 +'),'개선 예상에 현 재고 대비 줄 없음');
 
+// 11) 원격 사용 중지: 유예 15일, status.json 은 서비스워커가 저장하지 않음, 중지되면 서비스워커 재등록 안 함
+assert.ok(/const LIC_ON=(true|false), GRACE_DAYS=15/.test(html),'원격 중지 가드(유예 15일) 없음');
+assert.ok(/endsWith\("\/status\.json"\)\) return;/.test(sw),'서비스워커가 status.json 을 저장할 수 있음');
+assert.ok(/if\(window\.__licKilled\) return;/.test(html),'중지된 휴대폰에 서비스워커를 다시 등록함');
+
 console.log('eng3 회귀 검사 통과');

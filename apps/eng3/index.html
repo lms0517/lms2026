@@ -610,13 +610,92 @@ body.fs-lock{overflow:hidden}
 <link rel="stylesheet" href="./simulation.css?v=3.2.3">
 </head>
 <body>
+<script>
+/* ============================================================
+   원격 사용 중지 (LMS-0517/ENG 배포본에서만 켠다 — 동기화 스크립트가 LIC_ON 을 true 로 바꾼다)
+   - 열 때·다시 화면으로 돌아올 때 status.json 을 확인한다 (휴대폰에 저장하지 않음)
+   - active:false  또는  status.json·index.html 둘 다 404(Pages 중단·저장소 삭제/비공개) → 중지:
+     안내 화면 + 이 앱이 휴대폰에 저장한 파일·데이터 삭제 + 서비스워커 해제
+   - 인터넷 없음·서버 오류 → 마지막 확인 후 유예 기간(15일)까지는 사용, 넘으면 '인터넷 연결 후 다시'
+   - 휴대폰 시계를 과거로 돌리면 유예를 인정하지 않는다
+   ============================================================ */
+(function(){
+  const LIC_ON=false, GRACE_DAYS=15, DAY=864e5;
+  window.__licOn=LIC_ON;
+  if(!LIC_ON) return;
+  const K_OK="tspg_eng_lic_ok", K_SEEN="tspg_eng_lic_seen", K_KILL="tspg_eng_lic_killed", DB="tspg-eng-lic";
+  const ls={ get:k=>{try{return localStorage.getItem(k)}catch(_){return null}}, set:(k,v)=>{try{localStorage.setItem(k,v)}catch(_){}}, del:k=>{try{localStorage.removeItem(k)}catch(_){}} };
+  // 마지막 확인 시각은 localStorage 와 IndexedDB 두 곳에 둔다 (한쪽만 지워도 유지)
+  const idb=(mode,fn)=>new Promise(res=>{ try{ const r=indexedDB.open(DB,1);
+      r.onupgradeneeded=()=>r.result.createObjectStore("kv");
+      r.onsuccess=()=>{ try{ const tx=r.result.transaction("kv",mode); const q=fn(tx.objectStore("kv")); tx.oncomplete=()=>res(q&&q.result); tx.onerror=()=>res(null); }catch(_){res(null)} };
+      r.onerror=()=>res(null); }catch(_){res(null)} });
+  const getOk=async()=>{ const a=+ls.get(K_OK)||0; const b=+(await idb("readonly",st=>st.get("ok")))||0; return Math.max(a,b); };
+  const setOk=async t=>{ ls.set(K_OK,String(t)); ls.set(K_SEEN,String(t)); await idb("readwrite",st=>{st.put(t,"ok");return null;}); };
+
+  let box=null;
+  const show=(title,msg,retry)=>{
+    if(!box){ box=document.createElement("div"); box.id="licLock";
+      box.style.cssText="position:fixed;inset:0;z-index:2147483647;background:#0b1220;color:#e6edf7;display:flex;align-items:center;justify-content:center;padding:24px;font-family:'Noto Sans KR',system-ui,sans-serif;text-align:center";
+      (document.body||document.documentElement).appendChild(box); }
+    box.innerHTML=`<div style="max-width:340px"><div style="font-size:40px;line-height:1;margin-bottom:14px">🔒</div>
+      <div style="font-size:19px;font-weight:700;margin-bottom:10px">${title}</div>
+      <div style="font-size:14px;line-height:1.6;color:#9fb0c8;word-break:keep-all">${msg}</div>
+      ${retry?'<button id="licRetry" style="margin-top:20px;padding:12px 22px;border-radius:12px;border:1px solid #2b3a55;background:#16223a;color:#fff;font-size:15px;font-weight:700">다시 확인</button>':''}</div>`;
+    const b=document.getElementById("licRetry"); if(b) b.onclick=()=>check(true);
+    document.documentElement.style.overflow="hidden";
+  };
+  const hide=()=>{ if(box){ box.remove(); box=null; document.documentElement.style.overflow=""; } };
+
+  const wipe=async()=>{
+    try{ const ks=await caches.keys(); await Promise.all(ks.filter(k=>k.startsWith("tspg-eng-")).map(k=>caches.delete(k))); }catch(_){}
+    try{ const rs=await navigator.serviceWorker.getRegistrations(); await Promise.all(rs.map(r=>r.unregister())); }catch(_){}
+    try{ Object.keys(localStorage).filter(k=>/^(eng3_|tspg_eng_)/.test(k)&&k!==K_KILL).forEach(k=>localStorage.removeItem(k)); }catch(_){}
+    try{ indexedDB.deleteDatabase(DB); }catch(_){}
+  };
+  const kill=async(msg)=>{
+    window.__licKilled=true; ls.set(K_KILL,"1");
+    show("사용이 중지된 앱입니다", (msg?msg+"<br>":"")+"관리자에게 문의해 주세요.", false);
+    await wipe();
+  };
+
+  const get=(u,ms)=>{ const c=new AbortController(); const t=setTimeout(()=>c.abort(),ms);
+    return fetch(u+(u.includes("?")?"&":"?")+"lic="+Date.now(),{cache:"no-store",signal:c.signal}).finally(()=>clearTimeout(t)); };
+  let busy=false, last=0;
+  async function check(force){
+    if(busy || (!force && Date.now()-last<60e3)) return; busy=true; last=Date.now();
+    try{
+      let r=null; try{ r=await get("status.json",4000); }catch(_){ r=null; }
+      if(r && r.ok){
+        let j={}; try{ j=await r.json(); }catch(_){}
+        if(j && j.active===false){ await kill(j.message||""); return; }
+        await setOk(Date.now()); ls.del(K_KILL); window.__licKilled=false; hide(); return;
+      }
+      if(r && (r.status===404||r.status===410)){
+        let r2=null; try{ r2=await get("index.html",4000); }catch(_){}
+        if(r2 && (r2.status===404||r2.status===410)){ await kill(""); return; }
+      }
+      // 인터넷 없음·서버 오류 → 유예
+      if(ls.get(K_KILL)){ show("사용이 중지된 앱입니다","관리자에게 문의해 주세요.",true); return; }
+      const now=Date.now(), ok=await getOk(), seen=+ls.get(K_SEEN)||0;
+      const rolledBack = seen && now < seen-36e5;
+      if(ok && !rolledBack && now-ok <= GRACE_DAYS*DAY){ ls.set(K_SEEN,String(Math.max(seen,now))); hide(); return; }
+      show("인터넷 연결이 필요합니다", rolledBack ? "휴대폰 날짜·시간이 맞지 않습니다.<br>인터넷에 연결한 뒤 다시 확인을 눌러 주세요." : ok ? `마지막 확인 후 ${GRACE_DAYS}일이 지났습니다.<br>인터넷에 연결한 뒤 다시 확인을 눌러 주세요.` : "처음 한 번은 인터넷에 연결된 상태에서 열어야 합니다.", true);
+    } finally { busy=false; }
+  }
+  // 이미 중지된 휴대폰은 앱 화면을 보여 주지 않고 바로 막는다 (되살리면 확인 후 풀림)
+  if(ls.get(K_KILL)){ window.__licKilled=true; document.addEventListener("DOMContentLoaded",()=>show("사용이 중지된 앱입니다","관리자에게 문의해 주세요.",true)); }
+  window.addEventListener("load",()=>check(true));
+  document.addEventListener("visibilitychange",()=>{ if(!document.hidden) check(false); });
+})();
+</script>
 <div class="app">
 
   <!-- ===== TOP BAR ===== -->
   <div class="topbar">
     <div class="brand">
       <span class="logo mono"><b>TSPG</b> · LOGISALL ENG</span>
-      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1011.9</span>
+      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1012.0</span>
     </div>
     <div class="prog" id="prog"></div>
   </div>
@@ -6067,6 +6146,7 @@ if("serviceWorker" in navigator){
      화면으로 돌아올 때마다 새 버전을 확인하고, 있으면 아래에 '눌러서 적용' 안내를 띄운다. */
   const hadCtl=!!navigator.serviceWorker.controller;
   window.addEventListener("load", ()=>{
+    if(window.__licKilled) return;   // 원격 중지된 휴대폰에는 다시 설치하지 않는다
     navigator.serviceWorker.register("sw.js").then(reg=>{
       document.addEventListener("visibilitychange", ()=>{ if(!document.hidden) reg.update().catch(()=>{}); });
     }).catch(()=>{});
