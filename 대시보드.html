@@ -1416,6 +1416,33 @@ let curTab='biz', curComp=null, curIntro='all', curPallet=1, knowFilter='전체'
 /* ─────────── 유틸 ─────────── */
 const $=id=>document.getElementById(id);
 function esc(s){return (s||'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+/* ─────────── 업체 정보 가림(**) — 화면에 보일 때만 가린다 ───────────
+   업무일지 원본(기기 저장)·검색은 그대로 두고, 업체 목록·상세에 표시할 때
+   업체명 · 사람 이름 · 연락처 · 이메일 · 주소 · 금액(예상매출 등)을 ** 로 바꾼다. */
+function maskName(n){
+  n=(n||'').toString().trim(); if(!n) return '';
+  const m=n.match(/^(\(주\)|㈜|주식회사\s*|\(유\)|유한회사\s*)?(.*)$/), pre=m[1]||'', body=m[2]||'';
+  const keep=body.length<=2?1:2;
+  return pre+body.slice(0,keep)+'**';
+}
+function maskPerson(n){ n=(n||'').toString().trim(); return n ? n.slice(0,1)+'**' : ''; }
+const MASK_TITLES='대표이사|대표|사장|부사장|전무|상무|이사|부장|차장|과장|대리|주임|사원|팀장|실장|소장|공장장|센터장|계장|반장|담당자|매니저';
+function maskText(t,company){
+  let s=(t||'').toString(); if(!s) return '';
+  if(company){ const c=company.toString().trim(); if(c.length>1) s=s.split(c).join(maskName(c)); }
+  s=s.replace(/[\w.+-]+@[\w-]+(\.[\w-]+)+/g,'***@***');                                     // 이메일
+  s=s.replace(/(^|[^\d])(01[016789]|0[2-6][0-9]?|070|1[5-9]\d{2})[-.)\s]?\s?(\d{3,4})[-.\s]?(\d{4})(?!\d)/g,'$1$2-****-****'); // 전화
+  s=s.replace(/([가-힣]{1,6}(?:시|군|구))((?:\s+(?:[가-힣0-9]+(?:읍|면|동|리|가|대로|로|번길|길)|산?\d+(?:-\d+)?(?:번지)?)(?=[\s,./·)]|$))+)/g,
+               (m,b,rest)=>/[가-힣]/.test(rest)||/\d/.test(rest) ? b+' **' : m);                // 주소: 시·군·구까지만 남김
+  s=s.replace(/(\d[\d,]*(?:\.\d+)?)\s*(억\s*원|억|천만\s*원|천만|백만\s*원|백만|만\s*원|만|원)(?=[\s/,.)·~\-]|$|[^가-힣])/g,'**$2'); // 금액
+  const NOT_WORD=/^(미팅|방문|통화|면담|협의|요청|확인|회신|보고|결재|승인|부재|연락|제안|견적|계약|교체|변경|예정|진행|상담|문의|답변|의견|지시|직접|본인|명의|부재중|휴가|출장|외근|참석|동행|소개|결정|검토|회의|면접|인사)/;
+  const NOT_NAME=/^(영업|구매|물류|생산|관리|총무|품질|자재|현장|공장|본부|지점|센터|창고|업무|기술|설비|회계|재무|인사|경영|운영|전산|개발|해외|국내|지사|사업)/;
+  s=s.replace(new RegExp('(^|[\\s(,·:/\\[])([가-힣]{2,4})(\\s?)('+MASK_TITLES+')','g'),
+              (m,p0,nm,sp,ti)=>NOT_NAME.test(nm)?m:p0+nm.slice(0,1)+'**'+sp+ti);              // 이름 + 직함
+  s=s.replace(new RegExp('('+MASK_TITLES+'|담당|고객|업체담당)(\\s*:?\\s+)([가-힣]{2,4})(?=[\\s,./)·]|$)','g'),
+              (m,ti,sp,nm)=>NOT_NAME.test(nm)||NOT_WORD.test(nm)||new RegExp('^('+MASK_TITLES+')').test(nm)?m:ti+sp+nm.slice(0,1)+'**');  // 직함 + 이름
+  return s;
+}
 function toast(t){const e=$('toast');e.textContent=t;e.classList.add('on');setTimeout(()=>e.classList.remove('on'),2300);}
 /* 복사 — 실제 성공 여부를 돌려준다.
    clipboard API는 https가 아니거나 권한이 없으면 조용히 거부되므로
@@ -1648,9 +1675,9 @@ function renderComp(){
   $('compList').innerHTML=list.length?list.map(c=>{
     const last=c.기록[0];
     return `<div class="ccard" onclick="openComp('${esc(c.업체)}')">
-      <div class="cn"><b>${esc(c.업체)}</b><span class="cnt">기록 ${c.기록.length}건</span></div>
-      <div class="ci">${esc(c.지점)}${c.담당?' · '+esc(c.담당):''}${Object.keys(c.사업).length?' · '+Object.keys(c.사업).join('/'):''}</div>
-      <div class="last"><span class="tb ${esc(last.유형)}">${esc(last.유형)}</span> ${esc(last.내용)}</div></div>`;
+      <div class="cn"><b>${esc(maskName(c.업체))}</b><span class="cnt">기록 ${c.기록.length}건</span></div>
+      <div class="ci">${esc(c.지점)}${c.담당?' · '+esc(maskPerson(c.담당)):''}${Object.keys(c.사업).length?' · '+Object.keys(c.사업).join('/'):''}</div>
+      <div class="last"><span class="tb ${esc(last.유형)}">${esc(last.유형)}</span> ${esc(maskText(last.내용,c.업체))}</div></div>`;
   }).join(''):`<div class="empty"><div class="ei">🏢</div>${q?'검색 결과가 없습니다.':'아직 업체 기록이 없습니다.'}<br>위에서 업무일지 잠금을 해제하면<br>업체 히스토리가 표시됩니다.</div>`;
 }
 $('compGo').onclick=renderComp;
@@ -1700,15 +1727,15 @@ function renderCompDetail(){
   recs.forEach(r=>{if(r.지점)c.지점=c.지점||r.지점;if(r.담당)c.담당=c.담당||r.담당;if(r.사업)c.사업[r.사업]=1;});
   const warns=recs.filter(r=>r.유형==='주의');
   $('compDetail').innerHTML=
-    `<div class="cprof"><h2>${esc(curComp)}</h2>
-      <div class="pi">${esc(c.지점)}${c.담당?' · 담당 '+esc(c.담당):''} · 기록 ${recs.length}건</div>
+    `<div class="cprof"><h2>${esc(maskName(curComp))}</h2>
+      <div class="pi">${esc(c.지점)}${c.담당?' · 담당 '+esc(maskPerson(c.담당)):''} · 기록 ${recs.length}건</div>
       <div class="pbadges">${Object.keys(c.사업).map(b=>`<span class="pb">${esc(b)}</span>`).join('')}</div></div>`+
-    warns.map(w=>`<div class="cwarn">⚠ ${esc(w.내용)}</div>`).join('')+
+    warns.map(w=>`<div class="cwarn">⚠ ${esc(maskText(w.내용,curComp))}</div>`).join('')+
     `<div class="tl">`+recs.filter(r=>r.유형!=='주의').map(r=>
-      `<div class="tli"><div class="tld">${esc(r.날짜||'')} <span class="tb ${esc(r.유형)}">${esc(r.유형)}</span>${r.사업?` <span class="tb 기타">${esc(r.사업)}</span>`:''}${r.담당?` · ${esc(r.담당)}`:''}</div>
-      <div class="tlc"><div class="tlt">${esc(r.내용)}</div>
-      ${r.대응?`<div class="tlr"><span class="lab">↳ 대응/결과:</span> ${esc(r.대응)}</div>`:''}
-      ${r.다음?`<div class="tlr" style="color:var(--blue);"><span class="lab">→ 다음:</span> ${esc(r.다음)}</div>`:''}</div></div>`).join('')+`</div>`;
+      `<div class="tli"><div class="tld">${esc(r.날짜||'')} <span class="tb ${esc(r.유형)}">${esc(r.유형)}</span>${r.사업?` <span class="tb 기타">${esc(r.사업)}</span>`:''}${r.담당?` · ${esc(maskPerson(r.담당))}`:''}</div>
+      <div class="tlc"><div class="tlt">${esc(maskText(r.내용,curComp))}</div>
+      ${r.대응?`<div class="tlr"><span class="lab">↳ 대응/결과:</span> ${esc(maskText(r.대응,curComp))}</div>`:''}
+      ${r.다음?`<div class="tlr" style="color:var(--blue);"><span class="lab">→ 다음:</span> ${esc(maskText(r.다음,curComp))}</div>`:''}</div></div>`).join('')+`</div>`;
 }
 
 /* ── 사업 ── */
