@@ -695,7 +695,7 @@ body.fs-lock{overflow:hidden}
   <div class="topbar">
     <div class="brand">
       <span class="logo mono"><b>TSPG</b> · LOGISALL ENG</span>
-      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1012.1</span>
+      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1012.2</span>
     </div>
     <div class="prog" id="prog"></div>
   </div>
@@ -1108,12 +1108,12 @@ const OBJECTIONS = [
 const SCOPES = [
   { k:"asrs",  t:"자동창고 (AS/RS · 셔틀)",     g:"gRack",
     d:"파렛트를 랙에 자동 보관·반출. 보관밀도와 인력 절감의 본체." },
+  { k:"dock",  t:"자동 상하차 (ATLS)",          g:"gDock",
+    d:"도크에서 차량 상하차를 자동화. 전용 차량·표준 파렛트가 전제." },
   { k:"agv",   t:"무인이송 (AGV · AMR · 무인지게차)", g:"gAGF",
     d:"공정 간 반복 이송을 무인화. 경로 변경이 쉬워 단계 투자에 유리." },
   { k:"conv",  t:"고정형 이송설비 (컨베이어 · 리프트)", g:"gConv",
-    d:"경로가 고정되고 물량이 많은 구간에 최적. 대량·연속 흐름용." },
-  { k:"dock",  t:"자동 상하차 (ATLS)",          g:"gDock",
-    d:"도크에서 차량 상하차를 자동화. 전용 차량·표준 파렛트가 전제." }
+    d:"경로가 고정되고 물량이 많은 구간에 최적. 대량·연속 흐름용." }
 ];
 const SCOPE_VERDICT = {
   fit:  {label:"적용 가능",   cls:"ok"},
