@@ -231,6 +231,9 @@ a.btn{text-decoration:none}
 .def-hint b{color:var(--ink-soft)}
 .def-note{margin:0 0 14px;padding:11px 14px;border:1px dashed rgba(232,178,31,.55);border-radius:var(--radius-sm);background:rgba(232,178,31,.07);font-size:12.5px;line-height:1.6;color:var(--ink-soft)}
 .def-note b{color:#f2c55c;margin-right:6px}
+.def-note .def-h{display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer}
+.def-note .def-h .obj-caret{color:#f2c55c}
+.def-note .roi-panel-inner{padding-top:6px}
 .stat.hl{border-color:rgba(94,230,189,.55);background:linear-gradient(180deg,rgba(94,230,189,.10),rgba(94,230,189,.03)),var(--grad-stat)}
 .stat.hl .v{color:var(--hi);text-shadow:0 0 18px rgba(94,230,189,.25)}
 .stat.hl .l{color:var(--ink-soft)}
@@ -701,7 +704,7 @@ body.fs-lock{overflow:hidden}
   <div class="topbar">
     <div class="brand">
       <span class="logo mono"><b>TSPG</b> · LOGISALL ENG</span>
-      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1012.4</span>
+      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1012.5</span>
     </div>
     <div class="prog" id="prog"></div>
   </div>
@@ -905,10 +908,6 @@ body.fs-lock{overflow:hidden}
 
     <!-- STEP 3 : 결과 -->
     <section class="step" data-step="2">
-      <div class="step-head">
-        <h2>솔루션 분석</h2>
-        <p>입력값 기반 개략 추정입니다. 정밀 설계는 시뮬레이션으로 확정합니다.</p>
-      </div>
       <div id="result"></div>
     </section>
 
@@ -2947,8 +2946,10 @@ function renderResult(){
   ].filter(Boolean).map(x=>`<span>${x}</span>`).join("");
   // 기본값으로 채운 칸이 있으면 결과 맨 위에 알린다
   const defs=defSummary(d);
-  const defNote = defs.length ? `<div class="def-note"><b>${defMain(d).length?'기본값 예시':'일부 기본값'}</b>
-      입력하지 않은 항목은 기본값으로 계산했습니다 — ${defs.join(" · ")}. 실제 값을 넣으면 규모·투자비·3D 가 바뀝니다.</div>` : "";
+  /* 기본값 안내 — 한 줄만 보이고 눌러야 어떤 값을 썼는지 펼친다. 모든 값을 넣으면 아예 나오지 않는다 */
+  const defNote = defs.length ? `<div class="def-note">
+      <div class="def-h obj-toggle" onclick="toggleCardPanel(this)"><span><b>${defMain(d).length?'기본값 예시':'일부 기본값'}</b>입력하지 않은 값은 기본값으로 계산했습니다</span><span class="obj-caret mono">▼</span></div>
+      <div class="roi-panel"><div class="roi-panel-inner">${defs.join(" · ")}.<br>실제 값을 넣으면 규모·투자비·3D 가 바뀝니다.</div></div></div>` : "";
 
   /* 산출 불가: 숫자(규모·투자비)를 지어내지 않고, 무엇이 모자란지만 알려 준다 */
   if(roi.infeasible){
