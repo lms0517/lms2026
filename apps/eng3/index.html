@@ -695,7 +695,7 @@ body.fs-lock{overflow:hidden}
   <div class="topbar">
     <div class="brand">
       <span class="logo mono"><b>TSPG</b> · LOGISALL ENG</span>
-      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1012.0</span>
+      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1012.1</span>
     </div>
     <div class="prog" id="prog"></div>
   </div>
@@ -2503,6 +2503,13 @@ const DOCS = {
     url:"./tspg_intro.pdf",
     name:"회사소개서_TSPG.pdf",
     title:"TSPG 회사소개서"
+  },
+  atls: {
+    label:"자동 상하차 소개서",
+    desc:"플랫폼 · 갠트리 · 로봇 · RGV 솔루션",
+    url:"./atls_intro.pdf",
+    name:"로지스올엔지니어링_자동상하차_솔루션.pdf",
+    title:"로지스올엔지니어링 자동 상하차 솔루션"
   }
 };
 const docUrl = key => new URL(DOCS[key].url, location.href).href;   // 절대 주소(공유용)
@@ -2732,7 +2739,7 @@ function shareMenu(key){
 }
 /* QR 은 앱 주소 + ?doc=키 — 찍으면 앱이 열리면서 소개서 PDF 를 바로 내려받는다 */
 function docDlLink(key){ const u=new URL(location.href); u.search=""; u.hash=""; return u.href+"?doc="+key; }
-const DOC_DL_NAME = { logisall:"LOGISALL_Company_Intro_2026.pdf", tspg:"TSPG_Company_Intro.pdf" };   // 한글 파일명은 일부 브라우저가 버림
+const DOC_DL_NAME = { logisall:"LOGISALL_Company_Intro_2026.pdf", tspg:"TSPG_Company_Intro.pdf", atls:"LOGISALL_ENG_Auto_Loading_Solution.pdf" };   // 한글 파일명은 일부 브라우저가 버림
 function downloadDoc(key){
   const doc=DOCS[key]; if(!doc) return;
   const a=document.createElement("a"); a.href=new URL(doc.url, location.href).href; a.download=DOC_DL_NAME[key]||"Company_Intro.pdf";
