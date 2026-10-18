@@ -705,7 +705,7 @@ body.fs-lock{overflow:hidden}
   <div class="topbar">
     <div class="brand">
       <span class="logo mono"><b>TSPG</b> · LOGISALL ENG</span>
-      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1012.7</span>
+      <span class="tag mono" id="buildTag" title="빌드 시각(UTC)">ENG · v3.0 · b1012.8</span>
     </div>
     <div class="prog" id="prog"></div>
   </div>
@@ -758,7 +758,7 @@ body.fs-lock{overflow:hidden}
               <div class="isys"><b>Stacker Crane AS/RS</b><span>최대 30m급 고단 · 소품종 대량·장기보관</span><div class="ivs"><a class="iv" href="https://youtu.be/MLz6X1eK5no" target="_blank" rel="noopener">▶ 대표 영상</a></div></div>
               <div class="isys"><b>Mini Shuttle · GTP</b><span>박스·토트 단위 · 다품종 피킹 생산성</span><div class="ivs"><a class="iv" href="https://youtu.be/XFRkj8hrS3Y" target="_blank" rel="noopener">▶ 대표 영상</a></div></div>
               <div class="isys"><b>무인지게차 AGF · AMR</b><span>LOGIQ 자율주행 이송 (최대 1.5t) · 단계적 자동화 진입</span><div class="ivs"><a class="iv" href="https://www.youtube.com/shorts/4WLB5J8pMqo" target="_blank" rel="noopener">▶ 쇼츠</a></div></div>
-              <div class="isys"><b>상하차 자동화</b><span>자동 상하차 로봇 · 하역 인력 대체</span><div class="ivs"><a class="iv" href="https://www.youtube.com/shorts/x_LbCA_UY1s" target="_blank" rel="noopener">▶ 쇼츠</a></div></div>
+              <div class="isys"><b>상하차 자동화</b><span>자동 상하차 로봇 · 하역 인력 대체</span><div class="ivs"><a class="iv" href="media/atls.mp4" data-poster="media/atls-poster.webp" target="_blank" rel="noopener">▶ 대표 영상</a><a class="iv" href="https://www.youtube.com/shorts/x_LbCA_UY1s" target="_blank" rel="noopener">▶ 쇼츠</a></div></div>
               <div class="isys"><b>로봇 파렛타이저</b><span>자동 적재·팔레타이징 · 반복 중량작업 자동화</span><div class="ivs"><a class="iv" href="https://www.youtube.com/shorts/q6KXSYNOgjs" target="_blank" rel="noopener">▶ 쇼츠</a></div></div>
               <div class="isys"><b>모노레일</b><span>천장 반송 시스템 · 바닥 동선 간섭 없음</span><div class="ivs"><a class="iv" href="https://www.youtube.com/shorts/EmVdLjH9CdI" target="_blank" rel="noopener">▶ 쇼츠</a></div></div>
               <div class="isys"><b>키오스크</b><span>무인 접수·출고 · 현장 운영 무인화</span><div class="ivs"><a class="iv" href="https://www.youtube.com/shorts/vCLHkuQ_jZI" target="_blank" rel="noopener">▶ 쇼츠</a></div></div>
@@ -5884,10 +5884,12 @@ function openOfficialVideo(vv){
 }
 /* 시스템 라인업의 ▶ 대표 영상 · ▶ 쇼츠 — 유튜브로 나가지 않고 앱 안 전체화면 플레이어에서 바로 재생 */
 document.addEventListener("click",e=>{
-  const a=e.target.closest&&e.target.closest(".isys a.iv"); if(!a||!ytId(a.href)) return;
+  const a=e.target.closest&&e.target.closest(".isys a.iv"); if(!a) return;
+  const mp4=/\.mp4(\?|$)/i.test(a.getAttribute("href")||"");   // 앱에 저장된 영상 (예: 자동 상하차)
+  if(!mp4 && !ytId(a.href)) return;
   e.preventDefault();
   const sys=a.closest(".isys"), t=(sys&&sys.querySelector("b")?sys.querySelector("b").textContent:"")+(/shorts/.test(a.href)?" · 쇼츠":"");
-  openOfficialVideo({url:a.href,t});
+  openOfficialVideo(mp4 ? {src:a.getAttribute("href"),poster:a.dataset.poster||"",t} : {url:a.href,t});
 });
 /* 닫으면 플레이어째 지워 소리를 멈춘다 */
 function closeOfficialVideo(fromPop){
