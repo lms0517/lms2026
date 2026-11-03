@@ -315,15 +315,20 @@ function logsOf(r) {
   const a = (r && r.code && LOGS[String(r.code)]) || [];
   return a.slice().sort((x, y) => String(y.d || "").localeCompare(String(x.d || "")));
 }
+/* 금액은 화면에 보이지 않게 ** 로 가린다 (연매출·미수금·단가·예상매출 등) — 원본 데이터는 그대로 */
+function maskMoney(t) {
+  return String(t || "").replace(/(\d[\d,]*(?:\.\d+)?)\s*(억\s*원|억|천만\s*원|천만|백만\s*원|백만|만\s*원|만|천\s*원|원)(?=[\s/,.)·~\-]|$|[^가-힣])/g, "**$2");
+}
 /* 본문 첫머리의 일자·업체코드·업체명은 위 제목줄과 겹친다 — 지우고 보여 준다 */
 function logBody(x) {
   return String(x || "").split("\n")
     .filter((ln, i) => !(i < 6 && /^\s*(일자|방문일자|업체코드|업체명|방문업체)\s*:/.test(ln)))
     .join("\n").trim();
 }
+function logText(x) { return maskMoney(logBody(x)); }
 function logHtml(e, i) {
   const d = e.d ? String(e.d).replace(/-/g, ".") : "날짜 없음";
-  const body = logBody(e.x);
+  const body = logText(e.x);
   const long = body.length > 150;
   return `<div class="lg-i">
     <div class="lg-h"><span class="lg-d">${esc(d)}</span>
@@ -593,7 +598,7 @@ function cardBody(r) {
       nums: (r.code ? `<span class="year">코드 ${esc(r.code)}</span>` : "") +
             (r.biz ? `<span class="year yg">${esc(r.biz)}</span>` : "") +
             (r.cat2 ? `<span class="year">${esc(r.cat2)}</span>` : "") +
-            (r.sales ? `<span class="amt">연 ${esc(Number(r.sales).toLocaleString())}천원</span>` : ""),
+            (r.sales ? `<span class="amt">연매출 **</span>` : ""),
       sub3: [r.fields, r.lastVisit ? `최종방문 ${md(r.lastVisit)}${r.visits ? ` (${esc(r.visits)}회)` : ""}` : ""]
               .filter(Boolean).join(" · ")
     };
@@ -602,7 +607,7 @@ function cardBody(r) {
     return {
       meta: [r.branch, r.dperson || r.person].filter(Boolean).join(" · ") || "-",
       nums: (r.grade ? `<span class="year yc">${esc(r.grade)}</span>` : "") +
-            (r.amount ? `<span class="amt">미수 ${esc(r.amount)}원</span>` : ""),
+            (r.amount ? `<span class="amt">미수 **원</span>` : ""),
       sub3: ""
     };
   }
@@ -757,7 +762,6 @@ function renderLegend() {
   const show = KIND_ORDER.filter(k => !state.cats.length || state.cats.includes(k));
   $("mapLegend").innerHTML = show.map(k =>
     `<span style="display:inline-flex;align-items:center;gap:4px;"><span style="width:12px;height:12px;border-radius:50%;background:${KIND[k].color};border:1.5px solid ${KIND[k].edge === "#fff" ? "#bbb" : "#333"};"></span>${KIND[k].label} ${n[k] || 0}</span>`).join("") +
-    (show.includes("rival") ? '<span style="color:#555;">경쟁사 숫자 = 연매출(억)</span>' : "") +
     '<span style="color:#1976d2;">⚑ 기준 위치</span>';
 }
 function clearMarkers() {
@@ -781,7 +785,7 @@ function drawMarkers(fit) {
   const bounds = new kakao.maps.LatLngBounds();
   items.forEach(r => {
     const pos = new kakao.maps.LatLng(r.lat, r.lng);
-    const m = new kakao.maps.Marker({ position: pos, image: dotImage(r.kind, r.kind === "rival" ? salesEok(r.sales) : "") });
+    const m = new kakao.maps.Marker({ position: pos, image: dotImage(r.kind, "") });   /* 마커 안 연매출 숫자는 표시하지 않는다 */
     kakao.maps.event.addListener(m, "click", () => openInfo(r));
     markers.push(m); bounds.extend(pos);
   });
